@@ -1518,37 +1518,33 @@ export function PracticePage() {
                         <div className="flex flex-col gap-3">
                           {/* Bot Training section */}
                           <div className="rounded-[12px] border border-white/[0.07] overflow-hidden">
-                            <button
-                              className="flex items-center justify-between w-full px-4 py-3 hover:bg-white/[0.02] transition-colors"
+                            <div
+                              className="flex items-center justify-between w-full px-4 py-3 cursor-pointer hover:bg-white/[0.02] transition-colors select-none"
                               onClick={() => setBotSectionOpen(v => !v)}
                             >
                               <div className="flex items-center gap-2.5">
                                 <Database size={13} className="text-accent/70" />
                                 <span className="text-[13px] font-semibold text-white">Bot Training</span>
                                 {botKnowledge.length > 0 && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: 'rgba(91,111,255,0.15)', color: 'var(--accent)' }}>
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-accent/10 text-accent">
                                     {botKnowledge.length} item{botKnowledge.length !== 1 ? 's' : ''}
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                                 <button
-                                  onClick={e => {
-                                    e.stopPropagation();
-                                    if (botKnowledge.length > 0) setBotKnowledge([]);
-                                    setBotSectionOpen(true);
-                                  }}
+                                  onClick={() => setBotSectionOpen(v => !v)}
                                   className={clsx(
                                     'relative w-9 h-5 rounded-full transition-colors flex-shrink-0',
-                                    botKnowledge.length > 0 || botSectionOpen ? 'bg-accent' : 'bg-white/20',
+                                    botSectionOpen ? 'bg-accent' : 'bg-white/20',
                                   )}
-                                  title="Toggle bot training"
+                                  title={botSectionOpen ? 'Collapse section' : 'Expand section'}
                                 >
-                                  <span className={clsx('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform', (botKnowledge.length > 0 || botSectionOpen) ? 'translate-x-4' : 'translate-x-0.5')} />
+                                  <span className={clsx('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform', botSectionOpen ? 'translate-x-4' : 'translate-x-0.5')} />
                                 </button>
                                 <ChevronDown size={13} className={clsx('text-white/40 transition-transform', botSectionOpen ? 'rotate-180' : '')} />
                               </div>
-                            </button>
+                            </div>
                             <AnimatePresence>
                               {botSectionOpen && (
                                 <motion.div
@@ -1582,37 +1578,33 @@ export function PracticePage() {
 
                           {/* Pre-Call Briefing section */}
                           <div className="rounded-[12px] border border-white/[0.07] overflow-hidden">
-                            <button
-                              className="flex items-center justify-between w-full px-4 py-3 hover:bg-white/[0.02] transition-colors"
+                            <div
+                              className="flex items-center justify-between w-full px-4 py-3 cursor-pointer hover:bg-white/[0.02] transition-colors select-none"
                               onClick={() => setBriefingSectionOpen(v => !v)}
                             >
                               <div className="flex items-center gap-2.5">
                                 <FileText size={13} className="text-accent/70" />
                                 <span className="text-[13px] font-semibold text-white">Pre-Call User Briefing</span>
                                 {userBriefing.length > 0 && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: 'rgba(6,214,160,0.15)', color: 'var(--accent3)' }}>
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-accent/10 text-accent">
                                     {userBriefing.length} item{userBriefing.length !== 1 ? 's' : ''}
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                                 <button
-                                  onClick={e => {
-                                    e.stopPropagation();
-                                    if (userBriefing.length > 0) setUserBriefing([]);
-                                    setBriefingSectionOpen(true);
-                                  }}
+                                  onClick={() => setBriefingSectionOpen(v => !v)}
                                   className={clsx(
                                     'relative w-9 h-5 rounded-full transition-colors flex-shrink-0',
-                                    userBriefing.length > 0 || briefingSectionOpen ? 'bg-accent3' : 'bg-white/20',
+                                    briefingSectionOpen ? 'bg-accent' : 'bg-white/20',
                                   )}
-                                  title="Toggle user briefing"
+                                  title={briefingSectionOpen ? 'Collapse section' : 'Expand section'}
                                 >
-                                  <span className={clsx('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform', (userBriefing.length > 0 || briefingSectionOpen) ? 'translate-x-4' : 'translate-x-0.5')} />
+                                  <span className={clsx('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform', briefingSectionOpen ? 'translate-x-4' : 'translate-x-0.5')} />
                                 </button>
                                 <ChevronDown size={13} className={clsx('text-white/40 transition-transform', briefingSectionOpen ? 'rotate-180' : '')} />
                               </div>
-                            </button>
+                            </div>
                             <AnimatePresence>
                               {briefingSectionOpen && (
                                 <motion.div
