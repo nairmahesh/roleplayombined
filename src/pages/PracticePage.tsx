@@ -2,11 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import {
-  Phone, Monitor, Sparkles, Loader2, ChevronDown, ChevronUp,
-  RefreshCw, Play, Plus, X, Settings, Info, Pencil, Trash2,
-  ArrowLeft, BookOpen, Lock, Check, User, Layers, Globe,
-} from 'lucide-react';
+import { Phone, Monitor, Sparkles, Loader as Loader2, ChevronDown, ChevronUp, RefreshCw, Play, Plus, X, Settings, Info, Pencil, Trash2, ArrowLeft, BookOpen, Lock, Check, User, Layers, Globe } from 'lucide-react';
 import { practiceApi, sessionsApi, personasApi, teamRoleplaysApi } from '@/lib/api';
 import { Framework, SessionType, FRAMEWORK_INFO, ScenarioConfig, Persona, TeamRoleplay } from '@/types';
 import { CallInterface, PersonaDisplay } from '@/components/practice/CallInterface';
@@ -800,7 +796,7 @@ export function PracticePage() {
 
           {/* ── VIEW-ONLY: two-column summary + launch ─────────────────────────── */}
           {setupMode === 'view' && (
-            <div className="flex gap-4 items-start">
+            <div className="flex flex-col md:flex-row gap-4 items-start">
               {/* Left: persona card */}
               <div className="flex-1 min-w-0 card p-5 flex flex-col gap-4">
                 <div className="flex items-center gap-4">
@@ -846,7 +842,7 @@ export function PracticePage() {
               </div>
 
               {/* Right: session config + start */}
-              <div className="flex flex-col gap-3 w-72 flex-shrink-0">
+              <div className="flex flex-col gap-3 w-full md:w-72 md:flex-shrink-0">
                 <div className="card p-4">
                   <p className="text-[10px] font-semibold text-white/25 uppercase tracking-wider mb-2.5">Sales Framework</p>
                   <div className="flex items-center gap-2 mb-1.5">
@@ -912,10 +908,10 @@ export function PracticePage() {
 
           {/* ── EDIT: left sidebar + step content ──────────────────────────────── */}
           {setupMode === 'edit' && (
-            <div className="flex gap-4 items-start">
+            <div className="flex flex-col md:flex-row gap-4 items-start">
               {/* Left sidebar */}
-              <div className="flex flex-col gap-3 w-44 flex-shrink-0">
-                <div className="card p-2 flex flex-col gap-1">
+              <div className="flex flex-col gap-3 w-full md:w-44 md:flex-shrink-0">
+                <div className="card p-2 flex flex-row md:flex-col gap-1 overflow-x-auto">
                   {[
                     { n: 1, label: 'Persona', sub: displayName !== 'Custom Persona' ? displayName : 'Avatar & context' },
                     { n: 2, label: 'Context', sub: industry || 'Industry & type' },
@@ -947,7 +943,7 @@ export function PracticePage() {
                     );
                   })}
                 </div>
-                <div className="card p-3 flex flex-col items-center gap-2 text-center">
+                <div className="hidden md:flex card p-3 flex-col items-center gap-2 text-center">
                   <div className="rounded-full overflow-hidden ring-2 ring-white/10">
                     <AvatarDisplay avatarId={avatarId} size={44} />
                   </div>

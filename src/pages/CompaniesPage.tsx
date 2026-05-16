@@ -256,8 +256,9 @@ export function CompaniesPage() {
 
       {/* Companies Table */}
       <div className="card">
+        {/* Desktop header */}
         <div
-          className="grid text-[11px] font-semibold text-white/30 uppercase tracking-wider px-5 py-3 border-b border-white/[0.06]"
+          className="hidden md:grid text-[11px] font-semibold text-white/30 uppercase tracking-wider px-5 py-3 border-b border-white/[0.06]"
           style={{ gridTemplateColumns: cols }}
         >
           <div>Company</div>
@@ -283,81 +284,103 @@ export function CompaniesPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: i * 0.04 }}
-                className="grid items-center px-5 py-3.5 hover:bg-white/[0.02] transition-colors"
-                style={{ gridTemplateColumns: cols }}
+                className="hover:bg-white/[0.02] transition-colors"
               >
-                {/* Company info */}
-                <div>
-                  <div className="font-medium text-[13.5px]">{c.name}</div>
-                  <div className="text-[11px] text-white/30 mt-0.5 flex items-center gap-2">
-                    {c.industry && (
-                      <span className="flex items-center gap-1">
-                        <Globe size={9} /> {c.industry}
-                      </span>
-                    )}
-                    {c.admins[0] && (
-                      <span>
-                        Admin: {c.admins[0].firstName} {c.admins[0].lastName}
-                      </span>
+                {/* Mobile card */}
+                <div className="md:hidden px-4 py-3.5 flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-[13.5px]">{c.name}</span>
+                      <button
+                        onClick={() => toggleActive(c)}
+                        className={clsx(
+                          'text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all',
+                          c.isActive
+                            ? 'bg-accent-3/10 text-accent-3 border-accent-3/25'
+                            : 'bg-white/[0.05] text-white/35 border-white/10'
+                        )}
+                      >
+                        {c.isActive ? 'Active' : 'Inactive'}
+                      </button>
+                    </div>
+                    <div className="text-[11px] text-white/30 mt-0.5">
+                      {c.industry && <span>{c.industry} · </span>}
+                      <span>{c.agentCount}/{c.maxAgents} agents · {c.totalSessions} sessions</span>
+                    </div>
+                    {c.contactEmail && (
+                      <div className="text-[11px] text-white/40 mt-0.5 truncate">{c.contactEmail}</div>
                     )}
                   </div>
-                  <div className="text-[10px] text-white/20 mt-0.5">
-                    Created {new Date(c.createdAt).toLocaleDateString()}
-                  </div>
-                </div>
-
-                {/* Contact */}
-                <div className="text-[12px] text-white/50 space-y-0.5">
-                  {c.contactEmail && (
-                    <div className="flex items-center gap-1 truncate">
-                      <Globe size={9} className="text-white/25 flex-shrink-0" />
-                      <span className="truncate">{c.contactEmail}</span>
-                    </div>
-                  )}
-                  {c.contactPhone && (
-                    <div className="flex items-center gap-1">
-                      <Phone size={9} className="text-white/25 flex-shrink-0" />
-                      {c.contactPhone}
-                    </div>
-                  )}
-                  {!c.contactEmail && !c.contactPhone && (
-                    <span className="text-white/20">—</span>
-                  )}
-                </div>
-
-                {/* Agents */}
-                <div className="text-[13px]">
-                  <span className="font-semibold">{c.agentCount}</span>
-                  <span className="text-white/30 text-xs ml-1">/ {c.maxAgents}</span>
-                </div>
-
-                {/* Sessions */}
-                <div className="text-[13px] text-white/50">{c.totalSessions}</div>
-
-                {/* Status toggle */}
-                <div>
-                  <button
-                    onClick={() => toggleActive(c)}
-                    className={clsx(
-                      'text-[10.5px] font-semibold px-2.5 py-1 rounded-full border transition-all cursor-pointer',
-                      c.isActive
-                        ? 'bg-accent-3/10 text-accent-3 border-accent-3/25 hover:bg-accent-3/20'
-                        : 'bg-white/[0.05] text-white/35 border-white/10 hover:bg-white/10'
-                    )}
-                  >
-                    {c.isActive ? 'Active' : 'Inactive'}
-                  </button>
-                </div>
-
-                {/* View detail */}
-                <div className="flex justify-end">
                   <button
                     onClick={() => navigate(`/superadmin/companies/${c.id}`)}
-                    className="p-1.5 rounded-lg hover:bg-white/[0.08] text-white/30 hover:text-white transition-colors"
-                    title="View details"
+                    className="p-1.5 rounded-lg hover:bg-white/[0.08] text-white/30 hover:text-white transition-colors flex-shrink-0 mt-0.5"
                   >
                     <ChevronRight size={14} />
                   </button>
+                </div>
+
+                {/* Desktop row */}
+                <div
+                  className="hidden md:grid items-center px-5 py-3.5"
+                  style={{ gridTemplateColumns: cols }}
+                >
+                  <div>
+                    <div className="font-medium text-[13.5px]">{c.name}</div>
+                    <div className="text-[11px] text-white/30 mt-0.5 flex items-center gap-2">
+                      {c.industry && (
+                        <span className="flex items-center gap-1">
+                          <Globe size={9} /> {c.industry}
+                        </span>
+                      )}
+                      {c.admins[0] && (
+                        <span>Admin: {c.admins[0].firstName} {c.admins[0].lastName}</span>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-white/20 mt-0.5">
+                      Created {new Date(c.createdAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div className="text-[12px] text-white/50 space-y-0.5">
+                    {c.contactEmail && (
+                      <div className="flex items-center gap-1 truncate">
+                        <Globe size={9} className="text-white/25 flex-shrink-0" />
+                        <span className="truncate">{c.contactEmail}</span>
+                      </div>
+                    )}
+                    {c.contactPhone && (
+                      <div className="flex items-center gap-1">
+                        <Phone size={9} className="text-white/25 flex-shrink-0" />
+                        {c.contactPhone}
+                      </div>
+                    )}
+                    {!c.contactEmail && !c.contactPhone && <span className="text-white/20">—</span>}
+                  </div>
+                  <div className="text-[13px]">
+                    <span className="font-semibold">{c.agentCount}</span>
+                    <span className="text-white/30 text-xs ml-1">/ {c.maxAgents}</span>
+                  </div>
+                  <div className="text-[13px] text-white/50">{c.totalSessions}</div>
+                  <div>
+                    <button
+                      onClick={() => toggleActive(c)}
+                      className={clsx(
+                        'text-[10.5px] font-semibold px-2.5 py-1 rounded-full border transition-all cursor-pointer',
+                        c.isActive
+                          ? 'bg-accent-3/10 text-accent-3 border-accent-3/25 hover:bg-accent-3/20'
+                          : 'bg-white/[0.05] text-white/35 border-white/10 hover:bg-white/10'
+                      )}
+                    >
+                      {c.isActive ? 'Active' : 'Inactive'}
+                    </button>
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => navigate(`/superadmin/companies/${c.id}`)}
+                      className="p-1.5 rounded-lg hover:bg-white/[0.08] text-white/30 hover:text-white transition-colors"
+                    >
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             ))}

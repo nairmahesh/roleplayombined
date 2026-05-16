@@ -424,7 +424,7 @@ export function FeedbackPage() {
                 <p className="text-[12px] text-white/50 leading-relaxed mt-1.5 line-clamp-2">{feedback.overallFeedback}</p>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+            <div className="flex flex-wrap items-center gap-2 sm:flex-shrink-0 w-full sm:w-auto">
               <button onClick={() => navigate('/practice')} className="btn-ghost gap-1.5 text-xs py-1.5 px-3">
                 <RefreshCw size={11} /> Retry
               </button>
@@ -434,7 +434,7 @@ export function FeedbackPage() {
               >
                 <Share2 size={11} /> Share
               </button>
-              <button onClick={() => navigate('/practice')} className="btn-primary gap-1.5 text-xs py-1.5 px-3">
+              <button onClick={() => navigate('/practice')} className="btn-primary gap-1.5 text-xs py-1.5 px-3 ml-auto sm:ml-0">
                 Next <ChevronRight size={12} />
               </button>
             </div>

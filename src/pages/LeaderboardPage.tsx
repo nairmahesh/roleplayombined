@@ -29,7 +29,7 @@ export function LeaderboardPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <h2 className="font-display text-xl font-bold flex items-center gap-2"><Trophy size={18} className="text-accent-5" /> Leaderboard</h2>
         <div className="flex gap-2">
           {(['all', 'month'] as const).map(p => (

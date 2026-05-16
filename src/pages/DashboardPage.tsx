@@ -3,10 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import {
-  TrendingUp, Users, Play, Trophy, Lightbulb, AlertTriangle,
-  CheckCircle, Flame, Award, Zap,
-} from 'lucide-react';
+import { TrendingUp, Users, Play, Trophy, Lightbulb, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Flame, Award, Zap } from 'lucide-react';
 import { analyticsApi } from '@/lib/api';
 import {
   DashboardStats,
@@ -584,15 +581,15 @@ export function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="font-display text-2xl font-bold">
+      <div className="flex items-start sm:items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="font-display text-xl sm:text-2xl font-bold truncate">
             {greeting()}, {user?.firstName} 👋
           </h2>
           <p className="text-sm text-white/65 mt-0.5">{subtitle}</p>
         </div>
-        <button onClick={() => navigate('/practice')} className="btn-primary gap-2">
-          <Play size={14} /> Start Practice
+        <button onClick={() => navigate('/practice')} className="btn-primary gap-2 flex-shrink-0">
+          <Play size={14} /> <span className="hidden sm:inline">Start Practice</span><span className="sm:hidden">Practice</span>
         </button>
       </div>
 
