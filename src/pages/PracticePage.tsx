@@ -335,6 +335,16 @@ export function PracticePage() {
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   const goToStep = (n: number) => {
+    // When advancing from Context (1) to Persona (2) with a blank persona, auto-apply
+    // the best matching template so the user lands on a pre-filled persona they can tweak.
+    if (n === 2 && currentStep === 1 && !personaContext.trim()) {
+      const match = TEMPLATES.find(t =>
+        (!industry || t.industry === industry) &&
+        (!roleplayType || t.roleplayType === roleplayType)
+      );
+      if (match) applyTemplate(match);
+      else setAiKeywords([industry, roleplayType].filter(Boolean).join(' '));
+    }
     stepDirection.current = n > currentStep ? 1 : -1;
     setCurrentStep(n);
   };
@@ -913,8 +923,8 @@ export function PracticePage() {
               <div className="flex flex-col gap-3 w-full md:w-44 md:flex-shrink-0">
                 <div className="card p-2 flex flex-row md:flex-col gap-1 overflow-x-auto">
                   {[
-                    { n: 1, label: 'Persona', sub: displayName !== 'Custom Persona' ? displayName : 'Avatar & context' },
-                    { n: 2, label: 'Context', sub: industry || 'Industry & type' },
+                    { n: 1, label: 'Context', sub: industry || 'Industry & type' },
+                    { n: 2, label: 'Persona', sub: displayName !== 'Custom Persona' ? displayName : 'Avatar & context' },
                     { n: 3, label: 'Launch', sub: roleplayType || 'Settings & start' },
                   ].map(({ n, label, sub }) => {
                     const done = n < currentStep;
@@ -966,168 +976,6 @@ export function PracticePage() {
                   {currentStep === 1 && (
                     <motion.div
                       key="s1"
-                      initial={{ opacity: 0, x: stepDirection.current * 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: stepDirection.current * -20 }}
-                      transition={{ duration: 0.18, ease: 'easeOut' }}
-                      className="card p-5 flex flex-col gap-4"
-                    >
-                      {/* Avatar picker with ethnicity + gender filter */}
-                      <div>
-                        <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Avatar</p>
-                        <EthnicityAvatarPicker value={avatarId} onChange={id => {
-                          setAvatarId(id);
-                          const cfg = AVATAR_VOICE_CONFIG[id as AvatarId];
-                          setSelectedVoiceId(cfg?.elevenlabsId ?? undefined);
-                          const av = AVATARS.find(a => a.id === id);
-                          if (av) setDisplayName(av.name);
-                        }} />
-                      </div>
-
-                      {/* Voice picker — collapsible */}
-                      <div className="border border-white/[0.07] rounded-[10px] overflow-hidden">
-                        <button
-                          type="button"
-                          onClick={() => setVoiceOpen(v => !v)}
-                          className="w-full flex items-center justify-between px-3 py-2 hover:bg-white/[0.03] transition-colors"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Voice</span>
-                            {selectedVoiceId && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 border border-accent/20 text-accent/70">Custom</span>
-                            )}
-                          </div>
-                          <ChevronDown size={12} className={clsx('text-white/70 transition-transform', voiceOpen && 'rotate-180')} />
-                        </button>
-                        {voiceOpen && (
-                          <div className="px-3 pb-3 border-t border-white/[0.06]">
-                            <div className="pt-3">
-                              <VoicePicker avatarId={avatarId} value={selectedVoiceId} onChange={setSelectedVoiceId} />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Name + Title + Difficulty */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                        <div>
-                          <label className="text-[10px] text-white/75 block mb-1">Name</label>
-                          <input value={displayName} onChange={e => setDisplayName(e.target.value)} className="input-base text-[12.5px]" placeholder="Alex Chen" />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-white/75 block mb-1">Title & Company</label>
-                          <input value={displayTitle} onChange={e => setDisplayTitle(e.target.value)} className="input-base text-[12.5px]" placeholder="VP Sales, Acme" />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-white/75 block mb-1">Difficulty</label>
-                          <select value={difficulty} onChange={e => setDifficulty(e.target.value)} className="input-base text-[12.5px] w-full">
-                            {['Easy', 'Medium', 'Hard', 'Expert'].map(d => <option key={d} value={d}>{d}</option>)}
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Pre-built scenario templates */}
-                      <div>
-                        <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Start from Template</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {TEMPLATES.map(t => {
-                            const isActive = personaContext === t.personaContext;
-                            return (
-                              <button
-                                key={t.id}
-                                type="button"
-                                onClick={() => applyTemplate(t)}
-                                title={`${t.displayTitle} · ${t.difficulty}`}
-                                className={clsx(
-                                  'flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] border text-[11px] font-medium transition-all',
-                                  isActive
-                                    ? 'bg-accent/10 border-accent/40 text-accent'
-                                    : 'border-white/[0.08] text-white/70 hover:text-white hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.05]'
-                                )}
-                              >
-                                <span className="text-[13px] leading-none">{t.displayEmoji}</span>
-                                <span>{t.label}</span>
-                                <span className={clsx(
-                                  'text-[9px] px-1.5 py-0.5 rounded border leading-none',
-                                  DIFFICULTY_COLORS[t.difficulty] || 'text-white/80 bg-white/5 border-white/10'
-                                )}>{t.difficulty}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Persona context */}
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <label className="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Persona Instructions</label>
-                          <div className="flex items-center gap-3">
-                            {canCreatePersona && (
-                              <button onClick={loadDbPersonas} disabled={loadingPersonas} className="flex items-center gap-1 text-[10px] text-white/75 hover:text-white/70 transition-colors">
-                                {loadingPersonas ? <Loader2 size={10} className="animate-spin" /> : <BookOpen size={10} />} Saved
-                              </button>
-                            )}
-                            <button onClick={() => setShowAiPanel(v => !v)} className="flex items-center gap-1 text-[10px] text-accent/60 hover:text-accent transition-colors">
-                              <Sparkles size={10} /> AI
-                            </button>
-                          </div>
-                        </div>
-                        <AnimatePresence>
-                          {showAiPanel && (
-                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-2">
-                              <div className="flex gap-2 p-2.5 rounded-[10px] bg-accent/[0.06] border border-accent/20">
-                                <input value={aiKeywords} onChange={e => setAiKeywords(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleGenerateScenario()} placeholder="e.g. skeptical CFO enterprise software" className="input-base flex-1 text-[12px] bg-transparent border-white/10" />
-                                <button onClick={handleGenerateScenario} disabled={generating || !aiKeywords.trim()} className="btn-primary gap-1 text-[11.5px] px-3 flex-shrink-0 disabled:opacity-50">
-                                  {generating ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
-                                  {generating ? '…' : 'Go'}
-                                </button>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                        <textarea value={personaContext} onChange={e => setPersonaContext(e.target.value)} placeholder="Describe the persona and scenario…" className="input-base min-h-[110px] resize-none text-[12.5px] leading-relaxed" />
-                      </div>
-
-                      {/* Suggested questions */}
-                      <div className="rounded-[10px] border border-white/[0.07] p-3 bg-white/[0.02]">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Suggested Questions</span>
-                            {generatingQuestions && <Loader2 size={10} className="animate-spin text-white/70" />}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => handleGenerateQuestions(true)} disabled={generatingQuestions || !personaContext.trim()} className="flex items-center gap-1 text-[10px] text-white/70 hover:text-white transition-colors disabled:opacity-40">
-                              <RefreshCw size={9} /> Regen
-                            </button>
-                            <button onClick={() => setShowQuestions(v => !v)} className="text-white/70 hover:text-white transition-colors">
-                              {showQuestions ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                            </button>
-                          </div>
-                        </div>
-                        {showQuestions && (
-                          suggestedQuestions.length > 0 ? (
-                            <div className="flex flex-wrap gap-1.5 mt-2">
-                              {suggestedQuestions.map((q, i) => (
-                                <span key={i} className="text-[11px] px-2 py-0.5 rounded-[7px] border border-white/[0.08] bg-white/[0.03] text-white/65">{q}</span>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-[11px] text-white/70 mt-2">Auto-generates from context.</p>
-                          )
-                        )}
-                      </div>
-
-                      <div className="flex justify-end pt-1 border-t border-white/[0.06]">
-                        <button onClick={() => goToStep(2)} className="btn-primary gap-2 text-[13px]">
-                          Context <ArrowLeft size={12} className="rotate-180" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {currentStep === 2 && (
-                    <motion.div
-                      key="s2"
                       initial={{ opacity: 0, x: stepDirection.current * 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: stepDirection.current * -20 }}
@@ -1217,8 +1065,213 @@ export function PracticePage() {
                         )}
                       </div>
 
+                      <div className="flex justify-end pt-1 border-t border-white/[0.06]">
+                        <button
+                          onClick={() => goToStep(2)}
+                          disabled={!industry || !roleplayType}
+                          className="btn-primary gap-2 text-[13px] disabled:opacity-40"
+                        >
+                          Persona <ArrowLeft size={12} className="rotate-180" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {currentStep === 2 && (
+                    <motion.div
+                      key="s2"
+                      initial={{ opacity: 0, x: stepDirection.current * 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: stepDirection.current * -20 }}
+                      transition={{ duration: 0.18, ease: 'easeOut' }}
+                      className="card p-5 flex flex-col gap-4"
+                    >
+                      {/* Avatar picker with ethnicity + gender filter */}
+                      <div>
+                        <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Avatar</p>
+                        <EthnicityAvatarPicker value={avatarId} onChange={id => {
+                          setAvatarId(id);
+                          const cfg = AVATAR_VOICE_CONFIG[id as AvatarId];
+                          setSelectedVoiceId(cfg?.elevenlabsId ?? undefined);
+                          const av = AVATARS.find(a => a.id === id);
+                          if (av) setDisplayName(av.name);
+                        }} />
+                      </div>
+
+                      {/* Voice picker — collapsible */}
+                      <div className="border border-white/[0.07] rounded-[10px] overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setVoiceOpen(v => !v)}
+                          className="w-full flex items-center justify-between px-3 py-2 hover:bg-white/[0.03] transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Voice</span>
+                            {selectedVoiceId && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 border border-accent/20 text-accent/70">Custom</span>
+                            )}
+                          </div>
+                          <ChevronDown size={12} className={clsx('text-white/70 transition-transform', voiceOpen && 'rotate-180')} />
+                        </button>
+                        {voiceOpen && (
+                          <div className="px-3 pb-3 border-t border-white/[0.06]">
+                            <div className="pt-3">
+                              <VoicePicker avatarId={avatarId} value={selectedVoiceId} onChange={setSelectedVoiceId} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Name + Title + Difficulty */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <div>
+                          <label className="text-[10px] text-white/75 block mb-1">Name</label>
+                          <input value={displayName} onChange={e => setDisplayName(e.target.value)} className="input-base text-[12.5px]" placeholder="Alex Chen" />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-white/75 block mb-1">Title & Company</label>
+                          <input value={displayTitle} onChange={e => setDisplayTitle(e.target.value)} className="input-base text-[12.5px]" placeholder="VP Sales, Acme" />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-white/75 block mb-1">Difficulty</label>
+                          <select value={difficulty} onChange={e => setDifficulty(e.target.value)} className="input-base text-[12.5px] w-full">
+                            {['Easy', 'Medium', 'Hard', 'Expert'].map(d => <option key={d} value={d}>{d}</option>)}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Pre-built scenario templates — filtered by selected industry/type */}
+                      <div>
+                        <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">
+                          Start from Template
+                          {(industry || roleplayType) && (
+                            <span className="ml-2 normal-case font-normal text-white/50">
+                              {[industry, roleplayType].filter(Boolean).join(' · ')}
+                            </span>
+                          )}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {TEMPLATES.filter(t =>
+                            (!industry || t.industry === industry) &&
+                            (!roleplayType || t.roleplayType === roleplayType)
+                          ).length > 0
+                            ? TEMPLATES.filter(t =>
+                                (!industry || t.industry === industry) &&
+                                (!roleplayType || t.roleplayType === roleplayType)
+                              ).map(t => {
+                                const isActive = personaContext === t.personaContext;
+                                return (
+                                  <button
+                                    key={t.id}
+                                    type="button"
+                                    onClick={() => applyTemplate(t)}
+                                    title={`${t.displayTitle} · ${t.difficulty}`}
+                                    className={clsx(
+                                      'flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] border text-[11px] font-medium transition-all',
+                                      isActive
+                                        ? 'bg-accent/10 border-accent/40 text-accent'
+                                        : 'border-white/[0.08] text-white/70 hover:text-white hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.05]'
+                                    )}
+                                  >
+                                    <span className="text-[13px] leading-none">{t.displayEmoji}</span>
+                                    <span>{t.label}</span>
+                                    <span className={clsx(
+                                      'text-[9px] px-1.5 py-0.5 rounded border leading-none',
+                                      DIFFICULTY_COLORS[t.difficulty] || 'text-white/80 bg-white/5 border-white/10'
+                                    )}>{t.difficulty}</span>
+                                  </button>
+                                );
+                              })
+                            : TEMPLATES.map(t => {
+                                const isActive = personaContext === t.personaContext;
+                                return (
+                                  <button
+                                    key={t.id}
+                                    type="button"
+                                    onClick={() => applyTemplate(t)}
+                                    title={`${t.displayTitle} · ${t.difficulty}`}
+                                    className={clsx(
+                                      'flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] border text-[11px] font-medium transition-all',
+                                      isActive
+                                        ? 'bg-accent/10 border-accent/40 text-accent'
+                                        : 'border-white/[0.08] text-white/70 hover:text-white hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.05]'
+                                    )}
+                                  >
+                                    <span className="text-[13px] leading-none">{t.displayEmoji}</span>
+                                    <span>{t.label}</span>
+                                    <span className={clsx(
+                                      'text-[9px] px-1.5 py-0.5 rounded border leading-none',
+                                      DIFFICULTY_COLORS[t.difficulty] || 'text-white/80 bg-white/5 border-white/10'
+                                    )}>{t.difficulty}</span>
+                                  </button>
+                                );
+                              })
+                          }
+                        </div>
+                      </div>
+
+                      {/* Persona context */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Persona Instructions</label>
+                          <div className="flex items-center gap-3">
+                            {canCreatePersona && (
+                              <button onClick={loadDbPersonas} disabled={loadingPersonas} className="flex items-center gap-1 text-[10px] text-white/75 hover:text-white/70 transition-colors">
+                                {loadingPersonas ? <Loader2 size={10} className="animate-spin" /> : <BookOpen size={10} />} Saved
+                              </button>
+                            )}
+                            <button onClick={() => setShowAiPanel(v => !v)} className="flex items-center gap-1 text-[10px] text-accent/60 hover:text-accent transition-colors">
+                              <Sparkles size={10} /> AI
+                            </button>
+                          </div>
+                        </div>
+                        <AnimatePresence>
+                          {showAiPanel && (
+                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-2">
+                              <div className="flex gap-2 p-2.5 rounded-[10px] bg-accent/[0.06] border border-accent/20">
+                                <input value={aiKeywords} onChange={e => setAiKeywords(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleGenerateScenario()} placeholder="e.g. skeptical CFO enterprise software" className="input-base flex-1 text-[12px] bg-transparent border-white/10" />
+                                <button onClick={handleGenerateScenario} disabled={generating || !aiKeywords.trim()} className="btn-primary gap-1 text-[11.5px] px-3 flex-shrink-0 disabled:opacity-50">
+                                  {generating ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+                                  {generating ? '…' : 'Go'}
+                                </button>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                        <textarea value={personaContext} onChange={e => setPersonaContext(e.target.value)} placeholder="Describe the persona and scenario…" className="input-base min-h-[110px] resize-none text-[12.5px] leading-relaxed" />
+                      </div>
+
+                      {/* Suggested questions */}
+                      <div className="rounded-[10px] border border-white/[0.07] p-3 bg-white/[0.02]">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Suggested Questions</span>
+                            {generatingQuestions && <Loader2 size={10} className="animate-spin text-white/70" />}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => handleGenerateQuestions(true)} disabled={generatingQuestions || !personaContext.trim()} className="flex items-center gap-1 text-[10px] text-white/70 hover:text-white transition-colors disabled:opacity-40">
+                              <RefreshCw size={9} /> Regen
+                            </button>
+                            <button onClick={() => setShowQuestions(v => !v)} className="text-white/70 hover:text-white transition-colors">
+                              {showQuestions ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                            </button>
+                          </div>
+                        </div>
+                        {showQuestions && (
+                          suggestedQuestions.length > 0 ? (
+                            <div className="flex flex-wrap gap-1.5 mt-2">
+                              {suggestedQuestions.map((q, i) => (
+                                <span key={i} className="text-[11px] px-2 py-0.5 rounded-[7px] border border-white/[0.08] bg-white/[0.03] text-white/65">{q}</span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-[11px] text-white/70 mt-2">Auto-generates from context.</p>
+                          )
+                        )}
+                      </div>
+
                       <div className="flex items-center justify-between pt-1 border-t border-white/[0.06]">
-                        <button onClick={() => goToStep(1)} className="btn-ghost gap-1.5 text-[13px]"><ArrowLeft size={12} /> Persona</button>
+                        <button onClick={() => goToStep(1)} className="btn-ghost gap-1.5 text-[13px]"><ArrowLeft size={12} /> Context</button>
                         <button onClick={() => goToStep(3)} className="btn-primary gap-2 text-[13px]">Launch <ArrowLeft size={12} className="rotate-180" /></button>
                       </div>
                     </motion.div>
@@ -1335,7 +1388,7 @@ export function PracticePage() {
                           </button>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => goToStep(2)} className="btn-ghost gap-1.5 text-[13px]"><ArrowLeft size={12} /> Context</button>
+                          <button onClick={() => goToStep(2)} className="btn-ghost gap-1.5 text-[13px]"><ArrowLeft size={12} /> Persona</button>
                           <button onClick={handleStart} disabled={starting || !isReady} className="flex-1 btn-primary gap-2 py-2.5 text-[13.5px] justify-center disabled:opacity-40">
                             {starting ? <><Loader2 size={14} className="animate-spin" /> Starting…</> : <><Play size={14} /> Start Session</>}
                           </button>
