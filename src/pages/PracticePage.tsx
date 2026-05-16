@@ -982,62 +982,54 @@ export function PracticePage() {
                       transition={{ duration: 0.18, ease: 'easeOut' }}
                       className="card p-4 sm:p-5 flex flex-col gap-4"
                     >
-                      <div>
-                        <div className="flex items-center gap-2 mb-2.5">
-                          <div className={clsx('w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0', industry ? 'bg-accent-3 text-white' : 'bg-white/[0.07] text-white/70 border border-white/[0.1]')}>
-                            {industry ? <Check size={9} /> : '1'}
-                          </div>
-                          <p className="text-[12.5px] font-semibold">Industry</p>
+                      {/* Industry + Language + Roleplay Type — compact dropdowns */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="flex items-center gap-1.5 text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-1.5">
+                            <div className={clsx('w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0', industry ? 'bg-accent-3 text-white' : 'bg-white/[0.07] text-white/60 border border-white/[0.1]')}>
+                              {industry ? <Check size={7} /> : '1'}
+                            </div>
+                            Industry
+                          </label>
+                          <select
+                            value={industry}
+                            onChange={e => setIndustry(e.target.value)}
+                            className={clsx('input-base text-[12.5px] w-full', !industry && 'text-white/45')}
+                          >
+                            <option value="" disabled>Select industry…</option>
+                            {INDUSTRIES.map(ind => <option key={ind} value={ind}>{ind}</option>)}
+                          </select>
                         </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {INDUSTRIES.map(ind => (
-                            <button key={ind} onClick={() => setIndustry(ind)} className={clsx(
-                              'px-2.5 py-1 rounded-[8px] text-[12px] font-medium border transition-all',
-                              industry === ind ? 'bg-accent text-white border-accent shadow-[0_2px_12px_rgba(91,111,255,0.3)]' : 'bg-transparent border-white/10 text-white/70 hover:text-white hover:bg-white/[0.06]'
-                            )}>{ind}</button>
-                          ))}
-                        </div>
-                      </div>
 
-                      {/* Language */}
-                      <div>
-                        <div className="flex items-center gap-2 mb-2.5">
-                          <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 bg-white/[0.07] text-white/70 border border-white/[0.1]">
-                            <Globe size={10} />
-                          </div>
-                          <p className="text-[12.5px] font-semibold">Conversation Language</p>
+                        <div>
+                          <label className="flex items-center gap-1.5 text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-1.5">
+                            <Globe size={10} className="text-white/50" />
+                            Language
+                          </label>
+                          <select
+                            value={language}
+                            onChange={e => setLanguage(e.target.value)}
+                            className="input-base text-[12.5px] w-full"
+                          >
+                            {LANGUAGES.map(lang => <option key={lang} value={lang}>{lang}</option>)}
+                          </select>
                         </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {LANGUAGES.map(lang => (
-                            <button
-                              key={lang}
-                              onClick={() => setLanguage(lang)}
-                              title={`Conduct the roleplay in ${lang}`}
-                              className={clsx(
-                                'px-2.5 py-1 rounded-[8px] text-[12px] font-medium border transition-all',
-                                language === lang
-                                  ? 'bg-accent text-white border-accent shadow-[0_2px_12px_rgba(91,111,255,0.3)]'
-                                  : 'bg-transparent border-white/10 text-white/70 hover:text-white hover:bg-white/[0.06]'
-                              )}
-                            >{lang}</button>
-                          ))}
-                        </div>
-                      </div>
 
-                      <div>
-                        <div className="flex items-center gap-2 mb-2.5">
-                          <div className={clsx('w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0', roleplayType ? 'bg-accent-3 text-white' : 'bg-white/[0.07] text-white/70 border border-white/[0.1]')}>
-                            {roleplayType ? <Check size={9} /> : '2'}
-                          </div>
-                          <p className="text-[12.5px] font-semibold">Roleplay Type</p>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {ROLEPLAY_TYPES.map(rt => (
-                            <button key={rt} onClick={() => setRoleplayType(rt)} className={clsx(
-                              'px-2.5 py-1 rounded-[8px] text-[12px] font-medium border transition-all',
-                              roleplayType === rt ? 'bg-accent text-white border-accent shadow-[0_2px_12px_rgba(91,111,255,0.3)]' : 'bg-transparent border-white/10 text-white/70 hover:text-white hover:bg-white/[0.06]'
-                            )}>{rt}</button>
-                          ))}
+                        <div>
+                          <label className="flex items-center gap-1.5 text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-1.5">
+                            <div className={clsx('w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0', roleplayType ? 'bg-accent-3 text-white' : 'bg-white/[0.07] text-white/60 border border-white/[0.1]')}>
+                              {roleplayType ? <Check size={7} /> : '2'}
+                            </div>
+                            Roleplay Type
+                          </label>
+                          <select
+                            value={roleplayType}
+                            onChange={e => setRoleplayType(e.target.value)}
+                            className={clsx('input-base text-[12.5px] w-full', !roleplayType && 'text-white/45')}
+                          >
+                            <option value="" disabled>Select type…</option>
+                            {ROLEPLAY_TYPES.map(rt => <option key={rt} value={rt}>{rt}</option>)}
+                          </select>
                         </div>
                       </div>
 
