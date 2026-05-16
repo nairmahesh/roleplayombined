@@ -328,9 +328,12 @@ export function PracticePage() {
   const autoGenRef      = useRef('');
 
   // ── Knowledge base state ──────────────────────────────────────────────────
-  const [botKnowledge, setBotKnowledge]   = useState<KnowledgeBaseEntry[]>([]);
-  const [userBriefing, setUserBriefing]   = useState<KnowledgeBaseEntry[]>([]);
-  const [showBriefing, setShowBriefing]   = useState(false);
+  const [botKnowledge, setBotKnowledge]     = useState<KnowledgeBaseEntry[]>([]);
+  const [userBriefing, setUserBriefing]     = useState<KnowledgeBaseEntry[]>([]);
+  const [kbEnabled, setKbEnabled]           = useState(true);
+  const [botSectionOpen, setBotSectionOpen] = useState(true);
+  const [briefingSectionOpen, setBriefingSectionOpen] = useState(true);
+  const [showBriefing, setShowBriefing]     = useState(false);
   const [pendingSession, setPendingSession] = useState<{ id: string; personaDisplay: PersonaDisplay } | null>(null);
 
   const canKnowledgeBase = usePlanStore(s => s.can('knowledgeBase'));
@@ -1493,58 +1496,162 @@ export function PracticePage() {
                       transition={{ duration: 0.18, ease: 'easeOut' }}
                       className="card p-4 sm:p-5 flex flex-col gap-6"
                     >
-                      <div>
-                        <h3 className="font-display text-[14px] font-bold text-white mb-0.5">Knowledge Base</h3>
-                        <p className="text-[11.5px] text-white/70">Attach content to train the AI bot and optionally brief the user before the call starts.</p>
+                      {/* Header with master toggle */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 className="font-display text-[14px] font-bold text-white mb-0.5">Knowledge Base</h3>
+                          <p className="text-[11.5px] text-white/70">Attach content to train the AI bot and optionally brief the user before the call starts.</p>
+                        </div>
+                        <button
+                          onClick={() => setKbEnabled(v => !v)}
+                          className={clsx(
+                            'relative w-11 h-6 rounded-full transition-colors flex-shrink-0 mt-0.5',
+                            kbEnabled ? 'bg-accent' : 'bg-white/20',
+                          )}
+                          title={kbEnabled ? 'Disable Knowledge Base' : 'Enable Knowledge Base'}
+                        >
+                          <span className={clsx('absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform', kbEnabled ? 'translate-x-5' : 'translate-x-0.5')} />
+                        </button>
                       </div>
 
-                      {/* Bot knowledge */}
-                      <div className="rounded-[12px] border border-white/[0.07] p-4">
-                        {canKnowledgeBase ? (
-                          <KnowledgeBaseEditor
-                            label="Bot Training"
-                            description="Context the AI persona will use during the call — product docs, FAQs, competitor info, pricing."
-                            forRole="bot"
-                            entries={botKnowledge}
-                            onChange={setBotKnowledge}
-                            maxEntries={5}
-                          />
-                        ) : (
-                          <PlanGate feature="knowledgeBase" overlay={false} upgradeLabel="Bot Knowledge Base — Pro feature">
-                            <KnowledgeBaseEditor
-                              label="Bot Training"
-                              description="Context the AI persona will use during the call."
-                              forRole="bot"
-                              entries={[]}
-                              onChange={() => {}}
-                            />
-                          </PlanGate>
-                        )}
-                      </div>
+                      {kbEnabled && (
+                        <div className="flex flex-col gap-3">
+                          {/* Bot Training section */}
+                          <div className="rounded-[12px] border border-white/[0.07] overflow-hidden">
+                            <button
+                              className="flex items-center justify-between w-full px-4 py-3 hover:bg-white/[0.02] transition-colors"
+                              onClick={() => setBotSectionOpen(v => !v)}
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <Database size={13} className="text-accent/70" />
+                                <span className="text-[13px] font-semibold text-white">Bot Training</span>
+                                {botKnowledge.length > 0 && (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: 'rgba(91,111,255,0.15)', color: 'var(--accent)' }}>
+                                    {botKnowledge.length} item{botKnowledge.length !== 1 ? 's' : ''}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    if (botKnowledge.length > 0) setBotKnowledge([]);
+                                    setBotSectionOpen(true);
+                                  }}
+                                  className={clsx(
+                                    'relative w-9 h-5 rounded-full transition-colors flex-shrink-0',
+                                    botKnowledge.length > 0 || botSectionOpen ? 'bg-accent' : 'bg-white/20',
+                                  )}
+                                  title="Toggle bot training"
+                                >
+                                  <span className={clsx('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform', (botKnowledge.length > 0 || botSectionOpen) ? 'translate-x-4' : 'translate-x-0.5')} />
+                                </button>
+                                <ChevronDown size={13} className={clsx('text-white/40 transition-transform', botSectionOpen ? 'rotate-180' : '')} />
+                              </div>
+                            </button>
+                            <AnimatePresence>
+                              {botSectionOpen && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: 'auto', opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{ duration: 0.18 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="px-4 pb-4 border-t border-white/[0.06]">
+                                    <p className="text-[11px] text-white/50 mt-3 mb-3">Context the AI persona will use during the call — product docs, FAQs, competitor info, pricing.</p>
+                                    {canKnowledgeBase ? (
+                                      <KnowledgeBaseEditor
+                                        label=""
+                                        description=""
+                                        forRole="bot"
+                                        entries={botKnowledge}
+                                        onChange={setBotKnowledge}
+                                        maxEntries={5}
+                                      />
+                                    ) : (
+                                      <PlanGate feature="knowledgeBase" overlay={false} upgradeLabel="Bot Knowledge Base — Pro feature">
+                                        <KnowledgeBaseEditor label="" description="" forRole="bot" entries={[]} onChange={() => {}} />
+                                      </PlanGate>
+                                    )}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
 
-                      {/* User briefing */}
-                      <div className="rounded-[12px] border border-white/[0.07] p-4">
-                        {canPreCallBriefing ? (
-                          <KnowledgeBaseEditor
-                            label="Pre-Call User Briefing"
-                            description="Material shown to the user before the call starts — product brochure, LinkedIn profile, website URL. Tests how well they've absorbed the content."
-                            forRole="user"
-                            entries={userBriefing}
-                            onChange={setUserBriefing}
-                            maxEntries={5}
-                          />
-                        ) : (
-                          <PlanGate feature="preCallBriefing" overlay={false} upgradeLabel="Pre-Call Briefing — Pro feature">
-                            <KnowledgeBaseEditor
-                              label="Pre-Call User Briefing"
-                              description="Material shown to the user before the call."
-                              forRole="user"
-                              entries={[]}
-                              onChange={() => {}}
-                            />
-                          </PlanGate>
-                        )}
-                      </div>
+                          {/* Pre-Call Briefing section */}
+                          <div className="rounded-[12px] border border-white/[0.07] overflow-hidden">
+                            <button
+                              className="flex items-center justify-between w-full px-4 py-3 hover:bg-white/[0.02] transition-colors"
+                              onClick={() => setBriefingSectionOpen(v => !v)}
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <FileText size={13} className="text-accent/70" />
+                                <span className="text-[13px] font-semibold text-white">Pre-Call User Briefing</span>
+                                {userBriefing.length > 0 && (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: 'rgba(6,214,160,0.15)', color: 'var(--accent3)' }}>
+                                    {userBriefing.length} item{userBriefing.length !== 1 ? 's' : ''}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    if (userBriefing.length > 0) setUserBriefing([]);
+                                    setBriefingSectionOpen(true);
+                                  }}
+                                  className={clsx(
+                                    'relative w-9 h-5 rounded-full transition-colors flex-shrink-0',
+                                    userBriefing.length > 0 || briefingSectionOpen ? 'bg-accent3' : 'bg-white/20',
+                                  )}
+                                  title="Toggle user briefing"
+                                >
+                                  <span className={clsx('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform', (userBriefing.length > 0 || briefingSectionOpen) ? 'translate-x-4' : 'translate-x-0.5')} />
+                                </button>
+                                <ChevronDown size={13} className={clsx('text-white/40 transition-transform', briefingSectionOpen ? 'rotate-180' : '')} />
+                              </div>
+                            </button>
+                            <AnimatePresence>
+                              {briefingSectionOpen && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: 'auto', opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{ duration: 0.18 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="px-4 pb-4 border-t border-white/[0.06]">
+                                    <p className="text-[11px] text-white/50 mt-3 mb-3">Material shown to the user before the call starts — product brochure, LinkedIn profile, website URL. Tests how well they've absorbed the content.</p>
+                                    {canPreCallBriefing ? (
+                                      <KnowledgeBaseEditor
+                                        label=""
+                                        description=""
+                                        forRole="user"
+                                        entries={userBriefing}
+                                        onChange={setUserBriefing}
+                                        maxEntries={5}
+                                      />
+                                    ) : (
+                                      <PlanGate feature="preCallBriefing" overlay={false} upgradeLabel="Pre-Call Briefing — Pro feature">
+                                        <KnowledgeBaseEditor label="" description="" forRole="user" entries={[]} onChange={() => {}} />
+                                      </PlanGate>
+                                    )}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        </div>
+                      )}
+
+                      {!kbEnabled && (
+                        <div className="rounded-[12px] border border-white/[0.06] bg-white/[0.02] p-5 flex flex-col items-center gap-2 text-center">
+                          <Database size={20} className="text-white/25" />
+                          <p className="text-[12px] text-white/40">Knowledge Base is disabled. Toggle it on to add bot training data or user briefing material.</p>
+                        </div>
+                      )}
 
                       <div className="flex items-center justify-between pt-1 border-t border-white/[0.06]">
                         <button onClick={() => goToStep(2)} className="btn-ghost gap-1.5 text-[13px]"><ArrowLeft size={12} /> Persona</button>
