@@ -26,7 +26,7 @@ export function SessionsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display text-xl font-bold">All Sessions</h2>
-          <p className="text-sm text-white/65 mt-0.5">{sessions.length} completed sessions</p>
+          <p className="text-sm text-white/80 mt-0.5">{sessions.length} completed sessions</p>
         </div>
         <div className="flex gap-2">
           <select
@@ -44,23 +44,23 @@ export function SessionsPage() {
       </div>
 
       <div className="card">
-        <div className="hidden md:grid text-[11px] font-semibold text-white/30 uppercase tracking-wider px-5 py-3 border-b border-white/[0.06]"
+        <div className="hidden md:grid text-[11px] font-semibold text-white/55 uppercase tracking-wider px-5 py-3 border-b border-white/[0.06]"
           style={{ gridTemplateColumns: '2fr 1fr 1fr 1fr 100px' }}>
           <div>Session</div><div>Framework</div><div>Duration</div><div>Date</div><div className="text-right">Score</div>
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-white/30">Loading…</div>
+          <div className="p-8 text-center text-white/55">Loading…</div>
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center">
-            <ClipboardList size={32} className="text-white/15 mx-auto mb-3" />
-            <p className="text-white/65 text-sm">No sessions yet. <button onClick={() => navigate('/practice')} className="text-accent hover:underline">Start your first one →</button></p>
+            <ClipboardList size={32} className="text-white/40 mx-auto mb-3" />
+            <p className="text-white/80 text-sm">No sessions yet. <button onClick={() => navigate('/practice')} className="text-accent hover:underline">Start your first one →</button></p>
           </div>
         ) : (
           <div className="divide-y divide-white/[0.04]">
             {filtered.map((session, i) => {
               const score = session.totalScore;
-              const scoreColor = score == null ? 'text-white/30' : score >= 80 ? 'text-accent-3' : score >= 65 ? 'text-accent-5' : 'text-accent-4';
+              const scoreColor = score == null ? 'text-white/55' : score >= 80 ? 'text-accent-3' : score >= 65 ? 'text-accent-5' : 'text-accent-4';
               const TypeIcon = session.type === 'PHONE_CALL' ? Phone : Monitor;
               return (
                 <motion.div
@@ -81,7 +81,7 @@ export function SessionsPage() {
                         <div className="text-[13.5px] font-medium truncate group-hover:text-white transition-colors">
                           {session.scenarioConfig?.displayName || session.persona?.name || 'Unknown Persona'}
                         </div>
-                        <div className="text-[11px] text-white/30">
+                        <div className="text-[11px] text-white/55">
                           {FRAMEWORK_INFO[session.framework]?.label}
                         </div>
                       </div>
@@ -100,16 +100,16 @@ export function SessionsPage() {
                         <div className="text-[13.5px] font-medium truncate group-hover:text-white transition-colors">
                           {session.scenarioConfig?.displayName || session.persona?.name || 'Unknown Persona'}
                         </div>
-                        <div className="text-[11px] text-white/30">
+                        <div className="text-[11px] text-white/55">
                           {session.scenarioConfig?.displayTitle || session.persona?.title}
                         </div>
                       </div>
                     </div>
-                    <div className="text-[12.5px] text-white/60">{FRAMEWORK_INFO[session.framework]?.label}</div>
-                    <div className="text-[12.5px] text-white/65 font-mono">
+                    <div className="text-[12.5px] text-white/75">{FRAMEWORK_INFO[session.framework]?.label}</div>
+                    <div className="text-[12.5px] text-white/80 font-mono">
                       {session.durationSeconds ? `${Math.floor(session.durationSeconds/60)}:${String(session.durationSeconds%60).padStart(2,'0')}` : '—'}
                     </div>
-                    <div className="text-[12px] text-white/65">
+                    <div className="text-[12px] text-white/80">
                       {session.endedAt ? formatDistanceToNow(new Date(session.endedAt), { addSuffix: true }) : '—'}
                     </div>
                     <div className={clsx('font-display text-[16px] font-bold text-right', scoreColor)}>

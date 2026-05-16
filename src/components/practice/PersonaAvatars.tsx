@@ -97,7 +97,7 @@ export function AvatarDisplay({
             onError={() => setImgError(true)}
           />
         : <div className="w-full h-full bg-gradient-to-br from-white/20 to-white/5 flex items-center justify-center">
-            <span className="text-white/60 font-semibold select-none" style={{ fontSize: size * 0.38 }}>
+            <span className="text-white/75 font-semibold select-none" style={{ fontSize: size * 0.38 }}>
               {found.name.charAt(0)}
             </span>
           </div>
@@ -147,7 +147,7 @@ function AvatarPickerCard({
         {photoUrl && !imgError
           ? <img src={photoUrl} alt={av.name} className="w-full h-full object-cover object-top" draggable={false} onError={() => setImgError(true)} />
           : <div className="w-full h-full bg-gradient-to-br from-white/20 to-white/5 flex items-center justify-center">
-              <span className="text-white/60 text-[14px] font-semibold select-none">{av.name.charAt(0)}</span>
+              <span className="text-white/75 text-[14px] font-semibold select-none">{av.name.charAt(0)}</span>
             </div>
         }
       </div>
@@ -185,7 +185,7 @@ export function EthnicityAvatarPicker({
               'text-[10.5px] px-2.5 py-0.5 rounded-full border transition-colors capitalize',
               genderFilter === g
                 ? 'bg-accent-5/15 border-accent-5 text-accent-5'
-                : 'border-white/15 text-white/65 hover:text-white/70 hover:border-white/30'
+                : 'border-white/15 text-white/80 hover:text-white/70 hover:border-white/30'
             )}
           >
             {g === 'all' ? 'Any Gender' : g === 'male' ? 'Male' : 'Female'}
@@ -204,7 +204,7 @@ export function EthnicityAvatarPicker({
               'text-[10.5px] px-2.5 py-0.5 rounded-full border transition-colors',
               ethnFilter === f.key
                 ? 'bg-accent/15 border-accent text-accent'
-                : 'border-white/15 text-white/65 hover:text-white/70 hover:border-white/30'
+                : 'border-white/15 text-white/80 hover:text-white/70 hover:border-white/30'
             )}
           >
             {f.label}
@@ -214,7 +214,7 @@ export function EthnicityAvatarPicker({
 
       {/* Avatar grid */}
       {visible.length === 0 ? (
-        <p className="text-[11px] text-white/25 py-1">No avatars match these filters.</p>
+        <p className="text-[11px] text-white/70 py-1">No avatars match these filters.</p>
       ) : (
         <div className="flex flex-wrap gap-2">
           {visible.map(av => (

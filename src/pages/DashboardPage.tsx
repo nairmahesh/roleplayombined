@@ -56,11 +56,11 @@ function StatCard({ label, value, icon: Icon, color, sub, delay = 0 }: StatCardP
     >
       <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: color }} />
       <div className="flex items-start justify-between mb-3">
-        <span className="text-[11px] font-semibold text-white/35 uppercase tracking-wider">{label}</span>
-        <Icon size={14} className="text-white/20 mt-0.5" />
+        <span className="text-[11px] font-semibold text-white/75 uppercase tracking-wider">{label}</span>
+        <Icon size={14} className="text-white/65 mt-0.5" />
       </div>
       <div className="font-display text-[28px] font-bold tracking-tight leading-none mb-1.5">{value}</div>
-      {sub && <div className="text-[11px] text-white/35">{sub}</div>}
+      {sub && <div className="text-[11px] text-white/75">{sub}</div>}
     </motion.div>
   );
 }
@@ -90,10 +90,10 @@ function SessionRow({
         <div className="text-[13.5px] font-medium truncate group-hover:text-white transition-colors">
           {session.personaName}
           {showAgent && (
-            <span className="text-white/65"> · {session.userFirstName} {session.userLastName}</span>
+            <span className="text-white/80"> · {session.userFirstName} {session.userLastName}</span>
           )}
         </div>
-        <div className="text-[11px] text-white/35 mt-0.5">
+        <div className="text-[11px] text-white/75 mt-0.5">
           {session.endedAt
             ? formatDistanceToNow(new Date(session.endedAt), { addSuffix: true })
             : 'In progress'}
@@ -240,7 +240,7 @@ function AgentView({ stats, navigate }: { stats: DashboardStats; navigate: (p: s
           </div>
           <div className="divide-y divide-white/[0.05]">
             {stats.recentSessions.length === 0 ? (
-              <div className="px-5 py-10 text-center text-white/30 text-sm">
+              <div className="px-5 py-10 text-center text-white/55 text-sm">
                 No sessions yet.{' '}
                 <button onClick={() => navigate('/practice')} className="text-accent hover:underline">
                   Start your first one →
@@ -275,14 +275,14 @@ function AgentView({ stats, navigate }: { stats: DashboardStats; navigate: (p: s
                       {Math.round(weakest.avgScore ?? 0)}/100
                     </span>
                   </div>
-                  <p className="text-[12px] text-white/60 leading-relaxed">
+                  <p className="text-[12px] text-white/75 leading-relaxed">
                     <strong className="text-white/80">{weakest.component}</strong> is your lowest-scoring area.
                     Dedicate your next few sessions to improving here.
                   </p>
                 </div>
               ) : (
                 <div className="p-3 rounded-[10px] bg-white/[0.04] border border-white/[0.08]">
-                  <p className="text-[12px] text-white/65">Complete more sessions to unlock insights.</p>
+                  <p className="text-[12px] text-white/80">Complete more sessions to unlock insights.</p>
                 </div>
               )}
               {strongest && strongest.component !== weakest?.component && (
@@ -294,7 +294,7 @@ function AgentView({ stats, navigate }: { stats: DashboardStats; navigate: (p: s
                       {Math.round(strongest.avgScore ?? 0)}/100
                     </span>
                   </div>
-                  <p className="text-[12px] text-white/60 leading-relaxed">
+                  <p className="text-[12px] text-white/75 leading-relaxed">
                     <strong className="text-white/80">{strongest.component}</strong> is your top skill.
                     Keep leveraging it in your calls.
                   </p>
@@ -367,7 +367,7 @@ function ManagerView({ stats, navigate }: { stats: DashboardStats; navigate: (p:
           </div>
           <div className="divide-y divide-white/[0.05]">
             {stats.recentSessions.length === 0 ? (
-              <div className="px-5 py-10 text-center text-white/30 text-sm">No team sessions yet.</div>
+              <div className="px-5 py-10 text-center text-white/55 text-sm">No team sessions yet.</div>
             ) : stats.recentSessions.map((s, i) => (
               <SessionRow
                 key={s.id}
@@ -396,7 +396,7 @@ function ManagerView({ stats, navigate }: { stats: DashboardStats; navigate: (p:
                     <div className="text-[13.5px] font-semibold truncate">
                       {topPerformer.firstName} {topPerformer.lastName}
                     </div>
-                    <div className="text-[11px] text-white/65">{topPerformer.sessionsThisWeek} sessions this week</div>
+                    <div className="text-[11px] text-white/80">{topPerformer.sessionsThisWeek} sessions this week</div>
                   </div>
                   {topPerformer.avgScore != null && (
                     <div className={clsx('font-display text-[20px] font-bold shrink-0', scoreColor(topPerformer.avgScore))}>
@@ -404,7 +404,7 @@ function ManagerView({ stats, navigate }: { stats: DashboardStats; navigate: (p:
                     </div>
                   )}
                 </div>
-                <div className="text-[11px] text-white/30">{topPerformer.sessionCount} total sessions</div>
+                <div className="text-[11px] text-white/55">{topPerformer.sessionCount} total sessions</div>
               </div>
             </div>
           )}
@@ -414,7 +414,7 @@ function ManagerView({ stats, navigate }: { stats: DashboardStats; navigate: (p:
               <div className="px-5 py-4 border-b border-white/[0.06] flex items-center gap-2">
                 <Zap size={13} className="text-accent-4" />
                 <span className="font-display text-[14px] font-bold">Needs a Nudge</span>
-                <span className="ml-auto text-[11px] text-white/30">{inactive.length} members</span>
+                <span className="ml-auto text-[11px] text-white/55">{inactive.length} members</span>
               </div>
               <div className="divide-y divide-white/[0.05]">
                 {inactive.slice(0, 5).map((m: TeamMemberSummary, i) => (
@@ -425,12 +425,12 @@ function ManagerView({ stats, navigate }: { stats: DashboardStats; navigate: (p:
                     transition={{ delay: 0.3 + i * 0.05 }}
                     className="flex items-center gap-3 px-4 py-2.5"
                   >
-                    <div className="w-7 h-7 rounded-full bg-white/[0.06] flex items-center justify-center text-[11px] font-bold text-white/50 shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-white/[0.06] flex items-center justify-center text-[11px] font-bold text-white/70 shrink-0">
                       {m.firstName[0]}{m.lastName[0]}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-[12.5px] font-medium text-white/70 truncate">{m.firstName} {m.lastName}</div>
-                      <div className="text-[10.5px] text-white/30">{m.sessionCount} total · 0 this week</div>
+                      <div className="text-[10.5px] text-white/55">{m.sessionCount} total · 0 this week</div>
                     </div>
                   </motion.div>
                 ))}
@@ -439,7 +439,7 @@ function ManagerView({ stats, navigate }: { stats: DashboardStats; navigate: (p:
           )}
 
           {!topPerformer && inactive.length === 0 && (
-            <div className="card p-6 text-center text-white/30 text-sm">No team data yet.</div>
+            <div className="card p-6 text-center text-white/55 text-sm">No team data yet.</div>
           )}
         </div>
       </div>
@@ -506,7 +506,7 @@ function AdminView({ stats, navigate }: { stats: DashboardStats; navigate: (p: s
           </div>
           <div className="divide-y divide-white/[0.05]">
             {stats.recentSessions.length === 0 ? (
-              <div className="px-5 py-10 text-center text-white/30 text-sm">No sessions yet.</div>
+              <div className="px-5 py-10 text-center text-white/55 text-sm">No sessions yet.</div>
             ) : stats.recentSessions.map((s, i) => (
               <SessionRow
                 key={s.id}
@@ -532,7 +532,7 @@ function AdminView({ stats, navigate }: { stats: DashboardStats; navigate: (p: s
           </div>
           <div className="divide-y divide-white/[0.05]">
             {topMembers.length === 0 ? (
-              <div className="px-5 py-8 text-center text-white/30 text-sm">No data yet.</div>
+              <div className="px-5 py-8 text-center text-white/55 text-sm">No data yet.</div>
             ) : topMembers.map((m: TeamMemberSummary, i) => (
               <motion.div
                 key={m.id}
@@ -543,13 +543,13 @@ function AdminView({ stats, navigate }: { stats: DashboardStats; navigate: (p: s
               >
                 <span className={clsx(
                   'w-6 text-center text-[12px] font-bold shrink-0',
-                  i === 0 ? 'text-accent-5' : i === 1 ? 'text-[#aaa]' : i === 2 ? 'text-[#cd7f32]' : 'text-white/30'
+                  i === 0 ? 'text-accent-5' : i === 1 ? 'text-[#aaa]' : i === 2 ? 'text-[#cd7f32]' : 'text-white/55'
                 )}>
                   {i < 3 ? MEDALS[i] : `#${i + 1}`}
                 </span>
                 <div className="flex-1 min-w-0">
                   <div className="text-[13px] font-medium truncate">{m.firstName} {m.lastName}</div>
-                  <div className="text-[11px] text-white/35">{m.sessionCount} sessions</div>
+                  <div className="text-[11px] text-white/75">{m.sessionCount} sessions</div>
                 </div>
                 {m.avgScore != null && (
                   <span className={clsx('text-[14px] font-bold font-display shrink-0', scoreColor(m.avgScore))}>
@@ -595,7 +595,7 @@ export function DashboardPage() {
           <h2 className="font-display text-xl sm:text-2xl font-bold truncate">
             {greeting()}, {user?.firstName}
           </h2>
-          <p className="text-sm text-white/65 mt-0.5">{subtitle}</p>
+          <p className="text-sm text-white/80 mt-0.5">{subtitle}</p>
         </div>
         <button onClick={() => navigate('/practice')} className="btn-primary gap-2 flex-shrink-0">
           <Play size={14} /> <span className="hidden sm:inline">Start Practice</span><span className="sm:hidden">Practice</span>

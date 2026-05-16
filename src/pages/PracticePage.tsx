@@ -595,7 +595,7 @@ export function PracticePage() {
         <div className="flex flex-col gap-6 max-w-5xl">
           <div>
             <h2 className="font-display text-xl font-bold">Practice</h2>
-            <p className="text-sm text-white/65 mt-0.5">Choose a scenario to begin</p>
+            <p className="text-sm text-white/80 mt-0.5">Choose a scenario to begin</p>
           </div>
 
           {/* Tab bar */}
@@ -608,17 +608,17 @@ export function PracticePage() {
                   'flex items-center gap-2 px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors',
                   galleryTab === tab
                     ? 'border-accent text-white'
-                    : 'border-transparent text-white/35 hover:text-white/60'
+                    : 'border-transparent text-white/75 hover:text-white/75'
                 )}
               >
                 {tab === 'assigned' ? <><Lock size={12} /> Assigned to Me</> : <><User size={12} /> Created by Me</>}
                 {tab === 'assigned' && !loadingTeamRoleplays && (
-                  <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/30">
+                  <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">
                     {assignedRoleplays.length + TEMPLATES.length}
                   </span>
                 )}
                 {tab === 'mine' && (
-                  <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/30">
+                  <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">
                     {myRoleplays.length}
                   </span>
                 )}
@@ -632,18 +632,18 @@ export function PracticePage() {
               {/* Team Roleplays */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <p className="text-[11px] font-semibold text-white/30 uppercase tracking-wider">Team Roleplays</p>
-                  <span className="text-[10px] text-white/20">Assigned by your manager</span>
+                  <p className="text-[11px] font-semibold text-white/70 uppercase tracking-wider">Team Roleplays</p>
+                  <span className="text-[10px] text-white/65">Assigned by your manager</span>
                 </div>
                 {loadingTeamRoleplays ? (
-                  <div className="flex items-center gap-2 text-[12px] text-white/30 py-4">
+                  <div className="flex items-center gap-2 text-[12px] text-white/70 py-4">
                     <Loader2 size={13} className="animate-spin" /> Loading…
                   </div>
                 ) : assignedRoleplays.length === 0 ? (
                   <div className="card p-6 flex flex-col items-center gap-2 text-center">
-                    <BookOpen size={22} className="text-white/15" />
-                    <p className="text-[12.5px] text-white/25">No roleplays assigned yet.</p>
-                    <p className="text-[11px] text-white/15">
+                    <BookOpen size={22} className="text-white/40" />
+                    <p className="text-[12.5px] text-white/70">No roleplays assigned yet.</p>
+                    <p className="text-[11px] text-white/40">
                       {isManagerOrAdmin
                         ? 'Create one in the "Created by Me" tab and it will appear here for your team.'
                         : 'Ask your manager to create team roleplays for you.'}
@@ -673,8 +673,8 @@ export function PracticePage() {
               {/* Built-in Templates */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <p className="text-[11px] font-semibold text-white/30 uppercase tracking-wider">Built-in Templates</p>
-                  <span className="text-[10px] text-white/20">Practice scenarios included with PitchIQ</span>
+                  <p className="text-[11px] font-semibold text-white/70 uppercase tracking-wider">Built-in Templates</p>
+                  <span className="text-[10px] text-white/65">Practice scenarios included with PitchIQ</span>
                 </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {TEMPLATES.map(t => (
@@ -699,7 +699,7 @@ export function PracticePage() {
           {galleryTab === 'mine' && (
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <p className="text-[12px] text-white/35">
+                <p className="text-[12px] text-white/75">
                   {isManagerOrAdmin
                     ? 'Your roleplays are visible to your whole team in "Assigned to Me".'
                     : 'Create a custom practice session for yourself.'}
@@ -716,7 +716,7 @@ export function PracticePage() {
                   </div>
                   <div>
                     <p className="text-[14px] font-semibold">No roleplays yet</p>
-                    <p className="text-[12px] text-white/35 mt-1">
+                    <p className="text-[12px] text-white/75 mt-1">
                       {isManagerOrAdmin
                         ? 'Create a roleplay and it will be shared with your team automatically.'
                         : 'Build a custom practice scenario and start training right away.'}
@@ -766,16 +766,16 @@ export function PracticePage() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setView('gallery')}
-              className="flex items-center gap-1.5 text-[12.5px] text-white/65 hover:text-white transition-colors"
+              className="flex items-center gap-1.5 text-[12.5px] text-white/80 hover:text-white transition-colors"
             >
               <ArrowLeft size={14} />
             </button>
             <div className="flex-1 min-w-0">
               <h2 className="font-display text-[17px] font-bold truncate">{selectedLabel || 'Practice Setup'}</h2>
-              {selectedDesc && <p className="text-[11.5px] text-white/35 mt-0.5 truncate">{selectedDesc}</p>}
+              {selectedDesc && <p className="text-[11.5px] text-white/75 mt-0.5 truncate">{selectedDesc}</p>}
             </div>
             {setupMode === 'view' && (
-              <span className="flex items-center gap-1.5 text-[11px] font-medium text-white/30 bg-white/[0.05] border border-white/[0.08] px-2.5 py-1 rounded-full flex-shrink-0">
+              <span className="flex items-center gap-1.5 text-[11px] font-medium text-white/70 bg-white/[0.05] border border-white/[0.08] px-2.5 py-1 rounded-full flex-shrink-0">
                 <Lock size={10} /> View Only
               </span>
             )}
@@ -787,7 +787,7 @@ export function PracticePage() {
                   setShowSaveModal(true);
                 }}
                 disabled={!isReady}
-                className="flex items-center gap-1.5 text-[12.5px] font-medium px-3 py-1.5 rounded-[8px] border border-white/[0.1] text-white/50 hover:text-white hover:border-white/25 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0"
+                className="flex items-center gap-1.5 text-[12.5px] font-medium px-3 py-1.5 rounded-[8px] border border-white/[0.1] text-white/70 hover:text-white hover:border-white/25 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0"
               >
                 <BookOpen size={13} /> {isManagerOrAdmin ? 'Save for Team' : 'Save Roleplay'}
               </button>
@@ -805,36 +805,36 @@ export function PracticePage() {
                   </div>
                   <div className="min-w-0">
                     <div className="font-display text-[16px] font-bold leading-tight truncate">{displayName}</div>
-                    <div className="text-[12.5px] text-white/45 mt-0.5 truncate">{displayTitle}</div>
+                    <div className="text-[12.5px] text-white/65 mt-0.5 truncate">{displayTitle}</div>
                     <div className="flex flex-wrap gap-1.5 mt-1.5">
-                      <span className={clsx('text-[10.5px] px-2 py-0.5 rounded border', DIFFICULTY_COLORS[difficulty] || 'text-white/65 bg-white/5 border-white/10')}>{difficulty}</span>
-                      {industry && <span className="text-[10.5px] px-2 py-0.5 rounded bg-white/[0.05] border border-white/[0.07] text-white/65">{industry}</span>}
-                      {roleplayType && <span className="text-[10.5px] px-2 py-0.5 rounded bg-white/[0.05] border border-white/[0.07] text-white/65">{roleplayType}</span>}
+                      <span className={clsx('text-[10.5px] px-2 py-0.5 rounded border', DIFFICULTY_COLORS[difficulty] || 'text-white/80 bg-white/5 border-white/10')}>{difficulty}</span>
+                      {industry && <span className="text-[10.5px] px-2 py-0.5 rounded bg-white/[0.05] border border-white/[0.07] text-white/80">{industry}</span>}
+                      {roleplayType && <span className="text-[10.5px] px-2 py-0.5 rounded bg-white/[0.05] border border-white/[0.07] text-white/80">{roleplayType}</span>}
                     </div>
                   </div>
                 </div>
                 <div className="border-t border-white/[0.06] pt-4">
-                  <p className="text-[10px] font-semibold text-white/25 uppercase tracking-wider mb-2">Persona Instructions</p>
-                  <div className="bg-white/[0.03] border border-white/[0.07] rounded-[10px] p-3 text-[12px] text-white/55 leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap font-mono">
-                    {personaContext || <span className="text-white/20 italic">No context provided.</span>}
+                  <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Persona Instructions</p>
+                  <div className="bg-white/[0.03] border border-white/[0.07] rounded-[10px] p-3 text-[12px] text-white/70 leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap font-mono">
+                    {personaContext || <span className="text-white/65 italic">No context provided.</span>}
                   </div>
                 </div>
                 {suggestedQuestions.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-semibold text-white/25 uppercase tracking-wider mb-2">Expected Questions</p>
+                    <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Expected Questions</p>
                     <div className="flex flex-wrap gap-1.5">
                       {suggestedQuestions.map((q, i) => (
-                        <span key={i} className="text-[11px] px-2 py-1 rounded-[7px] border border-white/[0.08] bg-white/[0.03] text-white/45">{q}</span>
+                        <span key={i} className="text-[11px] px-2 py-1 rounded-[7px] border border-white/[0.08] bg-white/[0.03] text-white/65">{q}</span>
                       ))}
                     </div>
                   </div>
                 )}
                 {objections.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-semibold text-white/25 uppercase tracking-wider mb-2">Objections</p>
+                    <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Objections</p>
                     <div className="flex flex-wrap gap-1.5">
                       {objections.map((obj, i) => (
-                        <span key={i} className="text-[11px] px-2 py-1 rounded-[7px] border border-white/[0.1] bg-white/[0.03] text-white/45">{obj}</span>
+                        <span key={i} className="text-[11px] px-2 py-1 rounded-[7px] border border-white/[0.1] bg-white/[0.03] text-white/65">{obj}</span>
                       ))}
                     </div>
                   </div>
@@ -844,24 +844,24 @@ export function PracticePage() {
               {/* Right: session config + start */}
               <div className="flex flex-col gap-3 w-full md:w-72 md:flex-shrink-0">
                 <div className="card p-4">
-                  <p className="text-[10px] font-semibold text-white/25 uppercase tracking-wider mb-2.5">Sales Framework</p>
+                  <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2.5">Sales Framework</p>
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-[13px] font-bold text-white">{FRAMEWORK_INFO[framework].label}</span>
                     <span className="text-[9px] font-semibold uppercase tracking-wide text-accent/70 bg-accent/[0.08] border border-accent/15 px-1.5 py-0.5 rounded">Auto</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {FRAMEWORK_INFO[framework].components.map((c, i) => (
-                      <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.07] text-white/35">{i + 1}. {c}</span>
+                      <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.07] text-white/75">{i + 1}. {c}</span>
                     ))}
                   </div>
                 </div>
                 <div className="card p-4">
-                  <p className="text-[10px] font-semibold text-white/25 uppercase tracking-wider mb-2.5">Call Format</p>
+                  <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2.5">Call Format</p>
                   <div className="flex gap-2">
-                    <button onClick={() => setSessionType('PHONE_CALL')} className={clsx('flex items-center gap-1.5 flex-1 justify-center px-3 py-2 rounded-[8px] border text-[12px] font-medium transition-all', sessionType === 'PHONE_CALL' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/65 hover:text-white hover:bg-white/[0.05]')}>
+                    <button onClick={() => setSessionType('PHONE_CALL')} className={clsx('flex items-center gap-1.5 flex-1 justify-center px-3 py-2 rounded-[8px] border text-[12px] font-medium transition-all', sessionType === 'PHONE_CALL' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/80 hover:text-white hover:bg-white/[0.05]')}>
                       <Phone size={12} /> Phone
                     </button>
-                    <button onClick={() => setSessionType('ONLINE_MEETING')} className={clsx('flex items-center gap-1.5 flex-1 justify-center px-3 py-2 rounded-[8px] border text-[12px] font-medium transition-all', sessionType === 'ONLINE_MEETING' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/65 hover:text-white hover:bg-white/[0.05]')}>
+                    <button onClick={() => setSessionType('ONLINE_MEETING')} className={clsx('flex items-center gap-1.5 flex-1 justify-center px-3 py-2 rounded-[8px] border text-[12px] font-medium transition-all', sessionType === 'ONLINE_MEETING' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/80 hover:text-white hover:bg-white/[0.05]')}>
                       <Monitor size={12} /> Online
                     </button>
                   </div>
@@ -869,10 +869,10 @@ export function PracticePage() {
                 <div className="card overflow-hidden">
                   <button onClick={() => setShowAdvanced(v => !v)} className="flex items-center justify-between w-full p-3.5 hover:bg-white/[0.02] transition-colors">
                     <div className="flex items-center gap-2">
-                      <Settings size={12} className="text-white/30" />
-                      <span className="text-[12.5px] font-medium text-white/65">Advanced</span>
+                      <Settings size={12} className="text-white/70" />
+                      <span className="text-[12.5px] font-medium text-white/80">Advanced</span>
                     </div>
-                    {showAdvanced ? <ChevronUp size={13} className="text-white/30" /> : <ChevronDown size={13} className="text-white/30" />}
+                    {showAdvanced ? <ChevronUp size={13} className="text-white/70" /> : <ChevronDown size={13} className="text-white/70" />}
                   </button>
                   <AnimatePresence>
                     {showAdvanced && (
@@ -881,7 +881,7 @@ export function PracticePage() {
                           <div className="flex items-start justify-between gap-3">
                             <div>
                               <span className="text-[12.5px] font-medium">Natural End</span>
-                              <p className="text-[10.5px] text-white/35 mt-0.5">AI ends call when scenario concludes.</p>
+                              <p className="text-[10.5px] text-white/75 mt-0.5">AI ends call when scenario concludes.</p>
                             </div>
                             <button onClick={() => setAiCanEnd(v => !v)} role="switch" aria-checked={aiCanEnd} className={clsx('relative flex-shrink-0 w-9 h-5 rounded-full transition-colors mt-0.5', aiCanEnd ? 'bg-accent' : 'bg-white/[0.18]')}>
                               <span className={clsx('absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform', aiCanEnd ? 'translate-x-4' : 'translate-x-0')} />
@@ -889,9 +889,9 @@ export function PracticePage() {
                           </div>
                           <textarea value={endCondition} onChange={e => setEndCondition(e.target.value)} placeholder="When should AI end? (optional)" disabled={!aiCanEnd} className={clsx('input-base resize-none min-h-[60px] text-[12px]', !aiCanEnd && 'opacity-35 pointer-events-none')} />
                           <div className="flex items-center gap-2">
-                            <span className="text-[12.5px] text-white/65 flex-1">Time limit</span>
+                            <span className="text-[12.5px] text-white/80 flex-1">Time limit</span>
                             <input type="number" min={1} max={120} value={timeLimitMins} onChange={e => setTimeLimitMins(e.target.value)} placeholder="—" className="input-base w-16 text-[12.5px] text-center" />
-                            <span className="text-[12px] text-white/35">min</span>
+                            <span className="text-[12px] text-white/75">min</span>
                           </div>
                         </div>
                       </motion.div>
@@ -931,13 +931,13 @@ export function PracticePage() {
                       >
                         <div className={clsx(
                           'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0',
-                          done ? 'bg-accent-3 text-white' : active ? 'bg-accent text-white' : 'bg-white/[0.08] text-white/30 border border-white/[0.12]'
+                          done ? 'bg-accent-3 text-white' : active ? 'bg-accent text-white' : 'bg-white/[0.08] text-white/70 border border-white/[0.12]'
                         )}>
                           {done ? <Check size={9} /> : n}
                         </div>
                         <div className="min-w-0">
-                          <div className={clsx('text-[11.5px] font-semibold leading-tight', active ? 'text-white' : 'text-white/50')}>{label}</div>
-                          <div className="text-[9.5px] text-white/30 mt-0.5 truncate">{sub}</div>
+                          <div className={clsx('text-[11.5px] font-semibold leading-tight', active ? 'text-white' : 'text-white/70')}>{label}</div>
+                          <div className="text-[9.5px] text-white/70 mt-0.5 truncate">{sub}</div>
                         </div>
                       </button>
                     );
@@ -951,8 +951,8 @@ export function PracticePage() {
                     {displayName && displayName !== 'Custom Persona' && (
                       <div className="text-[11.5px] font-semibold truncate">{displayName}</div>
                     )}
-                    {displayTitle && <div className="text-[10px] text-white/35 mt-0.5 truncate">{displayTitle}</div>}
-                    <span className={clsx('inline-block text-[9.5px] px-1.5 py-0.5 rounded border mt-1', DIFFICULTY_COLORS[difficulty] || 'text-white/65 bg-white/5 border-white/10')}>
+                    {displayTitle && <div className="text-[10px] text-white/75 mt-0.5 truncate">{displayTitle}</div>}
+                    <span className={clsx('inline-block text-[9.5px] px-1.5 py-0.5 rounded border mt-1', DIFFICULTY_COLORS[difficulty] || 'text-white/80 bg-white/5 border-white/10')}>
                       {difficulty}
                     </span>
                   </div>
@@ -974,7 +974,7 @@ export function PracticePage() {
                     >
                       {/* Avatar picker with ethnicity + gender filter */}
                       <div>
-                        <p className="text-[10px] font-semibold text-white/30 uppercase tracking-wider mb-2">Avatar</p>
+                        <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Avatar</p>
                         <EthnicityAvatarPicker value={avatarId} onChange={id => {
                           setAvatarId(id);
                           const cfg = AVATAR_VOICE_CONFIG[id as AvatarId];
@@ -992,12 +992,12 @@ export function PracticePage() {
                           className="w-full flex items-center justify-between px-3 py-2 hover:bg-white/[0.03] transition-colors"
                         >
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-semibold text-white/30 uppercase tracking-wider">Voice</span>
+                            <span className="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Voice</span>
                             {selectedVoiceId && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 border border-accent/20 text-accent/70">Custom</span>
                             )}
                           </div>
-                          <ChevronDown size={12} className={clsx('text-white/30 transition-transform', voiceOpen && 'rotate-180')} />
+                          <ChevronDown size={12} className={clsx('text-white/70 transition-transform', voiceOpen && 'rotate-180')} />
                         </button>
                         {voiceOpen && (
                           <div className="px-3 pb-3 border-t border-white/[0.06]">
@@ -1011,15 +1011,15 @@ export function PracticePage() {
                       {/* Name + Title + Difficulty */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                         <div>
-                          <label className="text-[10px] text-white/35 block mb-1">Name</label>
+                          <label className="text-[10px] text-white/75 block mb-1">Name</label>
                           <input value={displayName} onChange={e => setDisplayName(e.target.value)} className="input-base text-[12.5px]" placeholder="Alex Chen" />
                         </div>
                         <div>
-                          <label className="text-[10px] text-white/35 block mb-1">Title & Company</label>
+                          <label className="text-[10px] text-white/75 block mb-1">Title & Company</label>
                           <input value={displayTitle} onChange={e => setDisplayTitle(e.target.value)} className="input-base text-[12.5px]" placeholder="VP Sales, Acme" />
                         </div>
                         <div>
-                          <label className="text-[10px] text-white/35 block mb-1">Difficulty</label>
+                          <label className="text-[10px] text-white/75 block mb-1">Difficulty</label>
                           <select value={difficulty} onChange={e => setDifficulty(e.target.value)} className="input-base text-[12.5px] w-full">
                             {['Easy', 'Medium', 'Hard', 'Expert'].map(d => <option key={d} value={d}>{d}</option>)}
                           </select>
@@ -1028,7 +1028,7 @@ export function PracticePage() {
 
                       {/* Pre-built scenario templates */}
                       <div>
-                        <p className="text-[10px] font-semibold text-white/30 uppercase tracking-wider mb-2">Start from Template</p>
+                        <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Start from Template</p>
                         <div className="flex flex-wrap gap-1.5">
                           {TEMPLATES.map(t => {
                             const isActive = personaContext === t.personaContext;
@@ -1042,14 +1042,14 @@ export function PracticePage() {
                                   'flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] border text-[11px] font-medium transition-all',
                                   isActive
                                     ? 'bg-accent/10 border-accent/40 text-accent'
-                                    : 'border-white/[0.08] text-white/55 hover:text-white hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.05]'
+                                    : 'border-white/[0.08] text-white/70 hover:text-white hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.05]'
                                 )}
                               >
                                 <span className="text-[13px] leading-none">{t.displayEmoji}</span>
                                 <span>{t.label}</span>
                                 <span className={clsx(
                                   'text-[9px] px-1.5 py-0.5 rounded border leading-none',
-                                  DIFFICULTY_COLORS[t.difficulty] || 'text-white/65 bg-white/5 border-white/10'
+                                  DIFFICULTY_COLORS[t.difficulty] || 'text-white/80 bg-white/5 border-white/10'
                                 )}>{t.difficulty}</span>
                               </button>
                             );
@@ -1060,10 +1060,10 @@ export function PracticePage() {
                       {/* Persona context */}
                       <div>
                         <div className="flex items-center justify-between mb-1.5">
-                          <label className="text-[10px] font-semibold text-white/30 uppercase tracking-wider">Persona Instructions</label>
+                          <label className="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Persona Instructions</label>
                           <div className="flex items-center gap-3">
                             {canCreatePersona && (
-                              <button onClick={loadDbPersonas} disabled={loadingPersonas} className="flex items-center gap-1 text-[10px] text-white/35 hover:text-white/70 transition-colors">
+                              <button onClick={loadDbPersonas} disabled={loadingPersonas} className="flex items-center gap-1 text-[10px] text-white/75 hover:text-white/70 transition-colors">
                                 {loadingPersonas ? <Loader2 size={10} className="animate-spin" /> : <BookOpen size={10} />} Saved
                               </button>
                             )}
@@ -1092,14 +1092,14 @@ export function PracticePage() {
                       <div className="rounded-[10px] border border-white/[0.07] p-3 bg-white/[0.02]">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-semibold text-white/30 uppercase tracking-wider">Suggested Questions</span>
-                            {generatingQuestions && <Loader2 size={10} className="animate-spin text-white/30" />}
+                            <span className="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Suggested Questions</span>
+                            {generatingQuestions && <Loader2 size={10} className="animate-spin text-white/70" />}
                           </div>
                           <div className="flex items-center gap-2">
-                            <button onClick={() => handleGenerateQuestions(true)} disabled={generatingQuestions || !personaContext.trim()} className="flex items-center gap-1 text-[10px] text-white/30 hover:text-white transition-colors disabled:opacity-40">
+                            <button onClick={() => handleGenerateQuestions(true)} disabled={generatingQuestions || !personaContext.trim()} className="flex items-center gap-1 text-[10px] text-white/70 hover:text-white transition-colors disabled:opacity-40">
                               <RefreshCw size={9} /> Regen
                             </button>
-                            <button onClick={() => setShowQuestions(v => !v)} className="text-white/30 hover:text-white transition-colors">
+                            <button onClick={() => setShowQuestions(v => !v)} className="text-white/70 hover:text-white transition-colors">
                               {showQuestions ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                             </button>
                           </div>
@@ -1108,11 +1108,11 @@ export function PracticePage() {
                           suggestedQuestions.length > 0 ? (
                             <div className="flex flex-wrap gap-1.5 mt-2">
                               {suggestedQuestions.map((q, i) => (
-                                <span key={i} className="text-[11px] px-2 py-0.5 rounded-[7px] border border-white/[0.08] bg-white/[0.03] text-white/45">{q}</span>
+                                <span key={i} className="text-[11px] px-2 py-0.5 rounded-[7px] border border-white/[0.08] bg-white/[0.03] text-white/65">{q}</span>
                               ))}
                             </div>
                           ) : (
-                            <p className="text-[11px] text-white/25 mt-2">Auto-generates from context.</p>
+                            <p className="text-[11px] text-white/70 mt-2">Auto-generates from context.</p>
                           )
                         )}
                       </div>
@@ -1136,7 +1136,7 @@ export function PracticePage() {
                     >
                       <div>
                         <div className="flex items-center gap-2 mb-2.5">
-                          <div className={clsx('w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0', industry ? 'bg-accent-3 text-white' : 'bg-white/[0.07] text-white/30 border border-white/[0.1]')}>
+                          <div className={clsx('w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0', industry ? 'bg-accent-3 text-white' : 'bg-white/[0.07] text-white/70 border border-white/[0.1]')}>
                             {industry ? <Check size={9} /> : '1'}
                           </div>
                           <p className="text-[12.5px] font-semibold">Industry</p>
@@ -1145,7 +1145,7 @@ export function PracticePage() {
                           {INDUSTRIES.map(ind => (
                             <button key={ind} onClick={() => setIndustry(ind)} className={clsx(
                               'px-2.5 py-1 rounded-[8px] text-[12px] font-medium border transition-all',
-                              industry === ind ? 'bg-accent text-white border-accent shadow-[0_2px_12px_rgba(91,111,255,0.3)]' : 'bg-transparent border-white/10 text-white/50 hover:text-white hover:bg-white/[0.06]'
+                              industry === ind ? 'bg-accent text-white border-accent shadow-[0_2px_12px_rgba(91,111,255,0.3)]' : 'bg-transparent border-white/10 text-white/70 hover:text-white hover:bg-white/[0.06]'
                             )}>{ind}</button>
                           ))}
                         </div>
@@ -1154,7 +1154,7 @@ export function PracticePage() {
                       {/* Language */}
                       <div>
                         <div className="flex items-center gap-2 mb-2.5">
-                          <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 bg-white/[0.07] text-white/30 border border-white/[0.1]">
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 bg-white/[0.07] text-white/70 border border-white/[0.1]">
                             <Globe size={10} />
                           </div>
                           <p className="text-[12.5px] font-semibold">Conversation Language</p>
@@ -1169,7 +1169,7 @@ export function PracticePage() {
                                 'px-2.5 py-1 rounded-[8px] text-[12px] font-medium border transition-all',
                                 language === lang
                                   ? 'bg-accent text-white border-accent shadow-[0_2px_12px_rgba(91,111,255,0.3)]'
-                                  : 'bg-transparent border-white/10 text-white/50 hover:text-white hover:bg-white/[0.06]'
+                                  : 'bg-transparent border-white/10 text-white/70 hover:text-white hover:bg-white/[0.06]'
                               )}
                             >{lang}</button>
                           ))}
@@ -1178,7 +1178,7 @@ export function PracticePage() {
 
                       <div>
                         <div className="flex items-center gap-2 mb-2.5">
-                          <div className={clsx('w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0', roleplayType ? 'bg-accent-3 text-white' : 'bg-white/[0.07] text-white/30 border border-white/[0.1]')}>
+                          <div className={clsx('w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0', roleplayType ? 'bg-accent-3 text-white' : 'bg-white/[0.07] text-white/70 border border-white/[0.1]')}>
                             {roleplayType ? <Check size={9} /> : '2'}
                           </div>
                           <p className="text-[12.5px] font-semibold">Roleplay Type</p>
@@ -1187,7 +1187,7 @@ export function PracticePage() {
                           {ROLEPLAY_TYPES.map(rt => (
                             <button key={rt} onClick={() => setRoleplayType(rt)} className={clsx(
                               'px-2.5 py-1 rounded-[8px] text-[12px] font-medium border transition-all',
-                              roleplayType === rt ? 'bg-accent text-white border-accent shadow-[0_2px_12px_rgba(91,111,255,0.3)]' : 'bg-transparent border-white/10 text-white/50 hover:text-white hover:bg-white/[0.06]'
+                              roleplayType === rt ? 'bg-accent text-white border-accent shadow-[0_2px_12px_rgba(91,111,255,0.3)]' : 'bg-transparent border-white/10 text-white/70 hover:text-white hover:bg-white/[0.06]'
                             )}>{rt}</button>
                           ))}
                         </div>
@@ -1196,10 +1196,10 @@ export function PracticePage() {
                       <div>
                         <div className="flex items-center justify-between mb-2.5">
                           <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold bg-white/[0.07] text-white/30 border border-white/[0.1]">3</div>
-                            <p className="text-[12.5px] font-semibold">Objections <span className="text-[11px] text-white/30 font-normal">(optional)</span></p>
+                            <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold bg-white/[0.07] text-white/70 border border-white/[0.1]">3</div>
+                            <p className="text-[12.5px] font-semibold">Objections <span className="text-[11px] text-white/70 font-normal">(optional)</span></p>
                           </div>
-                          <span className="text-[10px] text-white/25 tabular-nums">{objections.length}/15</span>
+                          <span className="text-[10px] text-white/70 tabular-nums">{objections.length}/15</span>
                         </div>
                         <div className="flex gap-2">
                           <input value={objectionInput} onChange={e => setObjectionInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addObjection()} placeholder="e.g. Your competitor is 30% cheaper" className="input-base flex-1 text-[12.5px]" disabled={objections.length >= 15} />
@@ -1208,9 +1208,9 @@ export function PracticePage() {
                         {objections.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 mt-2.5">
                             {objections.map((obj, i) => (
-                              <span key={i} className="flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-[8px] border border-white/[0.1] bg-white/[0.04] text-white/65">
+                              <span key={i} className="flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-[8px] border border-white/[0.1] bg-white/[0.04] text-white/80">
                                 {obj}
-                                <button onClick={() => setObjections(p => p.filter((_, idx) => idx !== i))} className="text-white/25 hover:text-white/70 transition-colors"><X size={10} /></button>
+                                <button onClick={() => setObjections(p => p.filter((_, idx) => idx !== i))} className="text-white/70 hover:text-white/70 transition-colors"><X size={10} /></button>
                               </span>
                             ))}
                           </div>
@@ -1240,11 +1240,11 @@ export function PracticePage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="font-semibold text-[13.5px] truncate">{displayName}</div>
-                          {displayTitle && <div className="text-[11px] text-white/65 truncate">{displayTitle}</div>}
+                          {displayTitle && <div className="text-[11px] text-white/80 truncate">{displayTitle}</div>}
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {industry && <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/65">{industry}</span>}
-                            {roleplayType && <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/65">{roleplayType}</span>}
-                            {difficulty && <span className={clsx('text-[9.5px] px-1.5 py-0.5 rounded border', DIFFICULTY_COLORS[difficulty] || 'text-white/65 bg-white/5 border-white/10')}>{difficulty}</span>}
+                            {industry && <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/80">{industry}</span>}
+                            {roleplayType && <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/80">{roleplayType}</span>}
+                            {difficulty && <span className={clsx('text-[9.5px] px-1.5 py-0.5 rounded border', DIFFICULTY_COLORS[difficulty] || 'text-white/80 bg-white/5 border-white/10')}>{difficulty}</span>}
                           </div>
                         </div>
                       </div>
@@ -1252,7 +1252,7 @@ export function PracticePage() {
                       {/* Framework + call format side by side */}
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <p className="text-[10px] font-semibold text-white/30 uppercase tracking-wider mb-2">Sales Framework</p>
+                          <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Sales Framework</p>
                           <div className="p-3 rounded-[10px] bg-white/[0.03] border border-white/[0.07]">
                             <div className="flex items-center gap-2 mb-1.5">
                               <span className="text-[12.5px] font-bold">{FRAMEWORK_INFO[framework].label}</span>
@@ -1260,18 +1260,18 @@ export function PracticePage() {
                             </div>
                             <div className="flex flex-wrap gap-1">
                               {FRAMEWORK_INFO[framework].components.map((c, i) => (
-                                <span key={i} className="text-[9.5px] px-1.5 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.07] text-white/35">{i + 1}. {c}</span>
+                                <span key={i} className="text-[9.5px] px-1.5 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.07] text-white/75">{i + 1}. {c}</span>
                               ))}
                             </div>
                           </div>
                         </div>
                         <div>
-                          <p className="text-[10px] font-semibold text-white/30 uppercase tracking-wider mb-2">Call Format</p>
+                          <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Call Format</p>
                           <div className="flex flex-col gap-2">
-                            <button onClick={() => setSessionType('PHONE_CALL')} className={clsx('flex items-center gap-2 px-3 py-2 rounded-[8px] border text-[12px] font-medium transition-all', sessionType === 'PHONE_CALL' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/65 hover:text-white hover:bg-white/[0.05]')}>
+                            <button onClick={() => setSessionType('PHONE_CALL')} className={clsx('flex items-center gap-2 px-3 py-2 rounded-[8px] border text-[12px] font-medium transition-all', sessionType === 'PHONE_CALL' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/80 hover:text-white hover:bg-white/[0.05]')}>
                               <Phone size={12} /> Phone Call
                             </button>
-                            <button onClick={() => setSessionType('ONLINE_MEETING')} className={clsx('flex items-center gap-2 px-3 py-2 rounded-[8px] border text-[12px] font-medium transition-all', sessionType === 'ONLINE_MEETING' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/65 hover:text-white hover:bg-white/[0.05]')}>
+                            <button onClick={() => setSessionType('ONLINE_MEETING')} className={clsx('flex items-center gap-2 px-3 py-2 rounded-[8px] border text-[12px] font-medium transition-all', sessionType === 'ONLINE_MEETING' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/80 hover:text-white hover:bg-white/[0.05]')}>
                               <Monitor size={12} /> Online Meeting
                             </button>
                           </div>
@@ -1282,10 +1282,10 @@ export function PracticePage() {
                       <div className="border border-white/[0.07] rounded-[12px] overflow-hidden">
                         <button onClick={() => setShowAdvanced(v => !v)} className="flex items-center justify-between w-full p-3.5 hover:bg-white/[0.02] transition-colors">
                           <div className="flex items-center gap-2">
-                            <Settings size={12} className="text-white/30" />
-                            <span className="text-[12.5px] font-medium text-white/65">Advanced Settings</span>
+                            <Settings size={12} className="text-white/70" />
+                            <span className="text-[12.5px] font-medium text-white/80">Advanced Settings</span>
                           </div>
-                          {showAdvanced ? <ChevronUp size={13} className="text-white/30" /> : <ChevronDown size={13} className="text-white/30" />}
+                          {showAdvanced ? <ChevronUp size={13} className="text-white/70" /> : <ChevronDown size={13} className="text-white/70" />}
                         </button>
                         <AnimatePresence>
                           {showAdvanced && (
@@ -1294,7 +1294,7 @@ export function PracticePage() {
                                 <div className="flex items-start justify-between gap-3">
                                   <div>
                                     <span className="text-[12.5px] font-medium">Natural End Conversation</span>
-                                    <p className="text-[11px] text-white/35 mt-0.5">AI ends call when scenario concludes.</p>
+                                    <p className="text-[11px] text-white/75 mt-0.5">AI ends call when scenario concludes.</p>
                                   </div>
                                   <button onClick={() => setAiCanEnd(v => !v)} role="switch" aria-checked={aiCanEnd} className={clsx('relative flex-shrink-0 w-9 h-5 rounded-full transition-colors mt-0.5', aiCanEnd ? 'bg-accent' : 'bg-white/[0.18]')}>
                                     <span className={clsx('absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform', aiCanEnd ? 'translate-x-4' : 'translate-x-0')} />
@@ -1302,9 +1302,9 @@ export function PracticePage() {
                                 </div>
                                 <textarea value={endCondition} onChange={e => setEndCondition(e.target.value)} placeholder="Describe when AI should end call (optional)…" disabled={!aiCanEnd} className={clsx('input-base resize-none min-h-[60px] text-[12px]', !aiCanEnd && 'opacity-35 pointer-events-none')} />
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[12.5px] text-white/65 flex-1">Time limit</span>
+                                  <span className="text-[12.5px] text-white/80 flex-1">Time limit</span>
                                   <input type="number" min={1} max={120} value={timeLimitMins} onChange={e => setTimeLimitMins(e.target.value)} placeholder="—" className="input-base w-16 text-[12.5px] text-center" />
-                                  <span className="text-[12px] text-white/35">min</span>
+                                  <span className="text-[12px] text-white/75">min</span>
                                 </div>
                               </div>
                             </motion.div>
@@ -1320,7 +1320,7 @@ export function PracticePage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-[11.5px] font-medium text-white/70">{isManagerOrAdmin ? 'Save for Team' : 'Save Roleplay'}</p>
-                            <p className="text-[10px] text-white/30">{isManagerOrAdmin ? 'Publish so your team can practice' : 'Save to reuse in future sessions'}</p>
+                            <p className="text-[10px] text-white/70">{isManagerOrAdmin ? 'Publish so your team can practice' : 'Save to reuse in future sessions'}</p>
                           </div>
                           <button
                             onClick={() => {
@@ -1360,7 +1360,7 @@ export function PracticePage() {
                 <h3 className="font-display font-bold text-[15px]">Saved Personas</h3>
                 <div className="flex items-center gap-2">
                   {canCreatePersona && <button onClick={() => { setShowPersonaPicker(false); setShowBuilder(true); }} className="flex items-center gap-1 text-[11px] text-accent hover:text-accent/80 font-medium"><Plus size={11} /> Create</button>}
-                  <button onClick={() => setShowPersonaPicker(false)} className="text-white/30 hover:text-white"><X size={16} /></button>
+                  <button onClick={() => setShowPersonaPicker(false)} className="text-white/70 hover:text-white"><X size={16} /></button>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto">
@@ -1369,7 +1369,7 @@ export function PracticePage() {
                     <span className="text-xl flex-shrink-0">{p.emoji}</span>
                     <div className="min-w-0">
                       <div className="text-[12px] font-semibold truncate">{p.name}</div>
-                      <div className="text-[10.5px] text-white/35 truncate">{p.title}</div>
+                      <div className="text-[10.5px] text-white/75 truncate">{p.title}</div>
                     </div>
                   </button>
                 ))}
@@ -1413,28 +1413,28 @@ export function PracticePage() {
                   <h3 className="font-display font-bold text-[16px]">
                     {isManagerOrAdmin ? 'Save as Team Roleplay' : 'Save Roleplay'}
                   </h3>
-                  <p className="text-[11.5px] text-white/35 mt-0.5">
+                  <p className="text-[11.5px] text-white/75 mt-0.5">
                     {isManagerOrAdmin
                       ? 'Your teammates will see this in "Assigned to Me".'
                       : 'Saved to "Created by Me" — reuse it anytime.'}
                   </p>
                 </div>
-                <button onClick={() => setShowSaveModal(false)} className="text-white/30 hover:text-white"><X size={16} /></button>
+                <button onClick={() => setShowSaveModal(false)} className="text-white/70 hover:text-white"><X size={16} /></button>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-[10px] bg-white/[0.04] border border-white/[0.07] mb-4">
                 <div className="rounded-full overflow-hidden flex-shrink-0"><AvatarDisplay avatarId={avatarId} size={40} /></div>
                 <div className="min-w-0">
                   <div className="text-[13px] font-semibold truncate">{displayName}</div>
-                  <div className="text-[11px] text-white/65">{industry}{roleplayType && ` · ${roleplayType}`}</div>
+                  <div className="text-[11px] text-white/80">{industry}{roleplayType && ` · ${roleplayType}`}</div>
                 </div>
               </div>
               <div className="flex flex-col gap-3">
                 <div>
-                  <label className="text-[11px] text-white/65 block mb-1.5">Name <span className="text-accent-4">*</span></label>
+                  <label className="text-[11px] text-white/80 block mb-1.5">Name <span className="text-accent-4">*</span></label>
                   <input value={saveRoleplayName} onChange={e => setSaveRoleplayName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSaveRoleplay()} placeholder={industry ? `${industry} ${roleplayType}` : 'Enter name…'} className="input-base text-[13px] w-full" maxLength={80} autoFocus />
                 </div>
                 <div>
-                  <label className="text-[11px] text-white/65 block mb-1.5">Description <span className="text-white/20">(optional)</span></label>
+                  <label className="text-[11px] text-white/80 block mb-1.5">Description <span className="text-white/65">(optional)</span></label>
                   <textarea value={saveRoleplayDesc} onChange={e => setSaveRoleplayDesc(e.target.value)} placeholder="Brief note about this scenario…" className="input-base resize-none text-[12.5px] w-full min-h-[70px]" maxLength={200} />
                 </div>
               </div>
@@ -1473,11 +1473,11 @@ export function PracticePage() {
                 </div>
                 <div className="min-w-0">
                   <div className="font-display text-[16px] font-bold leading-tight truncate">{displayName}</div>
-                  {displayTitle && <div className="text-[12px] text-white/50 mt-0.5 truncate">{displayTitle}</div>}
+                  {displayTitle && <div className="text-[12px] text-white/70 mt-0.5 truncate">{displayTitle}</div>}
                   <div className="flex flex-wrap gap-1.5 mt-1.5">
-                    <span className={clsx('text-[10.5px] px-2 py-0.5 rounded border', DIFFICULTY_COLORS[difficulty] || 'text-white/65 bg-white/5 border-white/10')}>{difficulty}</span>
-                    {industry && <span className="text-[10.5px] px-2 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/50">{industry}</span>}
-                    {roleplayType && <span className="text-[10.5px] px-2 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/50">{roleplayType}</span>}
+                    <span className={clsx('text-[10.5px] px-2 py-0.5 rounded border', DIFFICULTY_COLORS[difficulty] || 'text-white/80 bg-white/5 border-white/10')}>{difficulty}</span>
+                    {industry && <span className="text-[10.5px] px-2 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/70">{industry}</span>}
+                    {roleplayType && <span className="text-[10.5px] px-2 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/70">{roleplayType}</span>}
                     <span className="text-[10.5px] px-2 py-0.5 rounded bg-accent/10 border border-accent/20 text-accent/70 flex items-center gap-1">
                       <Globe size={9} /> {language || 'English'}
                     </span>
@@ -1488,21 +1488,21 @@ export function PracticePage() {
               {/* Context preview */}
               {personaContext && (
                 <div className="mb-4 bg-white/[0.03] border border-white/[0.07] rounded-[10px] p-3">
-                  <p className="text-[10px] font-semibold text-white/25 uppercase tracking-wider mb-1.5">Context</p>
-                  <p className="text-[12px] text-white/50 leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto">{personaContext}</p>
+                  <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-1.5">Context</p>
+                  <p className="text-[12px] text-white/70 leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto">{personaContext}</p>
                 </div>
               )}
 
               {/* Call format */}
               <div className="mb-4">
-                <p className="text-[10px] font-semibold text-white/65 uppercase tracking-wider mb-2">Call Format</p>
+                <p className="text-[10px] font-semibold text-white/80 uppercase tracking-wider mb-2">Call Format</p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setSessionType('PHONE_CALL')}
                     title="Practice as a phone call"
                     className={clsx(
                       'flex items-center gap-2 flex-1 justify-center px-3 py-2.5 rounded-[10px] border text-[13px] font-medium transition-all',
-                      sessionType === 'PHONE_CALL' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/50 hover:text-white hover:bg-white/[0.05]'
+                      sessionType === 'PHONE_CALL' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/70 hover:text-white hover:bg-white/[0.05]'
                     )}
                   >
                     <Phone size={13} /> Phone Call
@@ -1512,7 +1512,7 @@ export function PracticePage() {
                     title="Practice as an online meeting"
                     className={clsx(
                       'flex items-center gap-2 flex-1 justify-center px-3 py-2.5 rounded-[10px] border text-[13px] font-medium transition-all',
-                      sessionType === 'ONLINE_MEETING' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/05 text-white/50 hover:text-white hover:bg-white/[0.05]'
+                      sessionType === 'ONLINE_MEETING' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/65 text-white/70 hover:text-white hover:bg-white/[0.05]'
                     )}
                   >
                     <Monitor size={13} /> Online
@@ -1570,7 +1570,7 @@ function GalleryCard({
     Medium: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
     Hard:   'text-accent-4 bg-accent-4/10 border-accent-4/20',
     Expert: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
-  } as Record<string, string>)[difficulty] ?? 'text-white/65 bg-white/5 border-white/10';
+  } as Record<string, string>)[difficulty] ?? 'text-white/80 bg-white/5 border-white/10';
 
   return (
     <div
@@ -1585,13 +1585,13 @@ function GalleryCard({
         <div className="flex items-start gap-2 justify-between">
           <div className="min-w-0">
             <div className="font-semibold text-[13.5px] leading-snug truncate">{name}</div>
-            {subtitle && <div className="text-[12px] text-white/55 mt-0.5 truncate">{subtitle}</div>}
+            {subtitle && <div className="text-[12px] text-white/70 mt-0.5 truncate">{subtitle}</div>}
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
             {canEdit && (
               <>
                 {onEdit && (
-                  <button onClick={onEdit} title="Edit roleplay" className="w-6 h-6 flex items-center justify-center rounded-[6px] bg-white/[0.05] hover:bg-white/[0.12] text-white/50 hover:text-white opacity-0 group-hover:opacity-100 transition-all">
+                  <button onClick={onEdit} title="Edit roleplay" className="w-6 h-6 flex items-center justify-center rounded-[6px] bg-white/[0.05] hover:bg-white/[0.12] text-white/70 hover:text-white opacity-0 group-hover:opacity-100 transition-all">
                     <Pencil size={10} />
                   </button>
                 )}
@@ -1605,13 +1605,13 @@ function GalleryCard({
           </div>
         </div>
 
-        {description && <p className="text-[11.5px] text-white/45 mt-1 line-clamp-1">{description}</p>}
+        {description && <p className="text-[11.5px] text-white/65 mt-1 line-clamp-1">{description}</p>}
 
         <div className="flex flex-wrap items-center gap-1.5 mt-2">
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] border border-white/[0.07] text-white/55">{industry}</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] border border-white/[0.07] text-white/55">{type}</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] border border-white/[0.07] text-white/70">{industry}</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] border border-white/[0.07] text-white/70">{type}</span>
           <span className={clsx('text-[10px] px-1.5 py-0.5 rounded border', diffColor)}>{difficulty}</span>
-          {metaLabel && <span className="text-[10px] text-white/65 ml-auto">{metaLabel}</span>}
+          {metaLabel && <span className="text-[10px] text-white/80 ml-auto">{metaLabel}</span>}
         </div>
       </div>
     </div>

@@ -152,7 +152,7 @@ export function VoicePicker({
               </span>
             )}
           </div>
-          <div className="text-[9.5px] text-white/30 mt-0.5">{v.accent} · {v.style}</div>
+          <div className="text-[9.5px] text-white/55 mt-0.5">{v.accent} · {v.style}</div>
         </div>
         <button
           type="button"
@@ -162,7 +162,7 @@ export function VoicePicker({
             'w-6 h-6 rounded-full border flex items-center justify-center flex-shrink-0 transition-all',
             isPreviewing
               ? 'border-accent-3 bg-accent-3/15 text-accent-3'
-              : 'border-white/20 text-white/35 hover:border-accent hover:text-accent hover:bg-accent/10'
+              : 'border-white/20 text-white/75 hover:border-accent hover:text-accent hover:bg-accent/10'
           )}
         >
           {isPreviewing ? <Square size={7} fill="currentColor" /> : <Play size={8} />}
@@ -198,7 +198,7 @@ export function VoicePicker({
           <div className={clsx('text-[12px] font-semibold leading-tight truncate', isSelected ? 'text-accent' : 'text-white/80')}>
             {v.name}
           </div>
-          <div className="text-[9.5px] text-white/30 mt-0.5 truncate">{v.accent} accent</div>
+          <div className="text-[9.5px] text-white/55 mt-0.5 truncate">{v.accent} accent</div>
         </div>
         {v.preview_url && (
           <button
@@ -213,7 +213,7 @@ export function VoicePicker({
               'w-6 h-6 rounded-full border flex items-center justify-center flex-shrink-0 transition-all',
               isPreviewing
                 ? 'border-accent-3 bg-accent-3/15 text-accent-3'
-                : 'border-white/20 text-white/35 hover:border-accent hover:text-accent hover:bg-accent/10'
+                : 'border-white/20 text-white/75 hover:border-accent hover:text-accent hover:bg-accent/10'
             )}
           >
             {isPreviewing ? <Square size={7} fill="currentColor" /> : <Play size={8} />}
@@ -232,8 +232,8 @@ export function VoicePicker({
           className={clsx(
             'text-[10px] px-2 py-0.5 rounded border transition-colors',
             !value
-              ? 'border-white/25 text-white/50 bg-white/[0.05]'
-              : 'border-white/[0.08] text-white/30 hover:text-white/55 hover:border-white/20'
+              ? 'border-white/25 text-white/70 bg-white/[0.05]'
+              : 'border-white/[0.08] text-white/55 hover:text-white/55 hover:border-white/20'
           )}
         >
           {!value ? <><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',marginRight:'3px'}}><polyline points="20 6 9 17 4 12"/></svg>Default (Browser)</> : 'Use Default'}
@@ -251,12 +251,12 @@ export function VoicePicker({
         {/* ── Regional / accent-specific voices from ElevenLabs shared library ── */}
         {accentTarget && (
           <div className="flex flex-col gap-1">
-            <span className="text-[9px] font-semibold text-white/25 uppercase tracking-wider flex items-center gap-1">
+            <span className="text-[9px] font-semibold text-white/70 uppercase tracking-wider flex items-center gap-1">
               <Globe2 size={8} className="text-accent-2/60" />
               {accentTarget} Accent Voices
             </span>
             {loadingRegional ? (
-              <div className="text-[10px] text-white/25 py-1 pl-0.5">Loading…</div>
+              <div className="text-[10px] text-white/70 py-1 pl-0.5">Loading…</div>
             ) : regionalVoices.length > 0 ? (
               <div className="grid grid-cols-2 gap-1.5">
                 {regionalVoices.map(v => renderRegionalCard(v))}
@@ -268,7 +268,7 @@ export function VoicePicker({
         {/* ── Avatar's recommended curated voice ── */}
         {recommendedVoice && (
           <div className="flex flex-col gap-1">
-            <span className="text-[9px] font-semibold text-white/25 uppercase tracking-wider flex items-center gap-1">
+            <span className="text-[9px] font-semibold text-white/70 uppercase tracking-wider flex items-center gap-1">
               <Star size={8} className="text-accent/50" />
               {avatar ? `Recommended for ${avatar.name.split(' ')[0]}` : 'Recommended'}
             </span>
@@ -279,7 +279,7 @@ export function VoicePicker({
         {/* ── Other same-gender curated voices ── */}
         {otherVoices.length > 0 && (
           <div className="flex flex-col gap-1">
-            <span className="text-[9px] font-semibold text-white/25 uppercase tracking-wider">
+            <span className="text-[9px] font-semibold text-white/70 uppercase tracking-wider">
               {accentTarget || recommendedVoice ? `Other ${genderFilter ?? ''} voices` : 'All voices'}
             </span>
             <div className="grid grid-cols-2 gap-1.5">

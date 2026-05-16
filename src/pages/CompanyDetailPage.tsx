@@ -2,10 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import {
-  ArrowLeft, Building2, Edit2, Check, X, Users,
-  ShieldCheck, RefreshCw, ToggleLeft, ToggleRight,
-} from 'lucide-react';
+import { ArrowLeft, Building2, CreditCard as Edit2, Check, X, Users, ShieldCheck, RefreshCw, ToggleLeft, ToggleRight } from 'lucide-react';
 import { superadminApi } from '@/lib/api';
 import { CompanyDetail, User } from '@/types';
 import clsx from 'clsx';
@@ -14,7 +11,7 @@ const ROLE_CONFIG: Record<string, { label: string; cls: string }> = {
   SUPER_ADMIN:   { label: 'Super Admin', cls: 'bg-purple-500/15 text-purple-300 border-purple-500/25' },
   COMPANY_ADMIN: { label: 'Admin',       cls: 'bg-accent/10 text-[#9BA8FF] border-accent/20' },
   MANAGER:       { label: 'Manager',     cls: 'bg-accent-3/10 text-accent-3 border-accent-3/20' },
-  AGENT:         { label: 'Agent',       cls: 'bg-white/[0.06] text-white/50 border-white/10' },
+  AGENT:         { label: 'Agent',       cls: 'bg-white/[0.06] text-white/70 border-white/10' },
 };
 
 interface EditField {
@@ -118,7 +115,7 @@ export function CompanyDetailPage() {
 
   if (!company) {
     return (
-      <div className="text-center py-20 text-white/30">Company not found</div>
+      <div className="text-center py-20 text-white/55">Company not found</div>
     );
   }
 
@@ -132,13 +129,13 @@ export function CompanyDetailPage() {
       <div className="flex flex-wrap items-center gap-3">
         <button
           onClick={() => navigate('/superadmin/companies')}
-          className="p-1.5 rounded-lg hover:bg-white/[0.08] text-white/65 hover:text-white transition-colors"
+          className="p-1.5 rounded-lg hover:bg-white/[0.08] text-white/80 hover:text-white transition-colors"
         >
           <ArrowLeft size={15} />
         </button>
         <div className="flex-1">
           <h2 className="font-display text-xl font-bold">{company.name}</h2>
-          <p className="text-sm text-white/65 mt-0.5">{company.slug}</p>
+          <p className="text-sm text-white/80 mt-0.5">{company.slug}</p>
         </div>
         <button
           onClick={toggleCompanyActive}
@@ -146,7 +143,7 @@ export function CompanyDetailPage() {
             'text-xs font-semibold px-3 py-1.5 rounded-full border transition-all',
             company.isActive
               ? 'bg-accent-3/10 text-accent-3 border-accent-3/25 hover:bg-accent-3/20'
-              : 'bg-white/[0.06] text-white/65 border-white/10 hover:bg-white/10'
+              : 'bg-white/[0.06] text-white/80 border-white/10 hover:bg-white/10'
           )}
         >
           {company.isActive ? 'Active' : 'Inactive'}
@@ -176,9 +173,9 @@ export function CompanyDetailPage() {
           { label: 'Max Agents', value: company.maxAgents, icon: Users },
         ].map(s => (
           <div key={s.label} className="card p-4">
-            <s.icon size={14} className="text-white/30 mb-2" />
+            <s.icon size={14} className="text-white/55 mb-2" />
             <div className="font-display text-2xl font-bold">{s.value}</div>
-            <div className="text-[11px] text-white/65 mt-0.5">{s.label}</div>
+            <div className="text-[11px] text-white/80 mt-0.5">{s.label}</div>
           </div>
         ))}
       </div>
@@ -191,31 +188,31 @@ export function CompanyDetailPage() {
         {editing && editForm ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-white/65 block mb-1">Company Name</label>
+              <label className="text-xs text-white/80 block mb-1">Company Name</label>
               <input value={editForm.name} onChange={ef('name')} className="input-base" />
             </div>
             <div>
-              <label className="text-xs text-white/65 block mb-1">Industry</label>
+              <label className="text-xs text-white/80 block mb-1">Industry</label>
               <input value={editForm.industry} onChange={ef('industry')} className="input-base" placeholder="Technology" />
             </div>
             <div>
-              <label className="text-xs text-white/65 block mb-1">Contact Email</label>
+              <label className="text-xs text-white/80 block mb-1">Contact Email</label>
               <input type="email" value={editForm.contactEmail} onChange={ef('contactEmail')} className="input-base" />
             </div>
             <div>
-              <label className="text-xs text-white/65 block mb-1">Contact Phone</label>
+              <label className="text-xs text-white/80 block mb-1">Contact Phone</label>
               <input value={editForm.contactPhone} onChange={ef('contactPhone')} className="input-base" />
             </div>
             <div>
-              <label className="text-xs text-white/65 block mb-1">Max Agents</label>
+              <label className="text-xs text-white/80 block mb-1">Max Agents</label>
               <input type="number" min={1} value={editForm.maxAgents} onChange={ef('maxAgents')} className="input-base" />
             </div>
             <div>
-              <label className="text-xs text-white/65 block mb-1">Pass Threshold (%)</label>
+              <label className="text-xs text-white/80 block mb-1">Pass Threshold (%)</label>
               <input type="number" min={50} max={100} value={editForm.passThreshold} onChange={ef('passThreshold')} className="input-base" />
             </div>
             <div className="col-span-1 sm:col-span-2">
-              <label className="text-xs text-white/65 block mb-1">Registration Info</label>
+              <label className="text-xs text-white/80 block mb-1">Registration Info</label>
               <textarea
                 value={editForm.registrationInfo}
                 onChange={ef('registrationInfo')}
@@ -240,7 +237,7 @@ export function CompanyDetailPage() {
               },
             ].map(row => (
               <div key={row.label} className={row.wide ? 'col-span-1 sm:col-span-2' : ''}>
-                <div className="text-[11px] text-white/35 mb-0.5">{row.label}</div>
+                <div className="text-[11px] text-white/75 mb-0.5">{row.label}</div>
                 <div className="text-white/80">{row.value}</div>
               </div>
             ))}
@@ -265,9 +262,9 @@ export function CompanyDetailPage() {
                 </div>
                 <div className="flex-1">
                   <div className="text-[13px] font-medium">{admin.firstName} {admin.lastName}</div>
-                  <div className="text-[11px] text-white/35">{admin.email}</div>
+                  <div className="text-[11px] text-white/75">{admin.email}</div>
                 </div>
-                <div className="text-[11px] text-white/35">
+                <div className="text-[11px] text-white/75">
                   {admin.lastLoginAt
                     ? `Last login ${new Date(admin.lastLoginAt).toLocaleDateString()}`
                     : 'Never logged in'}
@@ -276,7 +273,7 @@ export function CompanyDetailPage() {
                   'text-[10px] font-semibold px-2 py-0.5 rounded-full border',
                   admin.isActive
                     ? 'bg-accent-3/10 text-accent-3 border-accent-3/20'
-                    : 'bg-white/[0.05] text-white/30 border-white/10'
+                    : 'bg-white/[0.05] text-white/55 border-white/10'
                 )}>
                   {admin.isActive ? 'Active' : 'Inactive'}
                 </span>
@@ -293,7 +290,7 @@ export function CompanyDetailPage() {
         </div>
 
         <div
-          className="grid text-[11px] font-semibold text-white/30 uppercase tracking-wider px-5 py-2.5 border-b border-white/[0.04]"
+          className="grid text-[11px] font-semibold text-white/55 uppercase tracking-wider px-5 py-2.5 border-b border-white/[0.04]"
           style={{ gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr' }}
         >
           <div>User</div>
@@ -304,7 +301,7 @@ export function CompanyDetailPage() {
         </div>
 
         {users.length === 0 ? (
-          <div className="p-8 text-center text-white/30 text-sm">No users in this company</div>
+          <div className="p-8 text-center text-white/55 text-sm">No users in this company</div>
         ) : (
           <div className="divide-y divide-white/[0.03]">
             {users.map((u, i) => {
@@ -313,7 +310,7 @@ export function CompanyDetailPage() {
               const scoreColor =
                 score >= 80 ? 'text-accent-3' :
                 score >= 65 ? 'text-accent-5' :
-                score > 0   ? 'text-accent-4' : 'text-white/30';
+                score > 0   ? 'text-accent-4' : 'text-white/55';
 
               return (
                 <motion.div
@@ -330,7 +327,7 @@ export function CompanyDetailPage() {
                     </div>
                     <div>
                       <div className="text-[13px] font-medium">{u.firstName} {u.lastName}</div>
-                      <div className="text-[11px] text-white/30">{u.email}</div>
+                      <div className="text-[11px] text-white/55">{u.email}</div>
                     </div>
                   </div>
                   <div>
@@ -338,7 +335,7 @@ export function CompanyDetailPage() {
                       {roleCfg.label}
                     </span>
                   </div>
-                  <div className="text-[13px] text-white/50">{u.sessionCount ?? 0}</div>
+                  <div className="text-[13px] text-white/70">{u.sessionCount ?? 0}</div>
                   <div className={clsx('font-display text-[14px] font-bold', scoreColor)}>
                     {score > 0 ? score.toFixed(1) : '—'}
                   </div>
@@ -349,7 +346,7 @@ export function CompanyDetailPage() {
                         'text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all',
                         u.isActive !== false
                           ? 'bg-accent-3/10 text-accent-3 border-accent-3/20 hover:bg-accent-3/20'
-                          : 'bg-white/[0.05] text-white/30 border-white/10 hover:bg-white/10'
+                          : 'bg-white/[0.05] text-white/55 border-white/10 hover:bg-white/10'
                       )}
                     >
                       {u.isActive !== false ? 'Active' : 'Inactive'}

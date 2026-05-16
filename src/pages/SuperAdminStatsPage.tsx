@@ -60,7 +60,7 @@ export function SuperAdminStatsPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h2 className="font-display text-xl font-bold">Platform Overview</h2>
-        <p className="text-sm text-white/65 mt-0.5">System-wide statistics across all companies</p>
+        <p className="text-sm text-white/80 mt-0.5">System-wide statistics across all companies</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -82,7 +82,7 @@ export function SuperAdminStatsPage() {
               {card.value.toLocaleString()}
             </div>
             <div className="font-semibold text-[14px] mb-0.5">{card.label}</div>
-            <div className="text-xs text-white/35">{card.sub}</div>
+            <div className="text-xs text-white/75">{card.sub}</div>
           </motion.div>
         ))}
       </div>
@@ -124,7 +124,7 @@ export function SuperAdminStatsPage() {
             <div key={m.label}>
               <div className="font-display text-3xl font-bold text-accent mb-1">{m.value}</div>
               <div className="text-[13px] font-semibold mb-0.5">{m.label}</div>
-              <div className="text-[11px] text-white/35">{m.desc}</div>
+              <div className="text-[11px] text-white/75">{m.desc}</div>
             </div>
           ))}
         </div>

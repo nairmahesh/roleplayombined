@@ -44,7 +44,7 @@ const DEMO_ACCOUNTS = [
     email: 'agent@demo.com',
     description: 'Practice & coaching',
     icon: User,
-    color: 'text-white/60',
+    color: 'text-white/75',
     border: 'border-white/10 hover:border-white/20',
     bg: 'hover:bg-white/[0.04]',
   },
@@ -112,7 +112,7 @@ export function LoginPage() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
-              <label className="text-xs font-medium text-white/50 block mb-1.5">Email</label>
+              <label className="text-xs font-medium text-white/70 block mb-1.5">Email</label>
               <input
                 type="email"
                 required
@@ -124,7 +124,7 @@ export function LoginPage() {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-white/50 block mb-1.5">Password</label>
+              <label className="text-xs font-medium text-white/70 block mb-1.5">Password</label>
               <div className="relative">
                 <input
                   type={showPwd ? 'text' : 'password'}
@@ -137,7 +137,7 @@ export function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPwd(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/55 hover:text-white/75"
                 >
                   {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
@@ -156,8 +156,8 @@ export function LoginPage() {
 
           {/* Demo accounts */}
           <div className="mt-6 pt-6 border-t border-white/[0.07]">
-            <p className="text-[11px] text-white/30 text-center mb-3">
-              Try a demo account — all use <span className="font-mono text-white/50">Demo1234!</span>
+            <p className="text-[11px] text-white/55 text-center mb-3">
+              Try a demo account — all use <span className="font-mono text-white/70">Demo1234!</span>
             </p>
             <div className="grid grid-cols-2 gap-2">
               {DEMO_ACCOUNTS.map(account => {
@@ -179,7 +179,7 @@ export function LoginPage() {
                       <div className={clsx('text-[12px] font-semibold truncate', account.color)}>
                         {account.label}
                       </div>
-                      <div className="text-[10px] text-white/30 truncate">{account.description}</div>
+                      <div className="text-[10px] text-white/55 truncate">{account.description}</div>
                     </div>
                   </button>
                 );
@@ -188,7 +188,7 @@ export function LoginPage() {
           </div>
         </div>
 
-        <p className="text-center text-sm text-white/30 mt-4">
+        <p className="text-center text-sm text-white/55 mt-4">
           No account?{' '}
           <Link to="/register" className="text-accent hover:underline">Start free trial</Link>
         </p>

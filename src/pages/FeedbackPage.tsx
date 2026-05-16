@@ -87,7 +87,7 @@ function ScoreRing({ score, size = 72 }: { score: number; size?: number }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="font-display text-[18px] font-bold leading-none">{score}</span>
-        <span className="text-[8px] text-white/30 font-medium tracking-wider">SCORE</span>
+        <span className="text-[8px] text-white/70 font-medium tracking-wider">SCORE</span>
       </div>
     </div>
   );
@@ -244,7 +244,7 @@ export function FeedbackPage() {
       <div className="w-16 h-16 rounded-full border-4 border-accent/30 border-t-accent animate-spin" />
       <div className="text-center">
         <h3 className="font-display text-xl font-bold mb-2">Analysing your session…</h3>
-        <p className="text-white/65 text-sm">Reviewing your transcript against {FRAMEWORK_INFO[session.framework]?.label} criteria</p>
+        <p className="text-white/80 text-sm">Reviewing your transcript against {FRAMEWORK_INFO[session.framework]?.label} criteria</p>
       </div>
     </div>
   );
@@ -301,7 +301,7 @@ export function FeedbackPage() {
                   <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-white border-2 border-accent translate-x-1.5" />
                 </div>
               </div>
-              <span className="text-[10px] font-mono text-white/30 flex-shrink-0">
+              <span className="text-[10px] font-mono text-white/70 flex-shrink-0">
                 {formatMs(audioProgress * 1000)} / {audioDuration ? formatMs(audioDuration * 1000) : '--:--'}
               </span>
               <button
@@ -311,7 +311,7 @@ export function FeedbackPage() {
                   a.download = `session-${id}.mp3`;
                   a.click();
                 }}
-                className="text-white/25 hover:text-white/50 transition-colors flex-shrink-0"
+                className="text-white/70 hover:text-white/70 transition-colors flex-shrink-0"
                 title="Download recording"
               >
                 <Download size={12} />
@@ -324,15 +324,15 @@ export function FeedbackPage() {
         <div className="px-4 py-2.5 border-b border-white/[0.07] flex items-center gap-2 flex-shrink-0 bg-bg-2">
           <span className="font-semibold text-[13px] text-white/80 flex-1">Transcript</span>
           <div className="flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.07] rounded-[8px] px-2.5 py-1.5 flex-1 min-w-0">
-            <Search size={11} className="text-white/25 flex-shrink-0" />
+            <Search size={11} className="text-white/70 flex-shrink-0" />
             <input
               value={transcriptSearch}
               onChange={e => setTranscriptSearch(e.target.value)}
               placeholder="Search…"
-              className="flex-1 min-w-0 bg-transparent text-[12px] text-white outline-none placeholder:text-white/25"
+              className="flex-1 min-w-0 bg-transparent text-[12px] text-white outline-none placeholder:text-white/70"
             />
             {transcriptSearch && (
-              <button onClick={() => setTranscriptSearch('')} className="text-white/30 hover:text-white/60 transition-colors flex-shrink-0">
+              <button onClick={() => setTranscriptSearch('')} className="text-white/70 hover:text-white/75 transition-colors flex-shrink-0">
                 <X size={10} />
               </button>
             )}
@@ -344,7 +344,7 @@ export function FeedbackPage() {
                 .join('\n');
               navigator.clipboard.writeText(text).then(() => toast.success('Transcript copied!'));
             }}
-            className="text-white/25 hover:text-white/50 transition-colors flex-shrink-0"
+            className="text-white/70 hover:text-white/70 transition-colors flex-shrink-0"
             title="Copy transcript"
           >
             <Copy size={12} />
@@ -355,7 +355,7 @@ export function FeedbackPage() {
         <div className="flex-1 overflow-y-auto">
           {filteredMessages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
-              <p className="text-white/25 text-sm">{transcriptSearch ? 'No matches' : 'No transcript available'}</p>
+              <p className="text-white/70 text-sm">{transcriptSearch ? 'No matches' : 'No transcript available'}</p>
             </div>
           ) : (
             <div className="py-3 px-3 flex flex-col gap-1">
@@ -366,7 +366,7 @@ export function FeedbackPage() {
                     {/* Avatar */}
                     <div className={clsx(
                       'w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0 mt-1',
-                      isRep ? 'bg-accent/20 text-accent border border-accent/30' : 'bg-white/10 text-white/60 border border-white/15'
+                      isRep ? 'bg-accent/20 text-accent border border-accent/30' : 'bg-white/10 text-white/75 border border-white/15'
                     )}>
                       {isRep ? 'U' : personaName.charAt(0)}
                     </div>
@@ -378,13 +378,13 @@ export function FeedbackPage() {
                         {!isRep && (
                           <span className="text-[8px] font-bold bg-accent/20 text-accent px-1 py-0.5 rounded">AI</span>
                         )}
-                        <span className="text-[10px] font-mono text-white/20">{formatMs(m.timestampMs)}</span>
+                        <span className="text-[10px] font-mono text-white/65">{formatMs(m.timestampMs)}</span>
                       </div>
                       <div className={clsx(
                         'px-3 py-2 rounded-[10px] text-[12.5px] leading-relaxed',
                         isRep
                           ? 'bg-accent/10 border border-accent/15 text-white/85'
-                          : 'bg-white/[0.04] border border-white/[0.07] text-white/55'
+                          : 'bg-white/[0.04] border border-white/[0.07] text-white/70'
                       )}>
                         {highlightText(m.content, transcriptSearch)}
                       </div>
@@ -423,7 +423,7 @@ export function FeedbackPage() {
                 )}
               </div>
               {feedback?.overallFeedback && (
-                <p className="text-[12px] text-white/50 leading-relaxed mt-1.5 line-clamp-2">{feedback.overallFeedback}</p>
+                <p className="text-[12px] text-white/70 leading-relaxed mt-1.5 line-clamp-2">{feedback.overallFeedback}</p>
               )}
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:flex-shrink-0 w-full sm:w-auto">
@@ -454,7 +454,7 @@ export function FeedbackPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={clsx(
                   'flex items-center gap-1.5 px-3 py-3 text-[12.5px] font-medium transition-colors relative',
-                  active ? 'text-white' : 'text-white/35 hover:text-white/60'
+                  active ? 'text-white' : 'text-white/75 hover:text-white/75'
                 )}
               >
                 <Icon size={12} />
@@ -475,7 +475,7 @@ export function FeedbackPage() {
               {/* Scorecard */}
               {scores.length > 0 && (
                 <div>
-                  <div className="text-[10.5px] font-semibold text-white/25 uppercase tracking-[1.2px] mb-3">Scorecard</div>
+                  <div className="text-[10.5px] font-semibold text-white/70 uppercase tracking-[1.2px] mb-3">Scorecard</div>
                   <div className="flex flex-col gap-1.5">
                     {scores.map(score => {
                       const passed = score.score >= 70;
@@ -498,7 +498,7 @@ export function FeedbackPage() {
                             <span className="font-display text-[14px] font-bold flex-shrink-0" style={{ color }}>{score.score}</span>
                             <ChevronDown
                               size={14}
-                              className={clsx('text-white/25 flex-shrink-0 transition-transform ml-1', isOpen && 'rotate-180')}
+                              className={clsx('text-white/70 flex-shrink-0 transition-transform ml-1', isOpen && 'rotate-180')}
                             />
                           </button>
                           <AnimatePresence>
@@ -512,13 +512,13 @@ export function FeedbackPage() {
                               >
                                 <div className="px-4 pb-4 border-t border-white/[0.06] pt-3 bg-white/[0.015]">
                                   <div className="flex items-center gap-1.5 mb-2">
-                                    <span className="text-[10px] font-bold text-white/30 uppercase tracking-wider">Why were you scored this way?</span>
+                                    <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider">Why were you scored this way?</span>
                                   </div>
-                                  <p className="text-[12.5px] text-white/60 leading-relaxed mb-3">{score.feedback}</p>
+                                  <p className="text-[12.5px] text-white/75 leading-relaxed mb-3">{score.feedback}</p>
                                   {score.evidence?.length > 0 && (
                                     <div className="flex flex-col gap-1.5">
                                       {score.evidence.map((ev: string, i: number) => (
-                                        <blockquote key={i} className="text-[11.5px] text-white/35 italic border-l-2 border-accent/30 pl-3 py-0.5">
+                                        <blockquote key={i} className="text-[11.5px] text-white/75 italic border-l-2 border-accent/30 pl-3 py-0.5">
                                           "{ev}"
                                         </blockquote>
                                       ))}
@@ -538,7 +538,7 @@ export function FeedbackPage() {
               {/* Timeline events (issues/warnings) */}
               {sortedEvents.length > 0 && (
                 <div>
-                  <div className="text-[10.5px] font-semibold text-white/25 uppercase tracking-[1.2px] mb-3">Key Moments</div>
+                  <div className="text-[10.5px] font-semibold text-white/70 uppercase tracking-[1.2px] mb-3">Key Moments</div>
 
                   {/* Scrubber */}
                   {totalDurationMs > 0 && (
@@ -557,7 +557,7 @@ export function FeedbackPage() {
                           );
                         })}
                       </div>
-                      <div className="flex justify-between text-[9px] text-white/20 mt-1 font-mono">
+                      <div className="flex justify-between text-[9px] text-white/65 mt-1 font-mono">
                         <span>0:00</span>
                         {session.durationSeconds && <span>{formatMs(session.durationSeconds * 1000)}</span>}
                       </div>
@@ -581,7 +581,7 @@ export function FeedbackPage() {
                           )}
                         >
                           <div className="flex items-center gap-2 mb-0.5">
-                            <span className="text-[10px] font-mono text-white/25 flex-shrink-0">{formatMs(event.timestampMs)}</span>
+                            <span className="text-[10px] font-mono text-white/70 flex-shrink-0">{formatMs(event.timestampMs)}</span>
                             <span className="text-[12.5px] font-medium text-white/80 flex-1 flex items-center gap-1.5">
                               {isGood
                                 ? <CheckCircle size={13} className="text-accent-3 flex-shrink-0" />
@@ -593,11 +593,11 @@ export function FeedbackPage() {
                               {event.title}
                             </span>
                           </div>
-                          <p className="text-[11.5px] text-white/45 leading-relaxed pl-10">{event.description}</p>
+                          <p className="text-[11.5px] text-white/65 leading-relaxed pl-10">{event.description}</p>
                           {event.betterResponse && (
                             <div className="mt-2 ml-10 bg-accent-3/5 border border-accent-3/15 rounded-[8px] p-2">
                               <span className="text-[9px] font-bold text-accent-3/60 uppercase tracking-wider block mb-1">Better response</span>
-                              <p className="text-[11.5px] text-white/60 italic">"{event.betterResponse}"</p>
+                              <p className="text-[11.5px] text-white/75 italic">"{event.betterResponse}"</p>
                             </div>
                           )}
                           {!event.betterResponse && event.suggestion && (
@@ -622,7 +622,7 @@ export function FeedbackPage() {
                     </div>
                     <ul className="flex flex-col gap-2">
                       {feedback.strengths.map((s, i) => (
-                        <li key={i} className="text-[11.5px] text-white/55 flex gap-2">
+                        <li key={i} className="text-[11.5px] text-white/70 flex gap-2">
                           <span className="text-accent-3 flex-shrink-0">✓</span> {s}
                         </li>
                       ))}
@@ -635,7 +635,7 @@ export function FeedbackPage() {
                     </div>
                     <ul className="flex flex-col gap-2">
                       {feedback.improvements.map((s, i) => (
-                        <li key={i} className="text-[11.5px] text-white/55 flex gap-2">
+                        <li key={i} className="text-[11.5px] text-white/70 flex gap-2">
                           <span className="text-accent-5 flex-shrink-0">→</span> {s}
                         </li>
                       ))}
@@ -646,7 +646,7 @@ export function FeedbackPage() {
                       <Lightbulb size={13} className="text-accent" />
                       <span className="font-display text-[12.5px] font-bold">Pro Tip</span>
                     </div>
-                    <p className="text-[11.5px] text-white/55 leading-relaxed">{feedback.proTip}</p>
+                    <p className="text-[11.5px] text-white/70 leading-relaxed">{feedback.proTip}</p>
                   </div>
                 </div>
               )}
@@ -658,8 +658,8 @@ export function FeedbackPage() {
             <div className="flex flex-col gap-4">
               {!analytics ? (
                 <div className="card p-12 text-center">
-                  <BarChart3 size={28} className="text-white/20 mx-auto mb-3" />
-                  <p className="text-white/65 text-sm">No analytics available — session transcript is empty</p>
+                  <BarChart3 size={28} className="text-white/65 mx-auto mb-3" />
+                  <p className="text-white/80 text-sm">No analytics available — session transcript is empty</p>
                 </div>
               ) : (
                 <>
@@ -671,7 +671,7 @@ export function FeedbackPage() {
                     <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-3">
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[12px] text-white/65">You spoke</span>
+                          <span className="text-[12px] text-white/80">You spoke</span>
                           <span className="font-display text-[20px] font-bold text-accent">{analytics.talkRatioPct}%</span>
                         </div>
                         <div className="h-3 bg-bg-4 rounded-full overflow-hidden">
@@ -683,8 +683,8 @@ export function FeedbackPage() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[12px] text-white/65">Prospect spoke</span>
-                          <span className="font-display text-[20px] font-bold text-white/50">{analytics.listenRatioPct}%</span>
+                          <span className="text-[12px] text-white/80">Prospect spoke</span>
+                          <span className="font-display text-[20px] font-bold text-white/70">{analytics.listenRatioPct}%</span>
                         </div>
                         <div className="h-3 bg-bg-4 rounded-full overflow-hidden">
                           <div className="h-full bg-white/15 rounded-full transition-all duration-700 ease-out" style={{ width: `${analytics.listenRatioPct}%` }} />
@@ -696,7 +696,7 @@ export function FeedbackPage() {
                       return (
                         <div className="flex items-center gap-2">
                           <RatingBadge color={r.color} label={r.label} />
-                          <span className="text-[11px] text-white/30">Ideal range is 40–60% for active selling</span>
+                          <span className="text-[11px] text-white/70">Ideal range is 40–60% for active selling</span>
                         </div>
                       );
                     })()}
@@ -708,13 +708,13 @@ export function FeedbackPage() {
                       return (
                         <div className="card p-4">
                           <div className="flex items-center gap-2 mb-3">
-                            <Gauge size={12} className="text-white/65" />
-                            <span className="text-[12px] font-semibold text-white/55">Talk Speed</span>
+                            <Gauge size={12} className="text-white/80" />
+                            <span className="text-[12px] font-semibold text-white/70">Talk Speed</span>
                           </div>
                           <div className="font-display text-[28px] font-bold leading-none mb-1">{analytics.talkSpeedWpm}</div>
-                          <div className="text-[10.5px] text-white/30 mb-3">words per minute</div>
+                          <div className="text-[10.5px] text-white/70 mb-3">words per minute</div>
                           <RatingBadge color={r.color} label={r.label} />
-                          <div className="mt-1.5 text-[10px] text-white/25">Ideal: 120–160 wpm</div>
+                          <div className="mt-1.5 text-[10px] text-white/70">Ideal: 120–160 wpm</div>
                         </div>
                       );
                     })()}
@@ -723,13 +723,13 @@ export function FeedbackPage() {
                       return (
                         <div className="card p-4">
                           <div className="flex items-center gap-2 mb-3">
-                            <Activity size={12} className="text-white/65" />
-                            <span className="text-[12px] font-semibold text-white/55">Filler Words</span>
+                            <Activity size={12} className="text-white/80" />
+                            <span className="text-[12px] font-semibold text-white/70">Filler Words</span>
                           </div>
                           <div className="font-display text-[28px] font-bold leading-none mb-1">{analytics.fillerWpm.toFixed(2)}</div>
-                          <div className="text-[10.5px] text-white/30 mb-3">per minute ({analytics.fillerCount} total)</div>
+                          <div className="text-[10.5px] text-white/70 mb-3">per minute ({analytics.fillerCount} total)</div>
                           <RatingBadge color={r.color} label={r.label} />
-                          <div className="mt-1.5 text-[10px] text-white/25">Target: &lt;1 per minute</div>
+                          <div className="mt-1.5 text-[10px] text-white/70">Target: &lt;1 per minute</div>
                         </div>
                       );
                     })()}
@@ -738,13 +738,13 @@ export function FeedbackPage() {
                       return (
                         <div className="card p-4">
                           <div className="flex items-center gap-2 mb-3">
-                            <Clock size={12} className="text-white/65" />
-                            <span className="text-[12px] font-semibold text-white/55">Longest Monologue</span>
+                            <Clock size={12} className="text-white/80" />
+                            <span className="text-[12px] font-semibold text-white/70">Longest Monologue</span>
                           </div>
                           <div className="font-display text-[28px] font-bold leading-none mb-1">{formatSecs(analytics.longestMonologueSecs)}</div>
-                          <div className="text-[10.5px] text-white/30 mb-3">uninterrupted speaking</div>
+                          <div className="text-[10.5px] text-white/70 mb-3">uninterrupted speaking</div>
                           <RatingBadge color={r.color} label={r.label} />
-                          <div className="mt-1.5 text-[10px] text-white/25">Target: under 30 sec</div>
+                          <div className="mt-1.5 text-[10px] text-white/70">Target: under 30 sec</div>
                         </div>
                       );
                     })()}
@@ -762,13 +762,13 @@ export function FeedbackPage() {
                   <div className="flex items-center gap-2 mb-4">
                     <Shield size={13} className="text-accent-4" />
                     <span className="font-display text-[13.5px] font-bold">Prospect's Prepared Objections</span>
-                    <span className="text-[11px] text-white/30">{objections.length} loaded</span>
+                    <span className="text-[11px] text-white/70">{objections.length} loaded</span>
                   </div>
                   <div className="flex flex-col gap-2">
                     {objections.map((obj, i) => (
                       <div key={i} className="flex gap-3 p-3 bg-accent-4/5 border border-accent-4/10 rounded-[10px]">
                         <span className="text-accent-4/50 text-[11px] font-bold flex-shrink-0 w-4">{i + 1}.</span>
-                        <span className="text-[12.5px] text-white/65">{obj}</span>
+                        <span className="text-[12.5px] text-white/80">{obj}</span>
                       </div>
                     ))}
                   </div>
@@ -780,7 +780,7 @@ export function FeedbackPage() {
                   <div className="px-5 py-4 border-b border-white/[0.06] flex items-center gap-2">
                     <AlertCircle size={13} className="text-accent-4" />
                     <span className="font-display text-[13.5px] font-bold">Handling Analysis</span>
-                    <span className="text-[11px] text-white/30">{objectionEvents.length} moment{objectionEvents.length !== 1 ? 's' : ''}</span>
+                    <span className="text-[11px] text-white/70">{objectionEvents.length} moment{objectionEvents.length !== 1 ? 's' : ''}</span>
                   </div>
                   <div className="flex flex-col divide-y divide-white/[0.05]">
                     {objectionEvents.map(event => {
@@ -794,15 +794,15 @@ export function FeedbackPage() {
                                 : <><AlertTriangle size={9} /> Warning</>}
                             </span>
                             <span className="text-[12px] font-semibold text-white/70">{event.title}</span>
-                            <span className="text-[10px] font-mono text-white/25 ml-auto">{formatMs(event.timestampMs)}</span>
+                            <span className="text-[10px] font-mono text-white/70 ml-auto">{formatMs(event.timestampMs)}</span>
                           </div>
-                          <p className="text-[12px] text-white/50 leading-relaxed">{event.description}</p>
+                          <p className="text-[12px] text-white/70 leading-relaxed">{event.description}</p>
                           {(event.transcriptRef || event.betterResponse) && (
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               {event.transcriptRef && (
                                 <div className="bg-accent-4/5 border border-accent-4/15 rounded-[10px] p-3">
                                   <div className="text-[9.5px] font-bold text-accent-4/60 uppercase tracking-wider mb-2">What was said</div>
-                                  <p className="text-[12px] text-white/60 italic">"{event.transcriptRef}"</p>
+                                  <p className="text-[12px] text-white/75 italic">"{event.transcriptRef}"</p>
                                 </div>
                               )}
                               {event.betterResponse && (
@@ -826,8 +826,8 @@ export function FeedbackPage() {
               ) : (
                 <div className="card p-10 text-center">
                   <CheckCircle size={28} className="text-accent-3 mx-auto mb-3" />
-                  <p className="text-[14px] font-semibold text-white/60">No objection handling issues detected</p>
-                  <p className="text-[12px] text-white/30 mt-1">You navigated the conversation well!</p>
+                  <p className="text-[14px] font-semibold text-white/75">No objection handling issues detected</p>
+                  <p className="text-[12px] text-white/70 mt-1">You navigated the conversation well!</p>
                 </div>
               )}
             </div>

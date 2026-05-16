@@ -26,7 +26,7 @@ export function SettingsPage() {
         </div>
         <div className="p-5 flex flex-col gap-5">
           <div>
-            <label className="text-xs font-medium text-white/50 block mb-2">TTS Provider</label>
+            <label className="text-xs font-medium text-white/70 block mb-2">TTS Provider</label>
             <div className="flex flex-col sm:flex-row gap-2">
               {[['elevenlabs', 'ElevenLabs', 'Lowest latency · Best quality'], ['google', 'Google TTS', 'Fast · Reliable']].map(([v, label, desc]) => (
                 <button
@@ -35,19 +35,19 @@ export function SettingsPage() {
                   className={`flex-1 p-3 rounded-[10px] border text-left transition-all ${voiceProvider === v ? 'border-accent bg-accent/10' : 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06]'}`}
                 >
                   <div className="text-[13px] font-semibold mb-0.5">{label}</div>
-                  <div className="text-[11px] text-white/65">{desc}</div>
+                  <div className="text-[11px] text-white/80">{desc}</div>
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-white/50 block mb-2">Latency Mode</label>
+            <label className="text-xs font-medium text-white/70 block mb-2">Latency Mode</label>
             <div className="flex flex-col sm:flex-row gap-2">
               {[['ultra', 'Ultra Low (Streaming)', 'accent-3'], ['balanced', 'Balanced', 'accent-5']].map(([v, label, color]) => (
                 <button
                   key={v}
                   onClick={() => setLatencyMode(v)}
-                  className={`flex-1 p-3 rounded-[10px] border text-left transition-all text-[13px] font-medium ${latencyMode === v ? `border-${color} bg-${color}/10 text-${color}` : 'border-white/[0.08] bg-white/[0.03] text-white/50 hover:bg-white/[0.06]'}`}
+                  className={`flex-1 p-3 rounded-[10px] border text-left transition-all text-[13px] font-medium ${latencyMode === v ? `border-${color} bg-${color}/10 text-${color}` : 'border-white/[0.08] bg-white/[0.03] text-white/70 hover:bg-white/[0.06]'}`}
                 >
                   {label}
                 </button>
@@ -65,7 +65,7 @@ export function SettingsPage() {
         </div>
         <div className="p-5 flex flex-col gap-4">
           <div>
-            <label className="text-xs font-medium text-white/50 block mb-1.5">Default Framework</label>
+            <label className="text-xs font-medium text-white/70 block mb-1.5">Default Framework</label>
             <select value={defaultFramework} onChange={e => setDefaultFramework(e.target.value as any)} className="input-base max-w-xs">
               {['MEDDIC', 'MEDDICC', 'SPIN', 'BANT', 'CHALLENGER', 'SNAP'].map(fw => (
                 <option key={fw} value={fw}>{fw}</option>
@@ -73,7 +73,7 @@ export function SettingsPage() {
             </select>
           </div>
           <div>
-            <label className="text-xs font-medium text-white/50 block mb-1.5">
+            <label className="text-xs font-medium text-white/70 block mb-1.5">
               Pass Threshold: <span className="text-accent font-bold">{passThreshold}/100</span>
             </label>
             <input
@@ -94,9 +94,9 @@ export function SettingsPage() {
         </div>
         <div className="p-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-            <div><span className="text-white/65">Email</span><div className="font-medium mt-0.5">{user?.email}</div></div>
-            <div><span className="text-white/65">Role</span><div className="font-medium mt-0.5 capitalize">{user?.role?.toLowerCase().replace(/_/g, ' ')}</div></div>
-            <div><span className="text-white/65">Company</span><div className="font-medium mt-0.5">{user?.company?.name || '—'}</div></div>
+            <div><span className="text-white/80">Email</span><div className="font-medium mt-0.5">{user?.email}</div></div>
+            <div><span className="text-white/80">Role</span><div className="font-medium mt-0.5 capitalize">{user?.role?.toLowerCase().replace(/_/g, ' ')}</div></div>
+            <div><span className="text-white/80">Company</span><div className="font-medium mt-0.5">{user?.company?.name || '—'}</div></div>
           </div>
         </div>
       </div>

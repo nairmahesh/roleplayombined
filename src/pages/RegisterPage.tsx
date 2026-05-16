@@ -54,29 +54,29 @@ export function RegisterPage() {
 
         <div className="card p-8">
           <h2 className="font-display text-xl font-bold mb-1">Start your free trial</h2>
-          <p className="text-sm text-white/65 mb-6">50 sessions free. No credit card required.</p>
+          <p className="text-sm text-white/80 mb-6">50 sessions free. No credit card required.</p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-white/50 block mb-1.5">First name</label>
+                <label className="text-xs font-medium text-white/70 block mb-1.5">First name</label>
                 <input required value={form.firstName} onChange={set('firstName')} placeholder="Mahesh" className="input-base" />
               </div>
               <div>
-                <label className="text-xs font-medium text-white/50 block mb-1.5">Last name</label>
+                <label className="text-xs font-medium text-white/70 block mb-1.5">Last name</label>
                 <input required value={form.lastName} onChange={set('lastName')} placeholder="Nair" className="input-base" />
               </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-white/50 block mb-1.5">Company name</label>
+              <label className="text-xs font-medium text-white/70 block mb-1.5">Company name</label>
               <input required value={form.companyName} onChange={set('companyName')} placeholder="Acme Corp" className="input-base" />
             </div>
             <div>
-              <label className="text-xs font-medium text-white/50 block mb-1.5">Work email</label>
+              <label className="text-xs font-medium text-white/70 block mb-1.5">Work email</label>
               <input type="email" required value={form.email} onChange={set('email')} placeholder="you@company.com" className="input-base" />
             </div>
             <div>
-              <label className="text-xs font-medium text-white/50 block mb-1.5">Password</label>
+              <label className="text-xs font-medium text-white/70 block mb-1.5">Password</label>
               <input type="password" required minLength={8} value={form.password} onChange={set('password')} placeholder="Min 8 characters" className="input-base" />
             </div>
 
@@ -87,7 +87,7 @@ export function RegisterPage() {
           </form>
         </div>
 
-        <p className="text-center text-sm text-white/30 mt-4">
+        <p className="text-center text-sm text-white/55 mt-4">
           Already have an account?{' '}
           <Link to="/login" className="text-accent hover:underline">Sign in</Link>
         </p>

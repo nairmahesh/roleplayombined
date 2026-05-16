@@ -519,13 +519,13 @@ export function CallInterface({ sessionId, persona, sessionType, framework, time
               <AvatarDisplay avatarId={persona.avatarId} size={96} />
             </div>
             <div className="font-display font-bold text-xl mb-1.5">{persona.name}</div>
-            <div className="text-sm text-white/35 mb-4">{persona.title}</div>
+            <div className="text-sm text-white/75 mb-4">{persona.title}</div>
             <div className="flex gap-2 mb-2">
               {[0, 1, 2].map(i => (
                 <div key={i} className={clsx('w-2.5 h-2.5 rounded-full transition-all duration-300', ringDot > i ? 'bg-accent scale-110' : 'bg-white/15')} />
               ))}
             </div>
-            <div className="text-[12px] text-white/25 mb-6">Ringing…</div>
+            <div className="text-[12px] text-white/70 mb-6">Ringing…</div>
             <button
               onClick={() => onEnd(sessionId)}
               className="px-6 py-2.5 bg-accent-4/15 text-accent-4 border border-accent-4/25 rounded-[9px] text-[12.5px] font-semibold cursor-pointer hover:bg-accent-4/25 transition-colors"
@@ -544,14 +544,14 @@ export function CallInterface({ sessionId, persona, sessionType, framework, time
                 <span className="w-[7px] h-[7px] rounded-full bg-accent-3 animate-pulse flex-shrink-0" />
                 <div>
                   <div className="font-display font-bold text-[15px]">{persona.name} · {FRAMEWORK_INFO[framework].label}</div>
-                  <div className="text-[12px] text-white/35 font-mono flex items-center gap-2">
+                  <div className="text-[12px] text-white/75 font-mono flex items-center gap-2">
                     {fmt(elapsed)}
                     {timeLimitMins && (
                       <span className={clsx(
                         'text-[10px] px-1.5 py-0.5 rounded border',
                         elapsed >= timeLimitMins * 60 * 1000 - 60_000
                           ? 'text-accent-4 border-accent-4/30 bg-accent-4/10'
-                          : 'text-white/30 border-white/10'
+                          : 'text-white/55 border-white/10'
                       )}>
                         /{timeLimitMins}:00
                       </span>
@@ -570,7 +570,7 @@ export function CallInterface({ sessionId, persona, sessionType, framework, time
                 )}
                 <span className="px-2.5 py-1 rounded-full bg-accent-3/10 border border-accent-3/20 text-[10px] text-accent-3 font-medium">● LIVE</span>
                 {!wsReady && phase === 'active' && (
-                  <span className="text-[10px] text-white/30 animate-pulse">Connecting…</span>
+                  <span className="text-[10px] text-white/55 animate-pulse">Connecting…</span>
                 )}
               </div>
             </div>
@@ -597,14 +597,14 @@ export function CallInterface({ sessionId, persona, sessionType, framework, time
                   </div>
                   <div className="text-center">
                     <div className="font-display font-bold text-sm">{persona.name}</div>
-                    <div className="text-[11px] text-white/50">{persona.title}</div>
+                    <div className="text-[11px] text-white/70">{persona.title}</div>
                   </div>
                   {/* Microphone status indicator */}
                   <div className={clsx(
                     'flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-medium transition-all',
                     isMuted
                       ? 'bg-accent-4/10 border-accent-4/25 text-accent-4'
-                      : 'bg-white/[0.04] border-white/[0.08] text-white/30'
+                      : 'bg-white/[0.04] border-white/[0.08] text-white/55'
                   )}>
                     {isMuted ? <><MicOff size={9} /> Muted</> : <><Mic size={9} /> Live</>}
                   </div>
@@ -614,7 +614,7 @@ export function CallInterface({ sessionId, persona, sessionType, framework, time
               {/* Transcript */}
               <div className="flex-1 flex flex-col bg-bg-3 min-w-0">
                 <div className="px-4 py-2.5 border-b border-white/[0.06] flex-shrink-0 flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-white/30 uppercase tracking-wider">Transcript</span>
+                  <span className="text-[10px] font-bold text-white/55 uppercase tracking-wider">Transcript</span>
                   {isBotSpeaking && (
                     <div className="flex items-center gap-1 h-3.5">
                       {[0, 0.15, 0.3].map(d => (
@@ -625,9 +625,9 @@ export function CallInterface({ sessionId, persona, sessionType, framework, time
                 </div>
                 <div ref={transcriptRef} className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
                   {messages.length === 0 && (
-                    <div className="text-center text-white/20 text-[12px] py-12 flex flex-col items-center gap-2">
+                    <div className="text-center text-white/65 text-[12px] py-12 flex flex-col items-center gap-2">
                       <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center">
-                        <Mic size={14} className="text-white/20" />
+                        <Mic size={14} className="text-white/65" />
                       </div>
                       <span>Waiting for conversation…</span>
                     </div>
@@ -687,12 +687,12 @@ export function CallInterface({ sessionId, persona, sessionType, framework, time
             <div className="w-11 h-11 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center"><BarChart3 size={20} className="text-accent" /></div>
             <div className="text-center">
               <div className="font-display font-bold text-[16px] mb-1.5">Analyze this session?</div>
-              <p className="text-[12.5px] text-white/50 leading-relaxed">Get AI feedback on your pitch, objection handling, and framework score.</p>
+              <p className="text-[12.5px] text-white/70 leading-relaxed">Get AI feedback on your pitch, objection handling, and framework score.</p>
             </div>
             <div className="flex gap-3 w-full">
               <button
                 onClick={() => confirmEnd(false)}
-                className="flex-1 py-2.5 rounded-[10px] bg-white/[0.05] border border-white/10 text-[13px] text-white/60 font-semibold hover:bg-white/[0.09] transition-colors"
+                className="flex-1 py-2.5 rounded-[10px] bg-white/[0.05] border border-white/10 text-[13px] text-white/75 font-semibold hover:bg-white/[0.09] transition-colors"
               >
                 Skip
               </button>
@@ -724,7 +724,7 @@ function CtrlBtn({ icon: Icon, active, muted, onClick, label }: {
           ? 'bg-accent-4/12 border-accent-4/40 text-accent-4'
           : active
           ? 'bg-accent/10 border-accent/40 text-accent'
-          : 'bg-bg-3 border-white/10 text-white/50 hover:text-white hover:bg-white/[0.08]'
+          : 'bg-bg-3 border-white/10 text-white/70 hover:text-white hover:bg-white/[0.08]'
       )}
     >
       <Icon size={16} />

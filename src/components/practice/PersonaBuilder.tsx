@@ -117,7 +117,7 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
             <Sparkles size={16} className="text-accent" />
             <h2 className="font-display text-lg font-bold">Create Custom Persona</h2>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/[0.08] text-white/65 hover:text-white transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/[0.08] text-white/80 hover:text-white transition-colors">
             <X size={16} />
           </button>
         </div>
@@ -130,7 +130,7 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
                 onClick={() => setStep(s)}
                 className={clsx(
                   'w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold transition-all',
-                  step === s ? 'bg-accent text-white' : step > s ? 'bg-accent-3 text-white' : 'bg-white/[0.08] text-white/30'
+                  step === s ? 'bg-accent text-white' : step > s ? 'bg-accent-3 text-white' : 'bg-white/[0.08] text-white/55'
                 )}
               >
                 {step > s ? <Check size={10} /> : s}
@@ -138,7 +138,7 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
               {s < 3 && <div className={clsx('w-8 h-px', step > s ? 'bg-accent-3' : 'bg-white/10')} />}
             </div>
           ))}
-          <span className="ml-3 text-[12px] text-white/65">
+          <span className="ml-3 text-[12px] text-white/80">
             {['Identity', 'Behavior', 'Frameworks'][step - 1]}
           </span>
         </div>
@@ -150,7 +150,7 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
               <motion.div key="s1" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex flex-col gap-4">
                 {/* Icon picker */}
                 <div>
-                  <label className="text-xs font-medium text-white/50 block mb-2">Persona Icon</label>
+                  <label className="text-xs font-medium text-white/70 block mb-2">Persona Icon</label>
                   <div className="grid grid-cols-6 gap-2">
                     {PERSONA_ICONS.map(({ id, Icon, label }) => (
                       <button
@@ -162,8 +162,8 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
                           form.iconId === id ? 'border-accent bg-accent/15' : 'border-white/[0.08] bg-white/[0.04] hover:border-white/20'
                         )}
                       >
-                        <Icon size={16} className={form.iconId === id ? 'text-accent' : 'text-white/50'} />
-                        <span className="text-[9px] text-white/35 truncate w-full text-center">{label}</span>
+                        <Icon size={16} className={form.iconId === id ? 'text-accent' : 'text-white/70'} />
+                        <span className="text-[9px] text-white/75 truncate w-full text-center">{label}</span>
                       </button>
                     ))}
                   </div>
@@ -171,25 +171,25 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-medium text-white/50 block mb-1.5">Full Name *</label>
+                    <label className="text-xs font-medium text-white/70 block mb-1.5">Full Name *</label>
                     <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Sarah Chen" className="input-base" />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-white/50 block mb-1.5">Job Title *</label>
+                    <label className="text-xs font-medium text-white/70 block mb-1.5">Job Title *</label>
                     <input value={form.title} onChange={e => set('title', e.target.value)} placeholder="VP of Sales" className="input-base" />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-white/50 block mb-1.5">Company</label>
+                    <label className="text-xs font-medium text-white/70 block mb-1.5">Company</label>
                     <input value={form.company} onChange={e => set('company', e.target.value)} placeholder="Acme Corp" className="input-base" />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-white/50 block mb-1.5">Industry</label>
+                    <label className="text-xs font-medium text-white/70 block mb-1.5">Industry</label>
                     <input value={form.industry} onChange={e => set('industry', e.target.value)} placeholder="SaaS" className="input-base" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-white/50 block mb-2">Difficulty</label>
+                  <label className="text-xs font-medium text-white/70 block mb-2">Difficulty</label>
                   <div className="flex gap-2">
                     {DIFFICULTIES.map(d => (
                       <button
@@ -197,7 +197,7 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
                         onClick={() => set('difficulty', d)}
                         className={clsx(
                           'flex-1 py-2 rounded-[9px] text-[12px] font-semibold border transition-all capitalize',
-                          form.difficulty === d ? 'border-accent bg-accent/10 text-accent' : 'border-white/[0.08] text-white/65 hover:text-white'
+                          form.difficulty === d ? 'border-accent bg-accent/10 text-accent' : 'border-white/[0.08] text-white/80 hover:text-white'
                         )}
                       >
                         {d.toLowerCase()}
@@ -211,7 +211,7 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
             {step === 2 && (
               <motion.div key="s2" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex flex-col gap-5">
                 <div>
-                  <label className="text-xs font-medium text-white/50 block mb-1.5">Personality Description</label>
+                  <label className="text-xs font-medium text-white/70 block mb-1.5">Personality Description</label>
                   <textarea
                     value={form.personality}
                     onChange={e => set('personality', e.target.value)}
@@ -222,9 +222,9 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-white/50 block mb-1.5">
+                  <label className="text-xs font-medium text-white/70 block mb-1.5">
                     AI System Prompt *
-                    <span className="ml-1 text-white/25 font-normal">(This defines how the AI behaves in character)</span>
+                    <span className="ml-1 text-white/70 font-normal">(This defines how the AI behaves in character)</span>
                   </label>
                   <textarea
                     value={form.systemPrompt}
@@ -237,7 +237,7 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
 
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-medium text-white/50">Common Objections</label>
+                    <label className="text-xs font-medium text-white/70">Common Objections</label>
                     <button onClick={() => addItem('objections')} className="text-[11px] text-accent hover:underline flex items-center gap-1">
                       <Plus size={11} /> Add
                     </button>
@@ -252,7 +252,7 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
                           className="input-base flex-1 text-[12.5px]"
                         />
                         {form.objections.length > 1 && (
-                          <button onClick={() => removeItem('objections', i)} className="p-2 text-white/30 hover:text-accent-4 transition-colors">
+                          <button onClick={() => removeItem('objections', i)} className="p-2 text-white/55 hover:text-accent-4 transition-colors">
                             <Trash2 size={13} />
                           </button>
                         )}
@@ -263,7 +263,7 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
 
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-medium text-white/50">Buying Signals (what makes them receptive)</label>
+                    <label className="text-xs font-medium text-white/70">Buying Signals (what makes them receptive)</label>
                     <button onClick={() => addItem('buyingSignals')} className="text-[11px] text-accent hover:underline flex items-center gap-1">
                       <Plus size={11} /> Add
                     </button>
@@ -278,7 +278,7 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
                           className="input-base flex-1 text-[12.5px]"
                         />
                         {form.buyingSignals.length > 1 && (
-                          <button onClick={() => removeItem('buyingSignals', i)} className="p-2 text-white/30 hover:text-accent-4 transition-colors">
+                          <button onClick={() => removeItem('buyingSignals', i)} className="p-2 text-white/55 hover:text-accent-4 transition-colors">
                             <Trash2 size={13} />
                           </button>
                         )}
@@ -292,7 +292,7 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
             {step === 3 && (
               <motion.div key="s3" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex flex-col gap-5">
                 <div>
-                  <label className="text-xs font-medium text-white/50 block mb-2">
+                  <label className="text-xs font-medium text-white/70 block mb-2">
                     Which frameworks does this persona test?
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -304,7 +304,7 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
                           'px-4 py-2 rounded-[9px] text-[12.5px] font-semibold border transition-all',
                           form.frameworks.includes(fw)
                             ? 'border-accent bg-accent text-white'
-                            : 'border-white/10 text-white/50 hover:text-white hover:bg-white/[0.06]'
+                            : 'border-white/10 text-white/70 hover:text-white hover:bg-white/[0.06]'
                         )}
                       >
                         {fw}
@@ -315,14 +315,14 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
 
                 {form.name && (
                   <div className="p-4 rounded-[12px] bg-bg-3 border border-white/[0.08]">
-                    <div className="text-[11px] font-semibold text-white/30 uppercase tracking-wider mb-3">Preview</div>
+                    <div className="text-[11px] font-semibold text-white/55 uppercase tracking-wider mb-3">Preview</div>
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-full bg-accent/15 border border-accent/25 flex items-center justify-center flex-shrink-0">
                         <SelectedIcon size={18} className="text-accent" />
                       </div>
                       <div>
                         <div className="font-display font-bold">{form.name}</div>
-                        <div className="text-[12px] text-white/50 mb-2">{form.title}{form.company ? ` · ${form.company}` : ''}</div>
+                        <div className="text-[12px] text-white/70 mb-2">{form.title}{form.company ? ` · ${form.company}` : ''}</div>
                         <div className="flex gap-1.5 flex-wrap">
                           <span className={clsx('tag text-[10px]',
                             (form.difficulty as string) === 'EASY' ? 'tag-green' :

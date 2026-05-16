@@ -25,9 +25,9 @@ function CustomTooltip({ active, payload, label }: TooltipProps) {
   const color = score >= 80 ? '#06D6A0' : score >= 65 ? '#FFD166' : '#FF6B6B';
   return (
     <div className="bg-bg-2 border border-white/10 rounded-[10px] px-3 py-2.5 shadow-lg">
-      <div className="text-[11px] text-white/65 mb-1">{label}</div>
+      <div className="text-[11px] text-white/80 mb-1">{label}</div>
       <div className="font-display text-xl font-bold" style={{ color }}>{score}</div>
-      <div className="text-[10px] text-white/30 mt-0.5">{payload[0]?.payload?.persona}</div>
+      <div className="text-[10px] text-white/55 mt-0.5">{payload[0]?.payload?.persona}</div>
     </div>
   );
 }
@@ -46,7 +46,7 @@ export function ScoreChart({ sessions, passThreshold = 70 }: Props) {
 
   if (data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48 text-white/25 text-sm">
+      <div className="flex items-center justify-center h-48 text-white/70 text-sm">
         Complete sessions to see your score trend
       </div>
     );
