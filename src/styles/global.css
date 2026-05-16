@@ -33,24 +33,24 @@
 
   /* ── Light theme ────────────────────────────────────────────────────────── */
   .light {
-    --bg: #F5F6FA;
+    --bg: #E8EDF5;
     --bg2: #FFFFFF;
-    --bg3: #F0F1F7;
-    --bg4: #E8EAF2;
+    --bg3: #DDE3EE;
+    --bg4: #CDD5E4;
     --accent: #4A5EF0;
     --accent2: #6D28D9;
     --accent3: #059669;
     --accent4: #DC2626;
     --accent5: #D97706;
-    --text: #0D0E14;
-    --text2: rgba(13,14,20,0.72);
-    --text3: rgba(13,14,20,0.42);
-    --border: rgba(0,0,0,0.08);
-    --border2: rgba(0,0,0,0.14);
+    --text: #0D1117;
+    --text2: rgba(13,17,23,0.75);
+    --text3: rgba(13,17,23,0.50);
+    --border: rgba(13,17,23,0.09);
+    --border2: rgba(13,17,23,0.15);
     --card-bg: #FFFFFF;
-    --input-bg: #F0F1F7;
-    --scrollbar: rgba(0,0,0,0.12);
-    --scrollbar-hover: rgba(0,0,0,0.22);
+    --input-bg: #F0F3F8;
+    --scrollbar: rgba(13,17,23,0.15);
+    --scrollbar-hover: rgba(13,17,23,0.25);
   }
 
   * {
@@ -194,42 +194,82 @@
   }
 }
 
-/* ── Light theme overrides for hardcoded Tailwind white/black utility classes ── */
-.light .white-text-override { color: var(--text) !important; }
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIGHT THEME — override hardcoded Tailwind white/black utility classes
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Text overrides */
-.light .text-white { color: var(--text) !important; }
-.light [class*="text-white/"] { color: var(--text) !important; }
+/* ── Text ── */
+.light .text-white,
+.light .text-white\/40,
+.light .text-white\/45,
+.light .text-white\/50,
+.light .text-white\/55,
+.light .text-white\/60,
+.light .text-white\/65,
+.light .text-white\/70,
+.light .text-white\/72,
+.light .text-white\/75,
+.light .text-white\/80,
+.light .text-white\/85,
+.light .text-white\/90 { color: var(--text) !important; }
 
-/* Background overrides — white/opacity surfaces become dark/opacity */
-.light [class*="bg-white/"] { background-color: rgba(13,14,20,0.05) !important; }
-.light [class*="hover\:bg-white/"]:hover { background-color: rgba(13,14,20,0.07) !important; }
+/* Hover text variants */
+.light .hover\:text-white:hover,
+.light [class*="hover:text-white/"]:hover { color: var(--text) !important; }
 
-/* Border overrides */
-.light [class*="border-white/"] { border-color: rgba(0,0,0,0.10) !important; }
-.light [class*="hover\:border-white/"]:hover { border-color: rgba(0,0,0,0.20) !important; }
+/* ── Backgrounds (white/opacity → soft blue-grey tint) ── */
+.light .bg-white\/\[0\.02\],
+.light .bg-white\/\[0\.03\],
+.light .bg-white\/\[0\.04\],
+.light .bg-white\/\[0\.05\],
+.light .bg-white\/\[0\.06\],
+.light .bg-white\/\[0\.07\],
+.light .bg-white\/\[0\.08\] { background-color: rgba(13,17,23,0.04) !important; }
 
-/* Divide overrides */
-.light [class*="divide-white/"] > * + * { border-color: rgba(0,0,0,0.07) !important; }
+.light .hover\:bg-white\/\[0\.02\]:hover,
+.light .hover\:bg-white\/\[0\.03\]:hover,
+.light .hover\:bg-white\/\[0\.04\]:hover,
+.light .hover\:bg-white\/\[0\.05\]:hover,
+.light .hover\:bg-white\/\[0\.06\]:hover,
+.light .hover\:bg-white\/\[0\.07\]:hover,
+.light .hover\:bg-white\/\[0\.08\]:hover { background-color: rgba(13,17,23,0.06) !important; }
 
-/* Sidebar / nav specific */
-.light .nav-item { color: rgba(13,14,20,0.65) !important; }
-.light .nav-item:hover { background: rgba(13,14,20,0.05) !important; color: var(--text) !important; }
+/* ── Borders (white/opacity → soft dark border) ── */
+.light .border-white\/\[0\.04\],
+.light .border-white\/\[0\.05\],
+.light .border-white\/\[0\.06\],
+.light .border-white\/\[0\.07\],
+.light .border-white\/\[0\.08\],
+.light .border-white\/\[0\.09\],
+.light .border-white\/\[0\.10\] { border-color: rgba(13,17,23,0.10) !important; }
+
+.light .border-white\/10,
+.light .border-white\/20,
+.light .border-white\/25 { border-color: rgba(13,17,23,0.12) !important; }
+
+.light .hover\:border-white\/20:hover,
+.light .hover\:border-white\/25:hover { border-color: rgba(13,17,23,0.22) !important; }
+
+/* ── Divide lines ── */
+.light .divide-white\/\[0\.04\] > * + *,
+.light .divide-white\/\[0\.06\] > * + *,
+.light .divide-white\/\[0\.07\] > * + *,
+.light .divide-white\/\[0\.08\] > * + * { border-color: rgba(13,17,23,0.08) !important; }
+
+/* ── Nav ── */
+.light .nav-item { color: rgba(13,17,23,0.60) !important; }
+.light .nav-item:hover { background: rgba(13,17,23,0.05) !important; color: var(--text) !important; }
 .light .nav-item-active { color: var(--accent) !important; background: rgba(74,94,240,0.10) !important; }
 
-/* Card headers with border-b */
-.light [class*="border-b"][class*="border-white/"] { border-color: rgba(0,0,0,0.08) !important; }
+/* ── Skeleton / pulse loaders ── */
+.light .animate-pulse .bg-white\/\[0\.06\],
+.light .animate-pulse [class*="bg-white/"] { background-color: rgba(13,17,23,0.08) !important; }
 
-/* Input placeholder */
-.light .input-base::placeholder { color: rgba(13,14,20,0.40) !important; }
+/* ── Progress bar ── */
+.light .progress-bar { background: rgba(13,17,23,0.10) !important; }
 
-/* Progress bar track */
-.light .progress-bar { background: rgba(13,14,20,0.10) !important; }
-
-/* Stat/animate pulse skeletons */
-.light [class*="bg-white/\[0.0"] { background-color: rgba(13,14,20,0.06) !important; }
-
-/* Accent opacity backgrounds stay accent-based — don't override those */
+/* ── Input placeholder ── */
+.light .input-base::placeholder { color: rgba(13,17,23,0.38) !important; }
 
 /* Animations */
 @keyframes wave {
