@@ -21,6 +21,7 @@ export interface User {
   company?: Company;
   avgScore?: number;
   sessionCount?: number;
+  location?: string;
   _count?: { sessions: number };
 }
 

@@ -23,6 +23,7 @@ const MOCK_USER: User = {
   companyId: 'c1',
   avgScore: 74,
   sessionCount: 12,
+  location: 'New York',
 };
 
 const MOCK_DASHBOARD: DashboardStats = {
@@ -58,6 +59,7 @@ const MOCK_SESSIONS: Session[] = [
     startedAt: new Date(Date.now() - 3_700_000).toISOString(),
     endedAt: new Date(Date.now() - 3_600_000).toISOString(),
     createdAt: new Date(Date.now() - 3_700_000).toISOString(),
+    user: { id: 'u1', firstName: 'Alex', lastName: 'Rivera', avatarUrl: undefined },
     persona: { id: 'p1', name: 'Sarah Chen', title: 'VP of Sales', emoji: '', difficulty: 'MEDIUM' },
     frameworkScores: [
       { id: 'fs1', component: 'Metrics', score: 85, feedback: 'Good use of quantitative metrics', evidence: ['You mentioned a 20% efficiency gain'] },
@@ -87,6 +89,7 @@ const MOCK_SESSIONS: Session[] = [
     startedAt: new Date(Date.now() - 87_000_000).toISOString(),
     endedAt: new Date(Date.now() - 86_400_000).toISOString(),
     createdAt: new Date(Date.now() - 87_000_000).toISOString(),
+    user: { id: 'u2', firstName: 'Jordan', lastName: 'Lee', avatarUrl: undefined },
     persona: { id: 'p2', name: 'Marcus Thompson', title: 'CTO', emoji: '', difficulty: 'HARD' },
     frameworkScores: [
       { id: 'fs5', component: 'Situation Questions', score: 75, feedback: 'Good situational awareness', evidence: [] },
@@ -112,6 +115,7 @@ const MOCK_SESSIONS: Session[] = [
     startedAt: new Date(Date.now() - 2 * 86_400_000 - 600_000).toISOString(),
     endedAt: new Date(Date.now() - 2 * 86_400_000).toISOString(),
     createdAt: new Date(Date.now() - 2 * 86_400_000 - 600_000).toISOString(),
+    user: { id: 'u3', firstName: 'Taylor', lastName: 'Morgan', avatarUrl: undefined },
     persona: { id: 'p3', name: 'Priya Patel', title: 'Head of Engineering', emoji: '', difficulty: 'MEDIUM' },
     frameworkScores: [
       { id: 'fs9', component: 'Budget', score: 70, feedback: 'Budget discussed but not qualified', evidence: [] },
@@ -125,6 +129,51 @@ const MOCK_SESSIONS: Session[] = [
       improvements: ['Qualify budget more precisely', 'Establish concrete timeline milestones'],
       proTip: 'When asking about budget, try "What investment range have you allocated for solving this?" instead of a direct budget question.',
     }),
+    timelineEvents: [],
+  },
+  {
+    id: 's4',
+    type: 'ONLINE_MEETING',
+    status: 'COMPLETED',
+    framework: 'CHALLENGER',
+    totalScore: 55,
+    durationSeconds: 480,
+    startedAt: new Date(Date.now() - 4 * 86_400_000 - 480_000).toISOString(),
+    endedAt: new Date(Date.now() - 4 * 86_400_000).toISOString(),
+    createdAt: new Date(Date.now() - 4 * 86_400_000 - 480_000).toISOString(),
+    user: { id: 'u4', firstName: 'Morgan', lastName: 'Kim', avatarUrl: undefined },
+    persona: { id: 'p4', name: 'Robert Blake', title: 'CFO', emoji: '', difficulty: 'EXPERT' },
+    frameworkScores: [],
+    timelineEvents: [],
+  },
+  {
+    id: 's5',
+    type: 'PHONE_CALL',
+    status: 'COMPLETED',
+    framework: 'SNAP',
+    totalScore: 88,
+    durationSeconds: 660,
+    startedAt: new Date(Date.now() - 6 * 86_400_000 - 660_000).toISOString(),
+    endedAt: new Date(Date.now() - 6 * 86_400_000).toISOString(),
+    createdAt: new Date(Date.now() - 6 * 86_400_000 - 660_000).toISOString(),
+    user: { id: 'u5', firstName: 'Sam', lastName: 'Patel', avatarUrl: undefined },
+    persona: { id: 'p5', name: 'Emma Wilson', title: 'Marketing Director', emoji: '', difficulty: 'EASY' },
+    frameworkScores: [],
+    timelineEvents: [],
+  },
+  {
+    id: 's6',
+    type: 'ONLINE_MEETING',
+    status: 'COMPLETED',
+    framework: 'MEDDICC',
+    totalScore: 62,
+    durationSeconds: 1020,
+    startedAt: new Date(Date.now() - 10 * 86_400_000 - 1020_000).toISOString(),
+    endedAt: new Date(Date.now() - 10 * 86_400_000).toISOString(),
+    createdAt: new Date(Date.now() - 10 * 86_400_000 - 1020_000).toISOString(),
+    user: { id: 'u1', firstName: 'Alex', lastName: 'Rivera', avatarUrl: undefined },
+    persona: { id: 'p6', name: 'Carlos Rodriguez', title: 'Operations Manager', emoji: '', difficulty: 'MEDIUM' },
+    frameworkScores: [],
     timelineEvents: [],
   },
 ];
@@ -150,10 +199,10 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
 ];
 
 const MOCK_TEAM_USERS: User[] = [
-  { id: 'u2', email: 'jordan@demo.com', firstName: 'Jordan', lastName: 'Lee', role: 'AGENT', companyId: 'c1', avgScore: 91, sessionCount: 24 },
-  { id: 'u3', email: 'taylor@demo.com', firstName: 'Taylor', lastName: 'Morgan', role: 'AGENT', companyId: 'c1', avgScore: 87, sessionCount: 18 },
-  { id: 'u4', email: 'morgan@demo.com', firstName: 'Morgan', lastName: 'Kim', role: 'AGENT', companyId: 'c1', avgScore: 83, sessionCount: 21 },
-  { id: 'u5', email: 'sam@demo.com', firstName: 'Sam', lastName: 'Patel', role: 'AGENT', companyId: 'c1', avgScore: 71, sessionCount: 15 },
+  { id: 'u2', email: 'jordan@demo.com', firstName: 'Jordan', lastName: 'Lee', role: 'AGENT', companyId: 'c1', avgScore: 91, sessionCount: 24, location: 'San Francisco' },
+  { id: 'u3', email: 'taylor@demo.com', firstName: 'Taylor', lastName: 'Morgan', role: 'AGENT', companyId: 'c1', avgScore: 87, sessionCount: 18, location: 'Chicago' },
+  { id: 'u4', email: 'morgan@demo.com', firstName: 'Morgan', lastName: 'Kim', role: 'AGENT', companyId: 'c1', avgScore: 83, sessionCount: 21, location: 'Austin' },
+  { id: 'u5', email: 'sam@demo.com', firstName: 'Sam', lastName: 'Patel', role: 'AGENT', companyId: 'c1', avgScore: 71, sessionCount: 15, location: 'London' },
   MOCK_USER,
 ];
 
@@ -206,6 +255,7 @@ export const authApi = {
 
 export const sessionsApi = {
   list: async (_params?: any) => { await delay(300); return { sessions: MOCK_SESSIONS, total: MOCK_SESSIONS.length }; },
+  listAll: async (_params?: any) => { await delay(300); return { sessions: MOCK_SESSIONS, total: MOCK_SESSIONS.length }; },
   create: async (_data: any) => {
     await delay(300);
     return { ...MOCK_SESSIONS[0], id: `s-new-${Date.now()}`, status: 'PENDING' };
