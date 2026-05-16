@@ -57,6 +57,7 @@ const MOCK_SESSIONS: Session[] = [
     framework: 'MEDDIC',
     totalScore: 81,
     durationSeconds: 720,
+    recordingUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
     startedAt: new Date(Date.now() - 3_700_000).toISOString(),
     endedAt: new Date(Date.now() - 3_600_000).toISOString(),
     createdAt: new Date(Date.now() - 3_700_000).toISOString(),
@@ -159,8 +160,8 @@ const MOCK_SESSIONS: Session[] = [
           maxPoints: 2,
           earnedPoints: 1,
           criteria: [
-            { question: 'Did the seller discuss the agenda and ask for prospect\'s input?', passed: false, reasoning: 'Rep jumped straight into pitch without setting a mutual agenda or asking what Sarah wanted to cover.' },
-            { question: 'Did the seller introduce an Upfront Contract?', passed: true, reasoning: 'Rep established the purpose and asked for 30 seconds before proceeding — implicit upfront contract.' },
+            { question: 'Did the seller discuss the agenda and ask for prospect\'s input?', passed: false, reasoning: 'Rep jumped straight into pitch at 0:05 without setting a mutual agenda or asking what Sarah wanted to cover.' },
+            { question: 'Did the seller introduce an Upfront Contract?', passed: true, reasoning: 'Rep asked for 30 seconds at 0:05 before proceeding — implicit upfront contract established early.' },
           ],
         },
         {
@@ -168,8 +169,8 @@ const MOCK_SESSIONS: Session[] = [
           maxPoints: 2,
           earnedPoints: 2,
           criteria: [
-            { question: 'Did the seller uncover specific pain points?', passed: true, reasoning: 'Three distinct pains uncovered: slow ramp, CRM tracking vs skill gaps, and 3hrs/week coaching waste.' },
-            { question: 'Did the seller uncover relevant metrics?', passed: true, reasoning: 'Rep quantified the 20% attainment lift and helped prospect calculate the weekly coaching cost.' },
+            { question: 'Did the seller uncover specific pain points?', passed: true, reasoning: 'Three distinct pains uncovered by 1:40: slow ramp, CRM tracking vs skill gaps, and 3hrs/week coaching waste.' },
+            { question: 'Did the seller uncover relevant metrics?', passed: true, reasoning: 'Rep quantified 20% attainment lift at 0:28 and helped prospect self-calculate weekly coaching cost at 2:45.' },
           ],
         },
         {
@@ -177,7 +178,7 @@ const MOCK_SESSIONS: Session[] = [
           maxPoints: 1,
           earnedPoints: 0,
           criteria: [
-            { question: 'Did the seller handle objections effectively using the FFF framework?', passed: false, reasoning: '"Pricing seems steep" was deflected with a pivot rather than acknowledged and reframed with ROI evidence.' },
+            { question: 'Did the seller handle objections effectively using the FFF framework?', passed: false, reasoning: '"Pricing seems steep" at 3:38 was deflected with a pivot rather than acknowledged and reframed with ROI evidence.' },
           ],
         },
         {
@@ -185,8 +186,8 @@ const MOCK_SESSIONS: Session[] = [
           maxPoints: 2,
           earnedPoints: 1,
           criteria: [
-            { question: 'Did the seller present a customer reference?', passed: true, reasoning: 'Rep cited companies achieving 20% quota attainment lift as social proof.' },
-            { question: 'Did the seller explore the prospect\'s goal-setting framework?', passed: false, reasoning: 'Rep did not ask how the CRO or Sarah measures team success or sets targets.' },
+            { question: 'Did the seller present a customer reference?', passed: true, reasoning: 'Rep cited 20% quota attainment lift from similar companies at 0:28 as social proof.' },
+            { question: 'Did the seller explore the prospect\'s goal-setting framework?', passed: false, reasoning: 'Rep never asked how the CRO or Sarah measures team success — missed between 4:00 and 4:50.' },
           ],
         },
         {
@@ -194,8 +195,8 @@ const MOCK_SESSIONS: Session[] = [
           maxPoints: 2,
           earnedPoints: 1,
           criteria: [
-            { question: 'Did the seller revisit the upfront contract and define next steps?', passed: true, reasoning: 'Closed with a specific 30-minute meeting ask with named stakeholders and a benchmark report offer.' },
-            { question: 'Did the seller qualify out or in effectively?', passed: false, reasoning: 'Rep did not explicitly confirm this is a qualified opportunity or establish a go/no-go milestone.' },
+            { question: 'Did the seller revisit the upfront contract and define next steps?', passed: true, reasoning: 'Closed at 5:40 with a specific 30-minute ask, named stakeholders, and a benchmark report offer.' },
+            { question: 'Did the seller qualify out or in effectively?', passed: false, reasoning: 'Rep did not explicitly confirm this is a qualified opportunity or establish a go/no-go milestone before 6:10.' },
           ],
         },
       ],

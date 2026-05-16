@@ -272,6 +272,7 @@ export function FeedbackPage() {
         ]);
         setSession(data);
         setPeerScores(peers);
+        if (data.recordingUrl) setPlaybackUrl(data.recordingUrl);
         if (data.status === 'COMPLETED' && !data.totalScore) setAnalysing(true);
       } catch {
         toast.error('Session not found');
@@ -300,11 +301,32 @@ export function FeedbackPage() {
     if (isPlaying) audioRef.current.pause(); else audioRef.current.play();
   }, [isPlaying]);
 
+  const pendingSeekRef = useRef<number | null>(null);
+
   const seekTo = useCallback((seconds: number) => {
-    if (!audioRef.current) return;
-    audioRef.current.currentTime = seconds;
-    audioRef.current.play();
-    setIsPlaying(true);
+    if (!audioRef.current) {
+      pendingSeekRef.current = seconds;
+      return;
+    }
+    const el = audioRef.current;
+    const doSeek = () => {
+      el.currentTime = seconds;
+      el.play().catch(() => {});
+      setIsPlaying(true);
+    };
+    if (el.readyState >= 1) {
+      doSeek();
+    } else {
+      pendingSeekRef.current = seconds;
+      el.addEventListener('loadedmetadata', () => {
+        if (pendingSeekRef.current !== null) {
+          el.currentTime = pendingSeekRef.current;
+          el.play().catch(() => {});
+          setIsPlaying(true);
+          pendingSeekRef.current = null;
+        }
+      }, { once: true });
+    }
   }, []);
 
   const jumpToTimestamp = useCallback((timestampMs: number, switchToTranscript = false) => {
@@ -509,7 +531,15 @@ export function FeedbackPage() {
               ref={el => {
                 audioRef.current = el;
                 if (el) {
-                  el.onloadedmetadata = () => setAudioDuration(el.duration);
+                  el.onloadedmetadata = () => {
+                    setAudioDuration(el.duration);
+                    if (pendingSeekRef.current !== null) {
+                      el.currentTime = pendingSeekRef.current;
+                      el.play().catch(() => {});
+                      setIsPlaying(true);
+                      pendingSeekRef.current = null;
+                    }
+                  };
                   el.ontimeupdate = () => setAudioProgress(el.currentTime);
                   el.onplay = () => setIsPlaying(true);
                   el.onpause = () => setIsPlaying(false);
