@@ -8,7 +8,8 @@ import { Framework, SessionType, FRAMEWORK_INFO, ScenarioConfig, Persona, TeamRo
 import { CallInterface, PersonaDisplay } from '@/components/practice/CallInterface';
 import { PersonaBuilder } from '@/components/practice/PersonaBuilder';
 import { AvatarDisplay, EthnicityAvatarPicker, AVATAR_VOICE_CONFIG, AVATARS, type AvatarId } from '@/components/practice/PersonaAvatars';
-import { VoicePicker } from '@/components/practice/VoicePicker';
+import { VoicePickerModal } from '@/components/practice/VoicePickerModal';
+import { CURATED_VOICES } from '@/components/practice/VoicePicker';
 import { useAuthStore } from '@/lib/store';
 import clsx from 'clsx';
 
@@ -246,6 +247,7 @@ export function PracticePage() {
   const [avatarId, setAvatarId]                   = useState('alex');
   const [selectedVoiceId, setSelectedVoiceId]     = useState<string | undefined>(undefined);
   const [voiceOpen, setVoiceOpen]                 = useState(false);
+  const [voiceModalOpen, setVoiceModalOpen]       = useState(false);
   const [displayName, setDisplayName]             = useState('Custom Persona');
   const [displayTitle, setDisplayTitle]           = useState('');
   const [displayEmoji, setDisplayEmoji]           = useState('');
@@ -254,6 +256,8 @@ export function PracticePage() {
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
   const [showQuestions, setShowQuestions]         = useState(false);
   const [questionInput, setQuestionInput]         = useState('');
+  // AI-generated staging: questions returned by AI before user picks them
+  const [stagedQuestions, setStagedQuestions]     = useState<string[]>([]);
 
   // ── Context fields ─────────────────────────────────────────────────────────
   const [industry, setIndustry]         = useState('');
@@ -434,6 +438,7 @@ export function PracticePage() {
     setPersonaContext('');
     setDifficulty('Medium');
     setSuggestedQuestions([]);
+    setStagedQuestions([]);
     setShowQuestions(false);
     setQuestionInput('');
     setIndustry('');
@@ -455,9 +460,10 @@ export function PracticePage() {
     setGeneratingQuestions(true);
     try {
       const { questions } = await practiceApi.generateQuestions({ personaContext, roleplayType });
-      setSuggestedQuestions(questions);
+      // Stage them so user can pick which ones to keep
+      setStagedQuestions(questions.filter((q: string) => !suggestedQuestions.includes(q)));
       setShowQuestions(true);
-      if (showToast) toast.success('Questions generated');
+      if (showToast) toast.success(`${questions.length} questions generated — select to add`);
     } catch {
       if (showToast) toast.error('Failed to generate questions');
     } finally {
@@ -1100,28 +1106,39 @@ export function PracticePage() {
                         }} />
                       </div>
 
-                      {/* Voice picker — collapsible */}
-                      <div className="border border-white/[0.07] rounded-[10px] overflow-hidden">
-                        <button
-                          type="button"
-                          onClick={() => setVoiceOpen(v => !v)}
-                          className="w-full flex items-center justify-between px-3 py-2 hover:bg-white/[0.03] transition-colors"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Voice</span>
-                            {selectedVoiceId && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 border border-accent/20 text-accent/70">Custom</span>
-                            )}
-                          </div>
-                          <ChevronDown size={12} className={clsx('text-white/70 transition-transform', voiceOpen && 'rotate-180')} />
-                        </button>
-                        {voiceOpen && (
-                          <div className="px-3 pb-3 border-t border-white/[0.06]">
-                            <div className="pt-3">
-                              <VoicePicker avatarId={avatarId} value={selectedVoiceId} onChange={setSelectedVoiceId} />
-                            </div>
-                          </div>
-                        )}
+                      {/* Voice picker — opens modal */}
+                      <div className="flex items-center justify-between px-3 py-2 rounded-[10px] border border-white/[0.07]">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-[10px] font-semibold text-white/70 uppercase tracking-wider flex-shrink-0">Voice</span>
+                          {selectedVoiceId ? (
+                            <span className="text-[11px] text-white/75 truncate">
+                              {CURATED_VOICES.find(v => v.id === selectedVoiceId)?.name ?? 'Custom'}
+                              <span className="ml-1 text-[9px] text-white/35">
+                                {CURATED_VOICES.find(v => v.id === selectedVoiceId)?.accent}
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-white/40">Browser default</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {selectedVoiceId && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedVoiceId(undefined)}
+                              className="text-[9px] text-white/40 hover:text-white/60 transition-colors px-1.5 py-0.5 rounded border border-white/[0.06] hover:border-white/[0.12]"
+                            >
+                              Clear
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setVoiceModalOpen(true)}
+                            className="btn-ghost text-[11px] px-2.5 py-1 gap-1"
+                          >
+                            {selectedVoiceId ? 'Change' : 'Choose'}
+                          </button>
+                        </div>
                       </div>
 
                       {/* Name + Title + Difficulty */}
@@ -1243,19 +1260,24 @@ export function PracticePage() {
                         <textarea value={personaContext} onChange={e => setPersonaContext(e.target.value)} placeholder="Describe the persona and scenario…" className="input-base min-h-[110px] resize-none text-[12.5px] leading-relaxed" />
                       </div>
 
-                      {/* Suggested questions */}
+                      {/* Expected questions */}
                       <div className="rounded-[10px] border border-white/[0.07] p-3 bg-white/[0.02]">
                         <div className="flex items-center justify-between mb-2.5">
                           <div className="flex items-center gap-2">
                             <span className="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Expected Questions</span>
                             {generatingQuestions && <Loader2 size={10} className="animate-spin text-white/70" />}
+                            {suggestedQuestions.length > 0 && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/50">
+                                {suggestedQuestions.length}/20
+                              </span>
+                            )}
                           </div>
                           <button
                             onClick={() => handleGenerateQuestions(true)}
                             disabled={generatingQuestions || !personaContext.trim()}
                             className="flex items-center gap-1 text-[10px] text-accent/70 hover:text-accent transition-colors disabled:opacity-40"
                           >
-                            <Sparkles size={9} /> {generatingQuestions ? 'Generating…' : 'AI Generate'}
+                            <Sparkles size={9} /> {generatingQuestions ? 'Generating…' : 'AI Suggest'}
                           </button>
                         </div>
 
@@ -1264,10 +1286,8 @@ export function PracticePage() {
                           <input
                             value={questionInput}
                             onChange={e => setQuestionInput(e.target.value)}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter') { e.preventDefault(); addQuestion(); }
-                            }}
-                            placeholder="Type a question the persona might ask…"
+                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addQuestion(); } }}
+                            placeholder="Type a question and press Add…"
                             className="input-base flex-1 text-[12px]"
                             disabled={suggestedQuestions.length >= 20}
                           />
@@ -1280,11 +1300,51 @@ export function PracticePage() {
                           </button>
                         </div>
 
-                        {/* Question pills */}
+                        {/* AI-staged questions — click to accept */}
+                        {stagedQuestions.length > 0 && (
+                          <div className="mb-2.5">
+                            <p className="text-[9.5px] text-white/50 mb-1.5 flex items-center gap-1">
+                              <Sparkles size={8} className="text-accent/50" />
+                              AI suggestions — click to add:
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {stagedQuestions.map((q, i) => (
+                                <button
+                                  key={i}
+                                  onClick={() => {
+                                    if (suggestedQuestions.length >= 20) return;
+                                    if (!suggestedQuestions.includes(q)) {
+                                      setSuggestedQuestions(prev => [...prev, q]);
+                                    }
+                                    setStagedQuestions(prev => prev.filter((_, idx) => idx !== i));
+                                  }}
+                                  disabled={suggestedQuestions.includes(q) || suggestedQuestions.length >= 20}
+                                  className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-[7px] border border-accent/20 bg-accent/[0.04] text-white/60 hover:border-accent/40 hover:bg-accent/[0.08] hover:text-white/80 transition-all text-left disabled:opacity-40"
+                                >
+                                  <Plus size={8} className="flex-shrink-0 text-accent/60" />
+                                  {q}
+                                </button>
+                              ))}
+                            </div>
+                            <button
+                              onClick={() => {
+                                const remaining = 20 - suggestedQuestions.length;
+                                const toAdd = stagedQuestions.slice(0, remaining).filter(q => !suggestedQuestions.includes(q));
+                                setSuggestedQuestions(prev => [...prev, ...toAdd]);
+                                setStagedQuestions([]);
+                              }}
+                              className="mt-2 text-[9.5px] text-accent/60 hover:text-accent transition-colors"
+                            >
+                              Add all
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Accepted questions */}
                         {suggestedQuestions.length > 0 ? (
                           <div className="flex flex-wrap gap-1.5">
                             {suggestedQuestions.map((q, i) => (
-                              <span key={i} className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-[7px] border border-white/[0.08] bg-white/[0.03] text-white/65 group">
+                              <span key={i} className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-[7px] border border-white/[0.08] bg-white/[0.03] text-white/65">
                                 {q}
                                 <button
                                   onClick={() => setSuggestedQuestions(prev => prev.filter((_, idx) => idx !== i))}
@@ -1295,8 +1355,8 @@ export function PracticePage() {
                               </span>
                             ))}
                           </div>
-                        ) : (
-                          <p className="text-[11px] text-white/40">Type a question above or use AI Generate to auto-populate from your persona context.</p>
+                        ) : stagedQuestions.length === 0 && (
+                          <p className="text-[11px] text-white/35">Type above or use AI Suggest to generate from your persona context.</p>
                         )}
                         {suggestedQuestions.length >= 20 && (
                           <p className="text-[10px] text-white/40 mt-1.5">Maximum 20 questions reached.</p>
@@ -1475,6 +1535,18 @@ export function PracticePage() {
             framework={framework}
             timeLimitMins={timeLimitMins ? parseInt(timeLimitMins, 10) || null : null}
             onEnd={sessionId => { setActiveSession(null); navigate(`/sessions/${sessionId}/feedback`); }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── Voice picker modal ────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {voiceModalOpen && (
+          <VoicePickerModal
+            avatarId={avatarId}
+            value={selectedVoiceId}
+            onSelect={setSelectedVoiceId}
+            onClose={() => setVoiceModalOpen(false)}
           />
         )}
       </AnimatePresence>
