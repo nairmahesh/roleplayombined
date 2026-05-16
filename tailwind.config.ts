@@ -13,21 +13,21 @@ const config: Config = {
       },
       colors: {
         bg: {
-          DEFAULT: '#0A0B0F',
-          2: '#111318',
-          3: '#181B23',
-          4: '#1F2330',
+          DEFAULT: 'var(--bg)',
+          2: 'var(--bg2)',
+          3: 'var(--bg3)',
+          4: 'var(--bg4)',
         },
         accent: {
-          DEFAULT: '#5B6FFF',
-          2: '#7C3AED',
-          3: '#06D6A0',
-          4: '#FF6B6B',
-          5: '#FFD166',
+          DEFAULT: 'var(--accent)',
+          2: 'var(--accent2)',
+          3: 'var(--accent3)',
+          4: 'var(--accent4)',
+          5: 'var(--accent5)',
         },
         border: {
-          DEFAULT: 'rgba(255,255,255,0.07)',
-          2: 'rgba(255,255,255,0.12)',
+          DEFAULT: 'var(--border)',
+          2: 'var(--border2)',
         },
       },
       borderRadius: {

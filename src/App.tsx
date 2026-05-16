@@ -1,7 +1,7 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { useAuthStore } from '@/lib/store';
+import { useAuthStore, useThemeStore } from '@/lib/store';
 import { AppShell } from '@/components/layout/AppShell';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AvatarPhotoProvider } from '@/components/practice/PersonaAvatars';
@@ -52,18 +52,31 @@ function DefaultRedirect() {
   return <Navigate to="/dashboard" replace />;
 }
 
+function ThemeInit() {
+  const theme = useThemeStore(s => s.theme);
+  useEffect(() => {
+    document.documentElement.classList.toggle('light', theme === 'light');
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  }, [theme]);
+  return null;
+}
+
 export default function App() {
+  const theme = useThemeStore(s => s.theme);
+  const isLight = theme === 'light';
+
   return (
     <ErrorBoundary>
       <AvatarPhotoProvider>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <ThemeInit />
         <Toaster
           position="bottom-right"
           toastOptions={{
             style: {
-              background: '#1F2330',
-              color: '#F0F2FF',
-              border: '1px solid rgba(255,255,255,0.12)',
+              background: isLight ? '#FFFFFF' : '#1F2330',
+              color: isLight ? '#0D0E14' : '#F0F2FF',
+              border: isLight ? '1px solid rgba(0,0,0,0.10)' : '1px solid rgba(255,255,255,0.12)',
               borderRadius: '12px',
               fontSize: '13px',
             },

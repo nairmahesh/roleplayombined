@@ -7,7 +7,9 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  /* ── Dark theme (default) ───────────────────────────────────────────────── */
+  :root,
+  .dark {
     --bg: #0A0B0F;
     --bg2: #111318;
     --bg3: #181B23;
@@ -17,11 +19,38 @@
     --accent3: #06D6A0;
     --accent4: #FF6B6B;
     --accent5: #FFD166;
-    --text: #F0F2FF;
-    --text2: rgba(240,242,255,0.6);
-    --text3: rgba(240,242,255,0.35);
+    /* Brighter text in dark mode */
+    --text: #FFFFFF;
+    --text2: rgba(255,255,255,0.80);
+    --text3: rgba(255,255,255,0.45);
     --border: rgba(255,255,255,0.07);
-    --border2: rgba(255,255,255,0.12);
+    --border2: rgba(255,255,255,0.14);
+    --card-bg: #111318;
+    --input-bg: #181B23;
+    --scrollbar: rgba(255,255,255,0.12);
+    --scrollbar-hover: rgba(255,255,255,0.22);
+  }
+
+  /* ── Light theme ────────────────────────────────────────────────────────── */
+  .light {
+    --bg: #F5F6FA;
+    --bg2: #FFFFFF;
+    --bg3: #F0F1F7;
+    --bg4: #E8EAF2;
+    --accent: #4A5EF0;
+    --accent2: #6D28D9;
+    --accent3: #059669;
+    --accent4: #DC2626;
+    --accent5: #D97706;
+    --text: #0D0E14;
+    --text2: rgba(13,14,20,0.72);
+    --text3: rgba(13,14,20,0.42);
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.14);
+    --card-bg: #FFFFFF;
+    --input-bg: #F0F1F7;
+    --scrollbar: rgba(0,0,0,0.12);
+    --scrollbar-hover: rgba(0,0,0,0.22);
   }
 
   * {
@@ -29,66 +58,101 @@
   }
 
   body {
-    @apply bg-bg text-[#F0F2FF] font-sans antialiased;
     background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
 
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+  ::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
 }
 
 @layer components {
   .card {
-    @apply bg-bg-2 border border-white/[0.06] rounded-lg overflow-hidden;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: background-color 0.25s ease, border-color 0.25s ease;
   }
 
   .btn-base {
-    @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-[9px] text-sm font-medium 
+    @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-[9px] text-sm font-medium
            transition-all duration-150 cursor-pointer border select-none;
   }
 
   .btn-primary {
     @apply btn-base bg-accent text-white border-transparent
-           hover:bg-[#6C7FFF] hover:-translate-y-px shadow-[0_4px_20px_rgba(91,111,255,0.35)];
+           hover:brightness-110 hover:-translate-y-px shadow-[0_4px_20px_rgba(91,111,255,0.3)];
   }
 
   .btn-ghost {
-    @apply btn-base bg-transparent text-[var(--text2)] border-white/10
-           hover:bg-white/[0.06] hover:text-[var(--text)];
+    @apply btn-base bg-transparent border-[var(--border2)] hover:-translate-y-px;
+    color: var(--text2);
+  }
+  .btn-ghost:hover {
+    color: var(--text);
+    background: rgba(128,128,128,0.08);
   }
 
   .btn-danger {
-    @apply btn-base bg-accent-4/15 text-accent-4 border-accent-4/20;
+    @apply btn-base;
+    background: rgba(255,107,107,0.12);
+    color: var(--accent4);
+    border-color: rgba(255,107,107,0.20);
   }
 
   .btn-success {
-    @apply btn-base bg-accent-3/10 text-accent-3 border-accent-3/20;
+    @apply btn-base;
+    background: rgba(6,214,160,0.10);
+    color: var(--accent3);
+    border-color: rgba(6,214,160,0.20);
   }
 
   .input-base {
-    @apply w-full bg-bg-3 border border-white/[0.08] rounded-[9px] px-3 py-2 text-sm
-           text-[var(--text)] placeholder:text-[var(--text3)]
-           focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/20
+    @apply w-full rounded-[9px] px-3 py-2 text-sm
+           focus:outline-none focus:ring-1
            transition-colors;
+    background: var(--input-bg);
+    border: 1px solid var(--border2);
+    color: var(--text);
+  }
+  .input-base::placeholder {
+    color: var(--text3);
+  }
+  .input-base:focus {
+    border-color: rgba(91,111,255,0.55);
+    box-shadow: 0 0 0 2px rgba(91,111,255,0.15);
   }
 
   .tag {
-    @apply text-[10px] font-semibold px-2 py-0.5 rounded-full 
-           bg-accent/10 text-[#9BA8FF] border border-accent/20;
+    @apply text-[10px] font-semibold px-2 py-0.5 rounded-full border;
+    background: rgba(91,111,255,0.12);
+    color: var(--accent);
+    border-color: rgba(91,111,255,0.25);
   }
 
   .tag-green {
-    @apply bg-accent-3/10 text-accent-3 border-accent-3/20;
+    background: rgba(6,214,160,0.10);
+    color: var(--accent3);
+    border-color: rgba(6,214,160,0.20);
   }
 
   .tag-amber {
-    @apply bg-accent-5/10 text-accent-5 border-accent-5/20;
+    background: rgba(255,209,102,0.10);
+    color: var(--accent5);
+    border-color: rgba(255,209,102,0.20);
   }
 
   .tag-red {
-    @apply bg-accent-4/10 text-accent-4 border-accent-4/20;
+    background: rgba(255,107,107,0.10);
+    color: var(--accent4);
+    border-color: rgba(255,107,107,0.20);
   }
 
   .section-title {
@@ -96,28 +160,42 @@
   }
 
   .stat-card {
-    @apply card p-5 relative overflow-hidden transition-all duration-200
-           hover:border-white/10 hover:-translate-y-px;
+    @apply card p-5 relative overflow-hidden transition-all duration-200;
+  }
+  .stat-card:hover {
+    border-color: var(--border2);
+    transform: translateY(-1px);
   }
 
   .nav-item {
-    @apply flex items-center gap-2.5 px-5 py-[9px] text-[13.5px] text-[var(--text2)]
-           cursor-pointer transition-all duration-150 border-l-2 border-transparent
-           hover:bg-white/[0.04] hover:text-[var(--text)];
+    @apply flex items-center gap-2.5 px-5 py-[9px] text-[13.5px]
+           cursor-pointer transition-all duration-150 border-l-2 border-transparent;
+    color: var(--text2);
+  }
+  .nav-item:hover {
+    color: var(--text);
+    background: rgba(128,128,128,0.06);
   }
 
   .nav-item-active {
-    @apply bg-accent/10 text-accent border-l-accent;
+    background: rgba(91,111,255,0.1);
+    color: var(--accent);
+    border-left-color: var(--accent);
+    @apply font-medium;
   }
 
   .progress-bar {
-    @apply h-[5px] bg-bg-4 rounded-full overflow-hidden;
+    @apply h-[5px] rounded-full overflow-hidden;
+    background: var(--bg4);
   }
 
   .progress-fill {
     @apply h-full rounded-full transition-all duration-500;
   }
 }
+
+/* ── Light theme overrides for components using hardcoded Tailwind white/black ── */
+.light .white-text-override { color: var(--text) !important; }
 
 /* Animations */
 @keyframes wave {

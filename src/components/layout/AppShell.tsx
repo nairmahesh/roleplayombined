@@ -1,14 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuthStore } from '@/lib/store';
+import { useAuthStore, useThemeStore } from '@/lib/store';
 import { authApi } from '@/lib/api';
 import { resetSocket } from '@/lib/socket';
 import toast from 'react-hot-toast';
 import {
-  LayoutDashboard, Play, ClipboardList, BarChart3,
+  LayoutDashboard, Play, ClipboardList,
   Trophy, Users, Settings, LogOut, Target,
-  Building2, Globe, Menu, X,
+  Building2, Globe, Menu, X, Sun, Moon,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -22,25 +22,19 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  // ── Platform (Super Admin only) ───────────────────────────────────────────
   { label: 'Companies',   to: '/superadmin/companies', icon: Building2,      section: 'Platform', roles: ['SUPER_ADMIN'] },
   { label: 'Platform',    to: '/superadmin/stats',     icon: Globe,          section: 'Platform', roles: ['SUPER_ADMIN'] },
-
-  // ── Overview (all non-super-admin) ────────────────────────────────────────
   { label: 'Dashboard',   to: '/dashboard',  icon: LayoutDashboard, section: 'Overview', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
   { label: 'Practice',    to: '/practice',   icon: Play,            section: 'Overview', badge: 'New', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
   { label: 'Sessions',    to: '/sessions',   icon: ClipboardList,   section: 'Overview', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
-
-  // ── Coaching ──────────────────────────────────────────────────────────────
   { label: 'Leaderboard', to: '/leaderboard',icon: Trophy,          section: 'Coaching', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
-
-  // ── Admin ─────────────────────────────────────────────────────────────────
   { label: 'Team',        to: '/team',       icon: Users,           section: 'Admin', roles: ['COMPANY_ADMIN', 'MANAGER', 'SUPER_ADMIN'] },
   { label: 'Settings',    to: '/settings',   icon: Settings,        section: 'Admin', roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'] },
 ];
 
 export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { theme, toggleTheme } = useThemeStore();
 
   const { user, clearAuth, refreshToken } = useAuthStore(s => ({
     user: s.user,
@@ -49,6 +43,12 @@ export function AppShell() {
   }));
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Apply theme class on mount + changes
+  useEffect(() => {
+    document.documentElement.classList.toggle('light', theme === 'light');
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  }, [theme]);
 
   const handleLogout = async () => {
     try {
@@ -68,8 +68,8 @@ export function AppShell() {
   );
 
   const sections = [...new Set(visibleNav.map(n => n.section))];
-
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const isLight = theme === 'light';
 
   return (
     <div className="flex h-screen overflow-hidden bg-bg">
@@ -82,17 +82,20 @@ export function AppShell() {
       )}
 
       {/* ─── Sidebar ────────────────────────────────────────────────────────── */}
-      <nav className={clsx(
-        "fixed md:static inset-y-0 left-0 z-30 w-[240px] min-w-[240px] bg-bg-2 border-r border-white/[0.07] flex flex-col transition-transform duration-300 md:translate-x-0",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
+      <nav
+        className={clsx(
+          'fixed md:static inset-y-0 left-0 z-30 w-[240px] min-w-[240px] flex flex-col transition-transform duration-300 md:translate-x-0',
+          'bg-[var(--bg2)] border-r border-[var(--border)]',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
         {/* Logo */}
-        <div className="px-5 py-5 border-b border-white/[0.07]">
+        <div className="px-5 py-5 border-b border-[var(--border)]">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-accent to-accent-2 flex items-center justify-center">
               <Target size={16} className="text-white" />
             </div>
-            <span className="font-display text-[18px] font-extrabold tracking-tight">
+            <span className="font-display text-[18px] font-extrabold tracking-tight" style={{ color: 'var(--text)' }}>
               Pitch<span className="text-accent">IQ</span>
             </span>
             {isSuperAdmin && (
@@ -102,7 +105,8 @@ export function AppShell() {
             )}
             <button
               onClick={() => setSidebarOpen(false)}
-              className="ml-auto md:hidden p-1 rounded-[8px] hover:bg-white/[0.05] text-white/40 hover:text-white"
+              className="ml-auto md:hidden p-1 rounded-[8px] hover:bg-black/[0.06] transition-colors"
+              style={{ color: 'var(--text3)' }}
             >
               <X size={15} />
             </button>
@@ -115,7 +119,7 @@ export function AppShell() {
             const items = visibleNav.filter(n => n.section === section);
             return (
               <div key={section} className="mb-2">
-                <div className="px-5 py-2 text-[10px] font-semibold tracking-[1.5px] text-white/30 uppercase">
+                <div className="px-5 py-2 text-[10px] font-semibold tracking-[1.5px] uppercase" style={{ color: 'var(--text3)' }}>
                   {section}
                 </div>
                 {items.map(item => (
@@ -142,25 +146,29 @@ export function AppShell() {
         </div>
 
         {/* User footer */}
-        <div className="p-4 border-t border-white/[0.07]">
-          <div className="flex items-center gap-2.5 p-2.5 rounded-[10px] bg-white/[0.03] border border-white/[0.06] cursor-pointer hover:bg-white/[0.06] transition-colors group">
+        <div className="p-4 border-t border-[var(--border)]">
+          <div
+            className="flex items-center gap-2.5 p-2.5 rounded-[10px] border cursor-pointer transition-colors group"
+            style={{ background: 'rgba(128,128,128,0.05)', borderColor: 'var(--border)' }}
+          >
             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-accent to-accent-2 flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">
               {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[12.5px] font-medium truncate">
+              <div className="text-[12.5px] font-medium truncate" style={{ color: 'var(--text)' }}>
                 {user?.firstName} {user?.lastName}
               </div>
-              <div className="text-[10.5px] text-white/30 capitalize">
+              <div className="text-[10.5px] capitalize" style={{ color: 'var(--text3)' }}>
                 {user?.role?.replace(/_/g, ' ').toLowerCase()}
               </div>
             </div>
             <button
               onClick={handleLogout}
               className="opacity-0 group-hover:opacity-100 transition-opacity"
+              style={{ color: 'var(--text2)' }}
               title="Log out"
             >
-              <LogOut size={13} className="text-white/65 hover:text-white/70" />
+              <LogOut size={13} />
             </button>
           </div>
         </div>
@@ -169,16 +177,49 @@ export function AppShell() {
       {/* ─── Main content ──────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Topbar */}
-        <header className="flex items-center justify-between px-4 md:px-7 py-4 border-b border-white/[0.07] bg-bg flex-shrink-0">
+        <header
+          className="flex items-center justify-between px-4 md:px-7 py-4 border-b flex-shrink-0 bg-bg"
+          style={{ borderColor: 'var(--border)' }}
+        >
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="md:hidden p-2 -ml-1 rounded-[9px] hover:bg-white/[0.05] text-white/60 hover:text-white mr-1"
+              className="md:hidden p-2 -ml-1 rounded-[9px] transition-colors mr-1"
+              style={{ color: 'var(--text2)' }}
             >
               <Menu size={18} />
             </button>
             <PageTitle path={location.pathname} />
           </div>
+
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            title={isLight ? 'Switch to dark mode' : 'Switch to light mode'}
+            className={clsx(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-[9px] border text-[12px] font-medium transition-all',
+              'hover:scale-105 active:scale-95'
+            )}
+            style={{
+              background: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)',
+              borderColor: 'var(--border2)',
+              color: 'var(--text2)',
+            }}
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={theme}
+                initial={{ opacity: 0, rotate: -30, scale: 0.7 }}
+                animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                exit={{ opacity: 0, rotate: 30, scale: 0.7 }}
+                transition={{ duration: 0.18 }}
+                className="flex items-center gap-1.5"
+              >
+                {isLight ? <Moon size={14} /> : <Sun size={14} />}
+                <span className="hidden sm:inline">{isLight ? 'Dark' : 'Light'}</span>
+              </motion.span>
+            </AnimatePresence>
+          </button>
         </header>
 
         {/* Page content */}
@@ -215,8 +256,8 @@ function PageTitle({ path }: { path: string }) {
   const [title, sub] = titles[key] || ['PitchIQ', ''];
   return (
     <>
-      <h1 className="font-display text-[20px] font-bold tracking-tight leading-none">{title}</h1>
-      <p className="text-[13px] text-white/35 mt-0.5">{sub}</p>
+      <h1 className="font-display text-[20px] font-bold tracking-tight leading-none" style={{ color: 'var(--text)' }}>{title}</h1>
+      <p className="text-[13px] mt-0.5" style={{ color: 'var(--text3)' }}>{sub}</p>
     </>
   );
 }

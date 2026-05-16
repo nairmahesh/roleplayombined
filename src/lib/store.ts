@@ -51,6 +51,39 @@ export const useAuthStore = create<AuthState>()(
   )
 );
 
+// ─── Theme State ──────────────────────────────────────────────────────────────
+interface ThemeState {
+  theme: 'dark' | 'light';
+  setTheme: (theme: 'dark' | 'light') => void;
+  toggleTheme: () => void;
+}
+
+export const useThemeStore = create<ThemeState>()(
+  persist(
+    (set, get) => ({
+      theme: 'dark',
+      setTheme: (theme) => {
+        set({ theme });
+        document.documentElement.classList.toggle('light', theme === 'light');
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+      },
+      toggleTheme: () => {
+        const next = get().theme === 'dark' ? 'light' : 'dark';
+        get().setTheme(next);
+      },
+    }),
+    {
+      name: 'pitchiq-theme',
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          document.documentElement.classList.toggle('light', state.theme === 'light');
+          document.documentElement.classList.toggle('dark', state.theme === 'dark');
+        }
+      },
+    }
+  )
+);
+
 // ─── Session UI State ─────────────────────────────────────────────────────────
 interface SessionState {
   activeSessionId: string | null;
