@@ -61,22 +61,105 @@ const MOCK_SESSIONS: Session[] = [
     createdAt: new Date(Date.now() - 3_700_000).toISOString(),
     user: { id: 'u1', firstName: 'Alex', lastName: 'Rivera', avatarUrl: undefined },
     persona: { id: 'p1', name: 'Sarah Chen', title: 'VP of Sales', emoji: '', difficulty: 'MEDIUM' },
+    messages: [
+      { id: 'm1', sessionId: 's1', role: 'user', content: "Hi Sarah, this is Alex from PitchIQ. I was looking at TechCorp's recent expansion into the enterprise segment — congrats on the Series B. Do you have 30 seconds?", timestampMs: 5000 },
+      { id: 'm2', sessionId: 's1', role: 'assistant', content: "Sure, go ahead. What is this about?", timestampMs: 18000 },
+      { id: 'm3', sessionId: 's1', role: 'user', content: "Thanks. We help VP-level sales leaders quantify rep performance gaps. Companies like yours typically see a 20% lift in quota attainment within 90 days. Is improving team efficiency something on your radar right now?", timestampMs: 28000 },
+      { id: 'm4', sessionId: 's1', role: 'assistant', content: "We do have some challenges there, yes. Our reps are ramping slowly and we're not hitting our numbers. But we already have a tool for this.", timestampMs: 55000 },
+      { id: 'm5', sessionId: 's1', role: 'user', content: "Interesting — what does that tool measure today? And is it giving you the visibility you need on where deals are actually stalling?", timestampMs: 75000 },
+      { id: 'm6', sessionId: 's1', role: 'assistant', content: "Honestly it mostly tracks CRM activity, not skill gaps. We can see what reps are doing but not why deals fall through.", timestampMs: 100000 },
+      { id: 'm7', sessionId: 's1', role: 'user', content: "That's the exact gap we solve. If you could pinpoint within 24 hours which MEDDIC component each rep is weak on, how would that change your coaching rhythm?", timestampMs: 120000 },
+      { id: 'm8', sessionId: 's1', role: 'assistant', content: "That would be huge. Right now I'm spending 3 hours per week listening to random calls.", timestampMs: 148000 },
+      { id: 'm9', sessionId: 's1', role: 'user', content: "And the cost of that — 3 hours a week, 52 weeks, plus the deals lost to uncoached reps — what's that worth to TechCorp?", timestampMs: 165000 },
+      { id: 'm10', sessionId: 's1', role: 'assistant', content: "Probably significant. I hadn't quantified it but you're right.", timestampMs: 188000 },
+      { id: 'm11', sessionId: 's1', role: 'user', content: "What's the budget range you'd be working with for a solution like this?", timestampMs: 200000 },
+      { id: 'm12', sessionId: 's1', role: 'assistant', content: "That's too early to say. I'd need to see a demo first. Also, pricing seems steep for what you're describing.", timestampMs: 218000 },
+      { id: 'm13', sessionId: 's1', role: 'user', content: "Totally fair — let's validate the value first. Who else would typically be part of evaluating something like this at TechCorp? Would you loop in your VP of RevOps?", timestampMs: 240000 },
+      { id: 'm14', sessionId: 's1', role: 'assistant', content: "Yes, probably Marcus in RevOps and our CRO would have final say.", timestampMs: 268000 },
+      { id: 'm15', sessionId: 's1', role: 'user', content: "Perfect. If Marcus and your CRO saw a 20% lift in attainment in our pilot data, is that the kind of metric that would move this forward quickly?", timestampMs: 290000 },
+      { id: 'm16', sessionId: 's1', role: 'assistant', content: "For the CRO, yes — attainment numbers are everything.", timestampMs: 320000 },
+      { id: 'm17', sessionId: 's1', role: 'user', content: "Great. Can we get 30 minutes on the calendar this week with you and Marcus? I'll prepare a benchmark report for TechCorp's size and stage.", timestampMs: 340000 },
+      { id: 'm18', sessionId: 's1', role: 'assistant', content: "Send me a calendar link and I'll check with Marcus.", timestampMs: 370000 },
+    ],
     frameworkScores: [
-      { id: 'fs1', component: 'Metrics', score: 85, feedback: 'Good use of quantitative metrics', evidence: ['You mentioned a 20% efficiency gain'] },
-      { id: 'fs2', component: 'Economic Buyer', score: 78, feedback: 'Identified the buyer well', evidence: ['Asked about budget authority early'] },
-      { id: 'fs3', component: 'Identify Pain', score: 92, feedback: 'Excellent pain discovery', evidence: ['Uncovered 3 distinct pain points'] },
-      { id: 'fs4', component: 'Champion', score: 68, feedback: 'Could build champion relationship more', evidence: ['Did not ask about internal advocates'] },
+      {
+        id: 'fs1',
+        component: 'Metrics',
+        score: 85,
+        feedback: 'Strong quantitative framing. You anchored the value conversation with a 20% efficiency figure early and followed up by helping the prospect self-calculate the cost of inaction (3 hours/week × 52 weeks). This is textbook MEDDIC — make the prospect own the number.',
+        evidence: [
+          'You mentioned a 20% quota attainment lift at 0:28',
+          'You calculated the cost of 3hrs/week coaching time at 2:45',
+          'You tied metrics directly to the CRO\'s attainment focus at 4:50',
+        ],
+      },
+      {
+        id: 'fs2',
+        component: 'Economic Buyer',
+        score: 78,
+        feedback: 'You correctly identified that the CRO has final say and Marcus in RevOps is a key influencer. However, you did not ask what the CRO\'s specific success criteria are, or whether Sarah has budget authority herself. Knowing who signs the check — not just who approves — is critical.',
+        evidence: [
+          'Asked about decision makers at 4:00 — correctly surfaced Marcus and the CRO',
+          'Did not ask about Sarah\'s own budget authority',
+          'Missed: "What would the CRO need to see to sign off within Q2?"',
+        ],
+      },
+      {
+        id: 'fs3',
+        component: 'Decision Criteria',
+        score: 72,
+        feedback: 'You touched on attainment metrics as a success criterion but did not explicitly ask Sarah what the evaluation criteria would be. The prospect needs to articulate their own criteria — then you can map your product to each one. Without this, you\'re guessing what to demo.',
+        evidence: [
+          'You assumed attainment % is the key metric without confirmation',
+          'Missed: "What would a successful vendor look like to you and Marcus?"',
+          'Missed: "What does the current solution lack that you\'d need replaced?"',
+        ],
+      },
+      {
+        id: 'fs4',
+        component: 'Identify Pain',
+        score: 92,
+        feedback: 'Excellent pain discovery. You uncovered 3 distinct pain points without being pushy: slow ramp time, CRM activity tracking without skill visibility, and 3 hours/week wasted on random call reviews. You let the prospect articulate the pain herself rather than telling her what it should be.',
+        evidence: [
+          'Uncovered "ramps slowly and not hitting numbers" at 0:55',
+          'Surfaced skill gap vs. activity tracking distinction at 1:40',
+          'Quantified coaching time waste at 2:28 — prospect owned the number',
+        ],
+      },
+      {
+        id: 'fs5',
+        component: 'Champion',
+        score: 65,
+        feedback: 'You identified Marcus as an influencer but did not do the work to build a champion. A champion is someone who will sell for you internally. You need to ask: "Is Marcus the type who would advocate for a solution if he believed in it?" and give them a reason to do so before the meeting.',
+        evidence: [
+          'Named Marcus as an influencer at 4:08 — good',
+          'Did not ask if Sarah would be the internal champion',
+          'Missed: "Would you be comfortable bringing this to Marcus as your recommendation?"',
+          'Missed: "What would make you confident enough to sponsor this internally?"',
+        ],
+      },
     ],
     aiFeedback: JSON.stringify({
-      overallFeedback: 'Strong discovery call with excellent pain identification. Your ability to quantify business impact was impressive.',
-      strengths: ['Excellent pain point discovery', 'Strong metric articulation', 'Professional tone throughout'],
-      improvements: ['Build champion relationships earlier', 'Ask more about decision timeline', 'Follow up on budget qualification'],
-      proTip: 'Try using the "impact gap" technique — ask "what happens if this problem persists for another 6 months?" to create urgency.',
+      overallFeedback: 'Strong discovery call with excellent pain identification. You quantified business impact naturally and secured a clear next step. The main area to develop is Champion-building — you identified influencers but didn\'t activate them as internal advocates.',
+      strengths: [
+        'Opened with a permission-based, research-backed hook',
+        'Let the prospect quantify pain in her own words',
+        'Linked product value directly to CRO-level metric (quota attainment)',
+      ],
+      improvements: [
+        'Ask explicitly for the Economic Buyer\'s success criteria, not just who they are',
+        'Build Sarah as a champion before the next meeting — give her a narrative to use',
+        'Qualify decision criteria before jumping to the demo request',
+      ],
+      proTip: 'Use the "impact gap" close: after uncovering pain, ask "What happens if this is still unsolved in 6 months?" — it creates urgency without pressure and lets the prospect sell themselves on the timeline.',
     }),
     timelineEvents: [
-      { id: 'te1', type: 'GOOD', timestampMs: 45000, title: 'Strong opener', description: 'Opened with a relevant industry insight', suggestion: undefined },
-      { id: 'te2', type: 'ISSUE', timestampMs: 180000, title: 'Missed objection', description: 'Prospect raised pricing concern but you moved on', suggestion: 'Acknowledge pricing objections directly', betterResponse: 'I understand cost is a concern — what ROI threshold would make this a clear yes for you?' },
-      { id: 'te3', type: 'GOOD', timestampMs: 320000, title: 'Pain identified', description: 'Uncovered key operational pain point', suggestion: undefined },
+      { id: 'te1', type: 'GOOD', timestampMs: 5000, title: 'Permission-based opener', description: 'Opened with a specific research reference (Series B, enterprise expansion) and asked for 30 seconds. This signals preparation and respects the prospect\'s time.', suggestion: undefined, transcriptRef: 'I was looking at TechCorp\'s recent expansion into the enterprise segment' },
+      { id: 'te2', type: 'GOOD', timestampMs: 75000, title: 'Probed existing solution gap', description: 'Rather than attacking the competitor, you asked what the current tool measures — revealing its blind spot without being adversarial.', suggestion: undefined, transcriptRef: 'what does that tool measure today?' },
+      { id: 'te3', type: 'GOOD', timestampMs: 165000, title: 'Cost of inaction quantified', description: 'You helped the prospect calculate the cost of the problem herself. Self-calculated pain is far more powerful than vendor-stated pain.', suggestion: undefined, transcriptRef: '3 hours a week, 52 weeks, plus the deals lost' },
+      { id: 'te4', type: 'ISSUE', timestampMs: 218000, title: 'Pricing objection glossed over', description: 'The prospect said "pricing seems steep" and you immediately pivoted to the demo. This leaves a doubt unaddressed that will resurface harder later.', suggestion: 'Acknowledge and reframe: quantify the ROI before defending price', betterResponse: 'That\'s fair — before we talk price, let\'s make sure the value is clear. If we can show a 20% attainment lift on your current team size, what would that be worth annually?' , transcriptRef: 'pricing seems steep for what you\'re describing' },
+      { id: 'te5', type: 'WARNING', timestampMs: 240000, title: 'Champion not activated', description: 'You asked who else is involved (good) but didn\'t set up Sarah to be your internal advocate. You\'re relying on her to bring Marcus without giving her the tools to make a compelling case.', suggestion: 'Ask: "Would you be comfortable sponsoring this to Marcus?" and arm her with a clear 2-sentence pitch', transcriptRef: 'Who else would typically be part of evaluating something like this' },
+      { id: 'te6', type: 'GOOD', timestampMs: 340000, title: 'Clean next step secured', description: 'Specific ask (30 min, this week, with a named stakeholder), offered clear value-add (benchmark report). This is how you close a discovery call.', suggestion: undefined, transcriptRef: 'Can we get 30 minutes on the calendar this week with you and Marcus' },
     ],
   },
   {
@@ -253,9 +336,20 @@ export const authApi = {
 
 // ── Sessions API ──────────────────────────────────────────────────────────────
 
+const MOCK_PEER_SCORES = [
+  { userId: 'u2', name: 'Jordan Lee', score: 88, rank: 1 },
+  { userId: 'u3', name: 'Taylor Morgan', score: 84, rank: 2 },
+  { userId: 'u1', name: 'Alex Rivera', score: 81, rank: 3 },
+  { userId: 'u4', name: 'Morgan Kim', score: 76, rank: 4 },
+  { userId: 'u5', name: 'Sam Patel', score: 71, rank: 5 },
+  { userId: 'u6', name: 'Casey Zhang', score: 65, rank: 6 },
+  { userId: 'u7', name: 'Riley Johnson', score: 58, rank: 7 },
+];
+
 export const sessionsApi = {
   list: async (_params?: any) => { await delay(300); return { sessions: MOCK_SESSIONS, total: MOCK_SESSIONS.length }; },
   listAll: async (_params?: any) => { await delay(300); return { sessions: MOCK_SESSIONS, total: MOCK_SESSIONS.length }; },
+  getPeerScores: async (_sessionId: string) => { await delay(200); return MOCK_PEER_SCORES; },
   create: async (_data: any) => {
     await delay(300);
     return { ...MOCK_SESSIONS[0], id: `s-new-${Date.now()}`, status: 'PENDING' };
