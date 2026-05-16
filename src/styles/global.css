@@ -194,8 +194,42 @@
   }
 }
 
-/* ── Light theme overrides for components using hardcoded Tailwind white/black ── */
+/* ── Light theme overrides for hardcoded Tailwind white/black utility classes ── */
 .light .white-text-override { color: var(--text) !important; }
+
+/* Text overrides */
+.light .text-white { color: var(--text) !important; }
+.light [class*="text-white/"] { color: var(--text) !important; }
+
+/* Background overrides — white/opacity surfaces become dark/opacity */
+.light [class*="bg-white/"] { background-color: rgba(13,14,20,0.05) !important; }
+.light [class*="hover\:bg-white/"]:hover { background-color: rgba(13,14,20,0.07) !important; }
+
+/* Border overrides */
+.light [class*="border-white/"] { border-color: rgba(0,0,0,0.10) !important; }
+.light [class*="hover\:border-white/"]:hover { border-color: rgba(0,0,0,0.20) !important; }
+
+/* Divide overrides */
+.light [class*="divide-white/"] > * + * { border-color: rgba(0,0,0,0.07) !important; }
+
+/* Sidebar / nav specific */
+.light .nav-item { color: rgba(13,14,20,0.65) !important; }
+.light .nav-item:hover { background: rgba(13,14,20,0.05) !important; color: var(--text) !important; }
+.light .nav-item-active { color: var(--accent) !important; background: rgba(74,94,240,0.10) !important; }
+
+/* Card headers with border-b */
+.light [class*="border-b"][class*="border-white/"] { border-color: rgba(0,0,0,0.08) !important; }
+
+/* Input placeholder */
+.light .input-base::placeholder { color: rgba(13,14,20,0.40) !important; }
+
+/* Progress bar track */
+.light .progress-bar { background: rgba(13,14,20,0.10) !important; }
+
+/* Stat/animate pulse skeletons */
+.light [class*="bg-white/\[0.0"] { background-color: rgba(13,14,20,0.06) !important; }
+
+/* Accent opacity backgrounds stay accent-based — don't override those */
 
 /* Animations */
 @keyframes wave {
