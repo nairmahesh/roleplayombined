@@ -302,6 +302,7 @@ export function PracticePage() {
   } | null>(null);
 
   // ── Modals ─────────────────────────────────────────────────────────────────
+  const [showSaveDropdown, setShowSaveDropdown] = useState(false);
   const [showSaveModal, setShowSaveModal]     = useState(false);
   const [saveRoleplayName, setSaveRoleplayName] = useState('');
   const [saveRoleplayDesc, setSaveRoleplayDesc] = useState('');
@@ -525,15 +526,16 @@ export function PracticePage() {
     }
   };
 
-  const openSaveModal = () => {
+  const openSaveModal = (presetScope?: AssignmentScope) => {
     setSaveRoleplayName(selectedLabel && selectedLabel !== 'New Roleplay' ? selectedLabel : '');
     setSaveRoleplayDesc(selectedDesc || '');
-    setAssignScope('all');
+    setAssignScope(presetScope ?? 'all');
     setAssignRegions([]);
     setAssignTeams([]);
     setAssignUserIds([]);
     setAllowPeerListening(true);
     setShowSaveModal(true);
+    setShowSaveDropdown(false);
     if (!targetOptions) {
       teamRoleplaysApi.getTargetOptions().then(setTargetOptions).catch(() => {});
     }
@@ -868,13 +870,51 @@ export function PracticePage() {
               </span>
             )}
             {setupMode === 'edit' && (
-              <button
-                onClick={openSaveModal}
-                disabled={!isReady}
-                className="flex items-center gap-1.5 text-[12.5px] font-medium px-3 py-1.5 rounded-[8px] border border-white/[0.1] text-white/70 hover:text-white hover:border-white/25 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0"
-              >
-                <BookOpen size={13} /> {isManagerOrAdmin ? 'Save for Team' : 'Save Roleplay'}
-              </button>
+              <div className="relative flex-shrink-0">
+                <div className="flex items-stretch rounded-[8px] border border-white/[0.1] overflow-hidden">
+                  <button
+                    onClick={() => openSaveModal()}
+                    disabled={!isReady}
+                    className="flex items-center gap-1.5 text-[12.5px] font-medium px-3 py-1.5 text-white/70 hover:text-white hover:bg-white/[0.05] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    <BookOpen size={13} /> {isManagerOrAdmin ? 'Save for Team' : 'Save Roleplay'}
+                  </button>
+                  {isManagerOrAdmin && (
+                    <button
+                      onClick={() => setShowSaveDropdown(v => !v)}
+                      disabled={!isReady}
+                      className="flex items-center px-2 border-l border-white/[0.1] text-white/50 hover:text-white hover:bg-white/[0.05] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronDown size={12} />
+                    </button>
+                  )}
+                </div>
+                {showSaveDropdown && isManagerOrAdmin && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowSaveDropdown(false)} />
+                    <div className="absolute right-0 top-full mt-1 z-50 rounded-[10px] border border-white/[0.12] shadow-[0_12px_40px_rgba(0,0,0,0.5)] overflow-hidden min-w-[200px]" style={{ background: 'var(--bg2)' }}>
+                      <button
+                        onClick={() => openSaveModal('all')}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12.5px] text-white/80 hover:bg-white/[0.06] hover:text-white transition-colors text-left"
+                      >
+                        <User size={13} className="text-white/50" /> Save for All Users
+                      </button>
+                      <button
+                        onClick={() => openSaveModal('team')}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12.5px] text-white/80 hover:bg-white/[0.06] hover:text-white transition-colors text-left"
+                      >
+                        <Layers size={13} className="text-white/50" /> Share with Team
+                      </button>
+                      <button
+                        onClick={() => openSaveModal('individual')}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12.5px] text-white/80 hover:bg-white/[0.06] hover:text-white transition-colors text-left"
+                      >
+                        <User size={13} className="text-white/50" /> Share with Individual
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             )}
           </div>
 
@@ -1542,24 +1582,18 @@ export function PracticePage() {
                       <div className="flex flex-col gap-3">
                         <div>
                           <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Sales Framework</p>
-                          <div className="grid grid-cols-3 gap-1.5">
-                            {(Object.keys(FRAMEWORK_INFO) as Framework[]).map(f => (
-                              <button
-                                key={f}
-                                onClick={() => setFramework(f)}
-                                className={clsx(
-                                  'flex flex-col items-center gap-0.5 px-2 py-2 rounded-[9px] border text-center transition-all',
-                                  framework === f
-                                    ? 'border-accent bg-accent/[0.10] text-accent'
-                                    : 'border-white/[0.08] bg-white/[0.02] text-white/70 hover:border-white/20 hover:text-white'
-                                )}
-                              >
-                                <span className="text-[11.5px] font-bold leading-tight">{FRAMEWORK_INFO[f].label}</span>
-                                <span className="text-[8.5px] text-white/45 leading-tight line-clamp-1">
-                                  {FRAMEWORK_INFO[f].components.slice(0, 2).join(', ')}
-                                </span>
-                              </button>
-                            ))}
+                          <div className="relative">
+                            <select
+                              value={framework}
+                              onChange={e => setFramework(e.target.value as Framework)}
+                              className="w-full appearance-none input-base text-[13px] font-medium pr-8 cursor-pointer"
+                              style={{ backgroundImage: 'none' }}
+                            >
+                              {(Object.keys(FRAMEWORK_INFO) as Framework[]).map(f => (
+                                <option key={f} value={f}>{FRAMEWORK_INFO[f].label} — {FRAMEWORK_INFO[f].components.slice(0, 2).join(', ')}{FRAMEWORK_INFO[f].components.length > 2 ? '…' : ''}</option>
+                              ))}
+                            </select>
+                            <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
                           </div>
                           {/* Component pills for selected */}
                           <div className="flex flex-wrap gap-1 mt-2">
@@ -1650,13 +1684,50 @@ export function PracticePage() {
                             <p className="text-[11.5px] font-medium text-white/70">{isManagerOrAdmin ? 'Save for Team' : 'Save Roleplay'}</p>
                             <p className="text-[10px] text-white/70">{isManagerOrAdmin ? 'Publish so your team can practice' : 'Save to reuse in future sessions'}</p>
                           </div>
-                          <button
-                            onClick={openSaveModal}
-                            disabled={!isReady}
-                            className="flex items-center gap-1.5 text-[11.5px] font-medium px-2.5 py-1.5 rounded-[7px] border border-accent/25 text-accent/80 hover:text-accent hover:border-accent hover:bg-accent/[0.06] disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0"
-                          >
-                            Save
-                          </button>
+                          {isManagerOrAdmin ? (
+                            <div className="relative flex-shrink-0">
+                              <div className="flex items-stretch rounded-[7px] border border-accent/25 overflow-hidden">
+                                <button
+                                  onClick={() => openSaveModal()}
+                                  disabled={!isReady}
+                                  className="flex items-center gap-1 text-[11.5px] font-medium px-2.5 py-1.5 text-accent/80 hover:text-accent hover:bg-accent/[0.06] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => setShowSaveDropdown(v => !v)}
+                                  disabled={!isReady}
+                                  className="flex items-center px-1.5 border-l border-accent/20 text-accent/50 hover:text-accent hover:bg-accent/[0.06] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                >
+                                  <ChevronDown size={11} />
+                                </button>
+                              </div>
+                              {showSaveDropdown && (
+                                <>
+                                  <div className="fixed inset-0 z-40" onClick={() => setShowSaveDropdown(false)} />
+                                  <div className="absolute right-0 bottom-full mb-1 z-50 rounded-[10px] border border-white/[0.12] shadow-[0_12px_40px_rgba(0,0,0,0.5)] overflow-hidden min-w-[190px]" style={{ background: 'var(--bg2)' }}>
+                                    <button onClick={() => openSaveModal('all')} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[12px] text-white/80 hover:bg-white/[0.06] hover:text-white transition-colors text-left">
+                                      <User size={12} className="text-white/50" /> Save for All Users
+                                    </button>
+                                    <button onClick={() => openSaveModal('team')} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[12px] text-white/80 hover:bg-white/[0.06] hover:text-white transition-colors text-left">
+                                      <Layers size={12} className="text-white/50" /> Share with Team
+                                    </button>
+                                    <button onClick={() => openSaveModal('individual')} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[12px] text-white/80 hover:bg-white/[0.06] hover:text-white transition-colors text-left">
+                                      <User size={12} className="text-white/50" /> Share with Individual
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => openSaveModal()}
+                              disabled={!isReady}
+                              className="flex items-center gap-1.5 text-[11.5px] font-medium px-2.5 py-1.5 rounded-[7px] border border-accent/25 text-accent/80 hover:text-accent hover:border-accent hover:bg-accent/[0.06] disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0"
+                            >
+                              Save
+                            </button>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           <button onClick={() => goToStep(3)} className="btn-ghost gap-1.5 text-[13px]"><ArrowLeft size={12} /> Knowledge</button>
@@ -1775,7 +1846,11 @@ export function PracticePage() {
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <h3 className="font-display font-bold text-[16px]">
-                    {isManagerOrAdmin ? 'Save as Team Roleplay' : 'Save Roleplay'}
+                    {isManagerOrAdmin
+                      ? assignScope === 'individual' ? 'Share with Individual'
+                      : assignScope === 'team' ? 'Share with Team'
+                      : 'Save for All Users'
+                      : 'Save Roleplay'}
                   </h3>
                   <p className="text-[11.5px] text-white/75 mt-0.5">
                     {isManagerOrAdmin
