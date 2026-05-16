@@ -253,6 +253,7 @@ export function PracticePage() {
   const [difficulty, setDifficulty]               = useState('Medium');
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
   const [showQuestions, setShowQuestions]         = useState(false);
+  const [questionInput, setQuestionInput]         = useState('');
 
   // ── Context fields ─────────────────────────────────────────────────────────
   const [industry, setIndustry]         = useState('');
@@ -434,6 +435,7 @@ export function PracticePage() {
     setDifficulty('Medium');
     setSuggestedQuestions([]);
     setShowQuestions(false);
+    setQuestionInput('');
     setIndustry('');
     setRoleplayType('');
     setLanguage('English');
@@ -550,6 +552,14 @@ export function PracticePage() {
     if (!v || objections.length >= 15) return;
     setObjections(p => [...p, v]);
     setObjectionInput('');
+  };
+
+  const addQuestion = () => {
+    const v = questionInput.trim();
+    if (!v || suggestedQuestions.length >= 20) return;
+    if (suggestedQuestions.includes(v)) { setQuestionInput(''); return; }
+    setSuggestedQuestions(p => [...p, v]);
+    setQuestionInput('');
   };
 
   const applyDbPersona = (p: Persona) => {
@@ -1235,30 +1245,61 @@ export function PracticePage() {
 
                       {/* Suggested questions */}
                       <div className="rounded-[10px] border border-white/[0.07] p-3 bg-white/[0.02]">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between mb-2.5">
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Suggested Questions</span>
+                            <span className="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Expected Questions</span>
                             {generatingQuestions && <Loader2 size={10} className="animate-spin text-white/70" />}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => handleGenerateQuestions(true)} disabled={generatingQuestions || !personaContext.trim()} className="flex items-center gap-1 text-[10px] text-white/70 hover:text-white transition-colors disabled:opacity-40">
-                              <RefreshCw size={9} /> Regen
-                            </button>
-                            <button onClick={() => setShowQuestions(v => !v)} className="text-white/70 hover:text-white transition-colors">
-                              {showQuestions ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => handleGenerateQuestions(true)}
+                            disabled={generatingQuestions || !personaContext.trim()}
+                            className="flex items-center gap-1 text-[10px] text-accent/70 hover:text-accent transition-colors disabled:opacity-40"
+                          >
+                            <Sparkles size={9} /> {generatingQuestions ? 'Generating…' : 'AI Generate'}
+                          </button>
                         </div>
-                        {showQuestions && (
-                          suggestedQuestions.length > 0 ? (
-                            <div className="flex flex-wrap gap-1.5 mt-2">
-                              {suggestedQuestions.map((q, i) => (
-                                <span key={i} className="text-[11px] px-2 py-0.5 rounded-[7px] border border-white/[0.08] bg-white/[0.03] text-white/65">{q}</span>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-[11px] text-white/70 mt-2">Auto-generates from context.</p>
-                          )
+
+                        {/* Manual add input */}
+                        <div className="flex gap-2 mb-2.5">
+                          <input
+                            value={questionInput}
+                            onChange={e => setQuestionInput(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') { e.preventDefault(); addQuestion(); }
+                            }}
+                            placeholder="Type a question the persona might ask…"
+                            className="input-base flex-1 text-[12px]"
+                            disabled={suggestedQuestions.length >= 20}
+                          />
+                          <button
+                            onClick={addQuestion}
+                            disabled={!questionInput.trim() || suggestedQuestions.length >= 20}
+                            className="btn-primary px-3 text-[12px] flex-shrink-0 disabled:opacity-40"
+                          >
+                            Add
+                          </button>
+                        </div>
+
+                        {/* Question pills */}
+                        {suggestedQuestions.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {suggestedQuestions.map((q, i) => (
+                              <span key={i} className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-[7px] border border-white/[0.08] bg-white/[0.03] text-white/65 group">
+                                {q}
+                                <button
+                                  onClick={() => setSuggestedQuestions(prev => prev.filter((_, idx) => idx !== i))}
+                                  className="text-white/30 hover:text-white/70 transition-colors ml-0.5 flex-shrink-0"
+                                >
+                                  <X size={9} />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-white/40">Type a question above or use AI Generate to auto-populate from your persona context.</p>
+                        )}
+                        {suggestedQuestions.length >= 20 && (
+                          <p className="text-[10px] text-white/40 mt-1.5">Maximum 20 questions reached.</p>
                         )}
                       </div>
 
