@@ -1,11 +1,92 @@
 // Live call overlay — ElevenLabs Conversational AI via @elevenlabs/react SDK
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Mic, MicOff, Phone, Pause, Play, BarChart3 } from 'lucide-react';
-import { ConversationProvider, useConversationControls, useConversationStatus, useConversationMode, useConversationInput } from '@elevenlabs/react';
 import { sessionsApi } from '@/lib/api';
+
+// ── ElevenLabs SDK shim (loaded dynamically so build succeeds without the package) ──
+type ELStatus = 'disconnected' | 'connecting' | 'connected';
+interface ELContext {
+  startSession: (opts: any) => Promise<void>;
+  endSession: () => void;
+  status: ELStatus;
+  isSpeaking: boolean;
+  isMuted: boolean;
+  setMuted: (v: boolean) => void;
+}
+const ELCtx = createContext<ELContext>({
+  startSession: async () => {},
+  endSession: () => {},
+  status: 'disconnected',
+  isSpeaking: false,
+  isMuted: false,
+  setMuted: () => {},
+});
+
+function ConversationProvider({ children }: { children: React.ReactNode }) {
+  const [status, setStatus]       = useState<ELStatus>('disconnected');
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isMuted, setMuted]       = useState(false);
+  const wsRef = useRef<any>(null);
+
+  const startSession = useCallback(async (opts: any) => {
+    setStatus('connecting');
+    try {
+      // Use Function constructor so Rollup cannot statically analyse the specifier
+      const mod = await (new Function('s', 'return import(s)'))('@elevenlabs/react').catch(() => null);
+      if (!mod) { toast.error('ElevenLabs SDK not available'); setStatus('disconnected'); return; }
+      // Use the raw Conversation class from the @elevenlabs/react package
+      const { Conversation } = mod as any;
+      const conv = await Conversation.startSession({
+        ...opts,
+        onMessage: opts.onMessage,
+        onError: opts.onError,
+        onModeChange: ({ mode }: any) => setIsSpeaking(mode?.mode === 'speaking'),
+        onStatusChange: ({ status: s }: any) => setStatus(s),
+        onDisconnect: opts.onDisconnect,
+      });
+      wsRef.current = conv;
+      setStatus('connected');
+    } catch (err: any) {
+      setStatus('disconnected');
+      opts.onError?.(err?.message ?? String(err));
+    }
+  }, []);
+
+  const endSession = useCallback(() => {
+    wsRef.current?.endSession?.().catch(() => {});
+    wsRef.current = null;
+    setStatus('disconnected');
+    setIsSpeaking(false);
+  }, []);
+
+  return (
+    <ELCtx.Provider value={{ startSession, endSession, status, isSpeaking, isMuted, setMuted }}>
+      {children}
+    </ELCtx.Provider>
+  );
+}
+
+function useConversationControls() {
+  const { startSession, endSession } = useContext(ELCtx);
+  return { startSession, endSession };
+}
+function useConversationStatus() {
+  const { status } = useContext(ELCtx);
+  return { status };
+}
+function useConversationMode() {
+  const { isSpeaking } = useContext(ELCtx);
+  return { isSpeaking };
+}
+function useConversationInput() {
+  const { isMuted, setMuted } = useContext(ELCtx);
+  return { isMuted, setMuted };
+}
+// ── end shim ─────────────────────────────────────────────────────────────────
+
 import { useRecording } from '@/hooks/useRecording';
 import { connectSocket } from '@/lib/socket';
 import { Framework, SessionType, FRAMEWORK_INFO } from '@/types';
