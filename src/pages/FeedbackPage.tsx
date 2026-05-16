@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { RefreshCw, Share2, ChevronRight, CircleCheck as CheckCircle, TriangleAlert as AlertTriangle, Lightbulb, Play, Pause, Search, Copy, Download, MessageSquare, Clock, Shield, BarChart3, Gauge, Activity, Mic, ChevronDown, CircleAlert as AlertCircle, X, Info, Trophy, RotateCcw, Zap, Target, ChevronLeft } from 'lucide-react';
 import { sessionsApi } from '@/lib/api';
 import { connectSocket } from '@/lib/socket';
-import { Session, ParsedFeedback, FRAMEWORK_INFO } from '@/types';
+import { Session, ParsedFeedback, FRAMEWORK_INFO, ScorecardGroup } from '@/types';
 import clsx from 'clsx';
 
 type Tab = 'scorecard' | 'transcript' | 'analytics' | 'objections' | 'leaderboard';
@@ -211,6 +211,30 @@ function getObjectionTip(objection: string, framework: string): string {
   return `Use the Acknowledge-Align-Pivot technique: (1) Acknowledge the concern genuinely, (2) Align with a shared goal, (3) Pivot to how you address it with specifics. Avoid defending; ask a clarifying question first.`;
 }
 
+function getQuickCoachingTip(question: string): string {
+  const q = question.toLowerCase();
+  if (q.includes('permission')) return 'Ask: "Do you have 30 seconds for me to explain why I\'m calling?" — this tiny ask dramatically increases engagement.';
+  if (q.includes('research') || q.includes('prospect')) return 'Mention one specific thing about their company or role before pitching — shows preparation and earns attention.';
+  if (q.includes('preconception') || q.includes('awareness')) return 'Ask: "What do you know about [product category] today?" — their answer shapes your entire pitch.';
+  if (q.includes('social proof')) return 'Name a customer they\'d recognise and their result: "We helped [Company] achieve X in 90 days."';
+  if (q.includes('relevant')) return 'After citing proof, ask: "Is that the kind of challenge you\'re dealing with too?" — makes it personal.';
+  if (q.includes('timing') || q.includes('time works')) return 'Close with: "Before we wrap — does this timing work for you, or is there a better moment to follow up?"';
+  if (q.includes('success criteria')) return 'Ask: "What would make the next conversation worth your time?" — then design your follow-up around their answer.';
+  if (q.includes('next step') || q.includes('next steps')) return 'Always close with a specific, time-bound next step — "Can we block 20 minutes Thursday?" beats "I\'ll be in touch."';
+  if (q.includes('follow-up') || q.includes('meeting booked')) return 'Book the meeting before ending the call — sending a calendar link after means competing for attention.';
+  if (q.includes('agenda')) return 'Open every call: "Here\'s what I was hoping to cover — does that work, and is there anything you\'d like to add?"';
+  if (q.includes('upfront contract')) return 'Set expectations early: "By the end of our time, my goal is X. For that to make sense, I\'d need to learn Y from you. Does that sound fair?"';
+  if (q.includes('pain')) return 'Dig past surface pain: ask "How long has this been an issue?" and "What have you tried?" — these reveal real urgency.';
+  if (q.includes('metric')) return 'Quantify the pain: "What does this cost you per month — in time, revenue, or team frustration?"';
+  if (q.includes('fff') || q.includes('objection')) return 'Use Feel-Felt-Found: "I understand how you feel — others have felt the same way — what they found was…" then present evidence.';
+  if (q.includes('customer reference') || q.includes('reference')) return 'Pick a customer from a similar industry or company size — relevance multiplies the impact of social proof.';
+  if (q.includes('goal') || q.includes('framework')) return 'Ask: "How do you measure success for your team this quarter?" — anchor your value to their own targets.';
+  if (q.includes('qualify')) return 'Confirm fit before closing: "Based on everything we\'ve covered, does it make sense to explore this further?"';
+  if (q.includes('anchor') || q.includes('concession')) return 'Never make the first concession — ask for something in return: "If I can do X, can you commit to Y?"';
+  if (q.includes('relationship')) return 'Acknowledge pressure points: "I know this is a tough conversation — let\'s find something that works for both of us."';
+  return 'Review this criterion in the transcript and prepare a specific phrase to address it in your next call.';
+}
+
 export function FeedbackPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -355,7 +379,8 @@ export function FeedbackPage() {
     </div>
   );
 
-  const scores      = session.frameworkScores || [];
+  const scores         = session.frameworkScores || [];
+  const scorecardGroups: ScorecardGroup[] = feedback?.scorecardGroups || [];
   const sortedEvents = [...(session.timelineEvents || [])].sort((a, b) => a.timestampMs - b.timestampMs);
   const personaName  = session.scenarioConfig?.displayName || session.persona?.name || 'Persona';
   const objections   = session.scenarioConfig?.objections || [];
@@ -572,8 +597,135 @@ export function FeedbackPage() {
             {activeTab === 'scorecard' && (
               <div className="flex flex-col gap-5">
 
+                {/* ── Rubric scorecard (criteria groups) ── */}
+                {scorecardGroups.length > 0 && (
+                  <div className="flex flex-col gap-3">
+                    {/* Total score bar */}
+                    {(() => {
+                      const total = scorecardGroups.reduce((a, g) => a + g.maxPoints, 0);
+                      const earned = scorecardGroups.reduce((a, g) => a + g.earnedPoints, 0);
+                      const pct = total > 0 ? Math.round((earned / total) * 100) : 0;
+                      const color = pct >= 70 ? '#06D6A0' : pct >= 50 ? '#FFD166' : '#FF6B6B';
+                      return (
+                        <div className="rounded-[12px] border p-4" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
+                          <div className="flex items-center justify-between mb-3">
+                            <div>
+                              <div className="font-display text-[14px] font-bold" style={{ color: 'var(--text)' }}>Roleplay Scorecard</div>
+                              <div className="text-[11.5px] mt-0.5" style={{ color: 'var(--text3)' }}>
+                                {scorecardGroups.reduce((a, g) => a + g.criteria.filter(c => c.passed).length, 0)} of {scorecardGroups.reduce((a, g) => a + g.criteria.length, 0)} criteria met
+                              </div>
+                            </div>
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="font-display text-[28px] font-bold" style={{ color }}>{earned}</span>
+                              <span className="text-[14px]" style={{ color: 'var(--text3)' }}>/ {total}</span>
+                            </div>
+                          </div>
+                          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg4)' }}>
+                            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: color }} />
+                          </div>
+                          <div className="flex gap-3 mt-2.5 flex-wrap">
+                            {scorecardGroups.map(g => {
+                              const gc = g.earnedPoints === g.maxPoints ? '#06D6A0' : g.earnedPoints === 0 ? '#FF6B6B' : '#FFD166';
+                              return (
+                                <div key={g.group} className="flex items-center gap-1.5">
+                                  <span className="text-[9.5px] font-bold" style={{ color: gc }}>{g.group}</span>
+                                  <span className="text-[9.5px]" style={{ color: 'var(--text3)' }}>{g.earnedPoints}/{g.maxPoints}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Criterion groups accordion */}
+                    {scorecardGroups.map((group, gi) => {
+                      const groupId = `sg-${gi}`;
+                      const isOpen = expandedId === groupId;
+                      const groupColor = group.earnedPoints === group.maxPoints ? '#06D6A0' : group.earnedPoints === 0 ? '#FF6B6B' : '#FFD166';
+                      return (
+                        <div key={gi} className="rounded-[12px] border overflow-hidden" style={{ borderColor: isOpen ? 'rgba(91,111,255,0.3)' : 'var(--border)', background: 'var(--bg2)' }}>
+                          <button
+                            onClick={() => setExpandedId(isOpen ? null : groupId)}
+                            className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
+                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold" style={{ background: `${groupColor}18`, color: groupColor, border: `1px solid ${groupColor}35` }}>
+                              {group.earnedPoints}/{group.maxPoints}
+                            </div>
+                            <span className="flex-1 text-[13.5px] font-semibold" style={{ color: 'var(--text)' }}>{group.group}</span>
+                            <div className="hidden sm:flex gap-1 mr-2">
+                              {group.criteria.map((c, ci) => (
+                                <div key={ci} className="w-2 h-2 rounded-full" style={{ background: c.passed ? '#06D6A0' : '#FF6B6B' }} />
+                              ))}
+                            </div>
+                            <ChevronDown size={14} className={clsx('flex-shrink-0 transition-transform', isOpen && 'rotate-180')} style={{ color: 'var(--text3)' }} />
+                          </button>
+
+                          <AnimatePresence>
+                            {isOpen && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="border-t" style={{ borderColor: 'var(--border)' }}>
+                                  {group.criteria.map((criterion, ci) => (
+                                    <div
+                                      key={ci}
+                                      className={clsx('px-4 py-3.5 flex gap-3', ci > 0 && 'border-t')}
+                                      style={{ borderColor: 'var(--border)', background: criterion.passed ? 'rgba(6,214,160,0.02)' : 'rgba(255,107,107,0.02)' }}
+                                    >
+                                      <div className="flex-shrink-0 mt-0.5">
+                                        {criterion.passed
+                                          ? <CheckCircle size={15} style={{ color: '#06D6A0' }} />
+                                          : <X size={15} style={{ color: '#FF6B6B' }} />
+                                        }
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="text-[13px] font-semibold mb-1" style={{ color: 'var(--text)' }}>{criterion.question}</div>
+                                        <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text3)' }}>{criterion.reasoning}</p>
+                                        {!criterion.passed && (
+                                          <div className="mt-2 flex items-start gap-1.5 text-[11.5px] leading-relaxed" style={{ color: '#FFD166' }}>
+                                            <Lightbulb size={10} className="flex-shrink-0 mt-0.5" />
+                                            {getQuickCoachingTip(criterion.question)}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="flex-shrink-0">
+                                        <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full" style={criterion.passed
+                                          ? { background: 'rgba(6,214,160,0.12)', color: '#06D6A0', border: '1px solid rgba(6,214,160,0.25)' }
+                                          : { background: 'rgba(255,107,107,0.12)', color: '#FF6B6B', border: '1px solid rgba(255,107,107,0.25)' }
+                                        }>
+                                          {criterion.passed ? 'Pass' : 'Fail'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Divider between rubric and framework scores */}
+                {scorecardGroups.length > 0 && scores.length > 0 && (
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+                    <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--text3)' }}>Sales Methodology ({FRAMEWORK_INFO[session.framework]?.label})</span>
+                    <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+                  </div>
+                )}
+
                 {/* Quick summary pills */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className={clsx('grid gap-3', scorecardGroups.length > 0 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-4')}>
                   {scores.map(s => (
                     <button
                       key={s.id}

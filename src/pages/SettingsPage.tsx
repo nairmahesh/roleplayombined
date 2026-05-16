@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuthStore, useElevenLabsStore } from '@/lib/store';
-import { Save, Zap, Globe, Shield, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { Save, Zap, Globe, Shield, Eye, EyeOff, ExternalLink, ChevronRight, FileText } from 'lucide-react';
 
 export function SettingsPage() {
   const user = useAuthStore(s => s.user);
+  const navigate = useNavigate();
   const { agentId, apiKey, setAgentId, setApiKey } = useElevenLabsStore();
 
   const [voiceProvider, setVoiceProvider] = useState('elevenlabs');
@@ -182,6 +184,34 @@ export function SettingsPage() {
               className="w-full max-w-xs"
             />
           </div>
+        </div>
+      </div>
+
+      {/* Evaluation Prompts */}
+      <div className="card">
+        <div className="flex items-center gap-2 px-5 py-4 border-b border-[var(--border)]">
+          <FileText size={14} className="text-accent" />
+          <span className="font-display text-[14px] font-bold">Evaluation Prompts</span>
+        </div>
+        <div className="p-5">
+          <p className="text-[12.5px] mb-4" style={{ color: 'var(--text3)' }}>
+            Configure the AI scoring rubric and prompt template used to evaluate each roleplay type.
+            Each roleplay type (Cold Call, Discovery Call, etc.) has its own criteria set.
+          </p>
+          <button
+            onClick={() => navigate('/settings/evaluation-prompts')}
+            className="flex items-center justify-between w-full p-3.5 rounded-[12px] border transition-all hover:border-[rgba(91,111,255,0.4)] hover:bg-[rgba(91,111,255,0.04)] group"
+            style={{ borderColor: 'var(--border2)', background: 'var(--bg2)' }}
+          >
+            <div className="flex items-center gap-3">
+              <FileText size={14} style={{ color: 'var(--accent)' }} />
+              <div className="text-left">
+                <div className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>Manage Evaluation Prompts</div>
+                <div className="text-[11px] mt-0.5" style={{ color: 'var(--text3)' }}>7 roleplay types · Cold Call, Discovery, Sales Pitch and more</div>
+              </div>
+            </div>
+            <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" style={{ color: 'var(--text3)' }} />
+          </button>
         </div>
       </div>
 

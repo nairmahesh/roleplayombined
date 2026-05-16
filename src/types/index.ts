@@ -224,6 +224,45 @@ export interface ParsedFeedback {
   strengths: string[];
   improvements: string[];
   proTip: string;
+  scorecardGroups?: ScorecardGroup[];
+}
+
+// Rubric-based scoring (per roleplay type)
+export interface ScorecardCriterion {
+  question: string;
+  hint?: string;
+  passed: boolean;
+  reasoning: string; // AI's one-line evidence
+}
+
+export interface ScorecardGroup {
+  group: string;
+  maxPoints: number;
+  earnedPoints: number;
+  criteria: ScorecardCriterion[];
+}
+
+// Evaluation prompt definition (stored in DB / admin settings)
+export interface EvaluationCriterionDef {
+  question: string;
+  hint?: string;
+}
+
+export interface EvaluationGroupDef {
+  group: string;
+  criteria: EvaluationCriterionDef[];
+}
+
+export interface EvaluationPrompt {
+  id: string;
+  companyId?: string;
+  roleplayType: string;
+  displayName: string;
+  scoringCriteria: EvaluationGroupDef[];
+  promptTemplate: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export const FRAMEWORK_INFO: Record<Framework, { label: string; components: string[]; color: string }> = {
