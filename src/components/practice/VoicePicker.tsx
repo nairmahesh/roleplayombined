@@ -1,6 +1,5 @@
-// Voice selector — regional accent voices (ElevenLabs shared library) + curated fallbacks
 import { useState, useRef, useEffect } from 'react';
-import { Play, Square, Star, Globe as Globe2 } from 'lucide-react';
+import { Play, Square, Star, Globe as Globe2, RefreshCw, Library } from 'lucide-react';
 import { api } from '@/lib/api';
 import { AVATARS, AVATAR_VOICE_CONFIG, type AvatarId, type Ethnicity } from './PersonaAvatars';
 import clsx from 'clsx';
@@ -11,6 +10,7 @@ export interface CuratedVoice {
   gender: 'male' | 'female';
   accent: string;
   style: string;
+  preview_url?: string;
 }
 
 interface RegionalVoice {
@@ -60,17 +60,58 @@ export function VoicePicker({
   value?: string;
   onChange: (id: string | undefined) => void;
 }) {
-  const [previewing, setPreviewing]       = useState<string | null>(null);
-  const [previewError, setPreviewError]   = useState(false);
+  const [previewing, setPreviewing]         = useState<string | null>(null);
+  const [previewError, setPreviewError]     = useState(false);
   const [regionalVoices, setRegionalVoices] = useState<RegionalVoice[]>([]);
   const [loadingRegional, setLoadingRegional] = useState(false);
+  // Account library voices fetched from ElevenLabs via our backend
+  const [libraryVoices, setLibraryVoices]   = useState<CuratedVoice[]>([]);
+  const [loadingLibrary, setLoadingLibrary] = useState(false);
+  const [libraryLoaded, setLibraryLoaded]   = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const avatar          = AVATARS.find(a => a.id === avatarId);
-  const recommendedId   = avatarId ? AVATAR_VOICE_CONFIG[avatarId as AvatarId]?.elevenlabsId : undefined;
-  const recommendedVoice = recommendedId ? CURATED_VOICES.find(v => v.id === recommendedId) : undefined;
-  const genderFilter    = avatar?.gender;
-  const accentTarget    = avatar?.ethnicity ? ETHNICITY_ACCENT[avatar.ethnicity as Ethnicity] : undefined;
+  const avatar        = AVATARS.find(a => a.id === avatarId);
+  const recommendedId = avatarId ? AVATAR_VOICE_CONFIG[avatarId as AvatarId]?.elevenlabsId : undefined;
+  const genderFilter  = avatar?.gender;
+  const accentTarget  = avatar?.ethnicity ? ETHNICITY_ACCENT[avatar.ethnicity as Ethnicity] : undefined;
+
+  // Merge curated with library voices, library takes precedence for metadata
+  const allCurated: CuratedVoice[] = (() => {
+    const curatedIds = new Set(CURATED_VOICES.map(v => v.id));
+    const extras = libraryVoices.filter(v => !curatedIds.has(v.id));
+    return [...CURATED_VOICES, ...extras];
+  })();
+
+  const recommendedVoice = recommendedId ? allCurated.find(v => v.id === recommendedId) : undefined;
+
+  const otherVoices = allCurated.filter(v => {
+    if (v.id === recommendedId) return false;
+    return !genderFilter || v.gender === genderFilter;
+  });
+
+  // Load account voice library from ElevenLabs via backend
+  const fetchLibrary = async (force = false) => {
+    if (libraryLoaded && !force) return;
+    setLoadingLibrary(true);
+    try {
+      const res = await api.get('/voice/voices');
+      const raw = (res.data as any)?.voices ?? [];
+      const mapped: CuratedVoice[] = raw.map((v: any) => ({
+        id: v.voice_id,
+        name: v.name,
+        gender: ((v.labels?.gender) || '').toLowerCase() as 'male' | 'female',
+        accent: v.labels?.accent || 'Unknown',
+        style:  v.labels?.use_case || v.labels?.description || 'Voice',
+        preview_url: v.preview_url ?? undefined,
+      }));
+      setLibraryVoices(mapped);
+      setLibraryLoaded(true);
+    } catch {
+      // silently fail — curated list still shows
+    } finally {
+      setLoadingLibrary(false);
+    }
+  };
 
   // Fetch regional accent voices from ElevenLabs shared library when avatar changes
   useEffect(() => {
@@ -87,21 +128,27 @@ export function VoicePicker({
     return () => { cancelled = true; };
   }, [accentTarget, genderFilter]);
 
-  const otherVoices = CURATED_VOICES.filter(v => {
-    if (v.id === recommendedId) return false;
-    return !genderFilter || v.gender === genderFilter;
-  });
+  // Auto-load library on first open
+  useEffect(() => { fetchLibrary(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stopPreview = () => {
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
     setPreviewing(null);
   };
 
-  // Curated voices: preview via our TTS endpoint
-  const playTTSPreview = async (voiceId: string) => {
+  const playTTSPreview = async (voiceId: string, previewUrl?: string) => {
     stopPreview();
     setPreviewError(false);
     setPreviewing(voiceId);
+    // For voices with a hosted preview URL, use it directly (no API key needed)
+    if (previewUrl) {
+      const audio = new Audio(previewUrl);
+      audioRef.current = audio;
+      audio.onended = () => { setPreviewing(null); audioRef.current = null; };
+      audio.onerror = () => { setPreviewing(null); audioRef.current = null; setPreviewError(true); };
+      audio.play();
+      return;
+    }
     try {
       const res = await api.post(`/voice/tts/${voiceId}`, { text: PREVIEW_TEXT }, { responseType: 'blob' });
       const url = URL.createObjectURL(res.data as Blob);
@@ -116,7 +163,6 @@ export function VoicePicker({
     }
   };
 
-  // Shared/regional voices: use ElevenLabs' hosted preview_url directly (no auth needed)
   const playDirectPreview = (previewUrl: string, voiceId: string) => {
     stopPreview();
     setPreviewing(voiceId);
@@ -127,7 +173,7 @@ export function VoicePicker({
     audio.play();
   };
 
-  const renderCuratedCard = (v: CuratedVoice, isRecommended = false) => {
+  const renderVoiceCard = (v: CuratedVoice, isRecommended = false) => {
     const isSelected   = value === v.id;
     const isPreviewing = previewing === v.id;
     return (
@@ -152,11 +198,13 @@ export function VoicePicker({
               </span>
             )}
           </div>
-          <div className="text-[9.5px] text-white/55 mt-0.5">{v.accent} · {v.style}</div>
+          <div className="text-[9.5px] text-white/55 mt-0.5 truncate">
+            {[v.accent, v.style].filter(Boolean).join(' · ')}
+          </div>
         </div>
         <button
           type="button"
-          onClick={e => { e.stopPropagation(); if (isPreviewing) stopPreview(); else playTTSPreview(v.id); }}
+          onClick={e => { e.stopPropagation(); if (isPreviewing) stopPreview(); else playTTSPreview(v.id, v.preview_url); }}
           title={isPreviewing ? 'Stop' : 'Preview'}
           className={clsx(
             'w-6 h-6 rounded-full border flex items-center justify-center flex-shrink-0 transition-all',
@@ -174,7 +222,6 @@ export function VoicePicker({
   const selectRegionalVoice = (v: RegionalVoice) => {
     stopPreview();
     onChange(v.id);
-    // Auto-add to ElevenLabs library in background so TTS works during calls
     if (v.public_owner_id) {
       api.post(`/voice/library/add/${v.public_owner_id}/${v.id}`).catch(() => {});
     }
@@ -225,7 +272,21 @@ export function VoicePicker({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex justify-end">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => fetchLibrary(true)}
+          disabled={loadingLibrary}
+          title="Reload your ElevenLabs voice library"
+          className="flex items-center gap-1 text-[10px] text-white/55 hover:text-white/80 transition-colors disabled:opacity-40"
+        >
+          {loadingLibrary
+            ? <RefreshCw size={9} className="animate-spin" />
+            : <Library size={9} />
+          }
+          {loadingLibrary ? 'Loading…' : `${libraryVoices.length > 0 ? libraryVoices.length + ' library voices' : 'Load library'}`}
+        </button>
         <button
           type="button"
           onClick={() => { stopPreview(); onChange(undefined); }}
@@ -236,19 +297,21 @@ export function VoicePicker({
               : 'border-white/[0.08] text-white/55 hover:text-white/55 hover:border-white/20'
           )}
         >
-          {!value ? <><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',marginRight:'3px'}}><polyline points="20 6 9 17 4 12"/></svg>Default (Browser)</> : 'Use Default'}
+          {!value
+            ? <><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',marginRight:'3px'}}><polyline points="20 6 9 17 4 12"/></svg>Default (Browser)</>
+            : 'Use Default'}
         </button>
       </div>
 
       {previewError && (
         <p className="text-[10.5px] text-accent-4/70">
-          Preview failed — check your ElevenLabs API key in settings.
+          Preview failed — check your ElevenLabs API key in Settings.
         </p>
       )}
 
-      <div className="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-0.5 [scrollbar-width:thin]">
+      <div className="flex flex-col gap-3 max-h-[320px] overflow-y-auto pr-0.5 [scrollbar-width:thin]">
 
-        {/* ── Regional / accent-specific voices from ElevenLabs shared library ── */}
+        {/* Regional / accent-specific voices */}
         {accentTarget && (
           <div className="flex flex-col gap-1">
             <span className="text-[9px] font-semibold text-white/70 uppercase tracking-wider flex items-center gap-1">
@@ -265,25 +328,27 @@ export function VoicePicker({
           </div>
         )}
 
-        {/* ── Avatar's recommended curated voice ── */}
+        {/* Avatar's recommended voice */}
         {recommendedVoice && (
           <div className="flex flex-col gap-1">
             <span className="text-[9px] font-semibold text-white/70 uppercase tracking-wider flex items-center gap-1">
               <Star size={8} className="text-accent/50" />
               {avatar ? `Recommended for ${avatar.name.split(' ')[0]}` : 'Recommended'}
             </span>
-            {renderCuratedCard(recommendedVoice, true)}
+            {renderVoiceCard(recommendedVoice, true)}
           </div>
         )}
 
-        {/* ── Other same-gender curated voices ── */}
+        {/* All other voices (curated + library) */}
         {otherVoices.length > 0 && (
           <div className="flex flex-col gap-1">
             <span className="text-[9px] font-semibold text-white/70 uppercase tracking-wider">
-              {accentTarget || recommendedVoice ? `Other ${genderFilter ?? ''} voices` : 'All voices'}
+              {accentTarget || recommendedVoice
+                ? `Other ${genderFilter ?? ''} voices`
+                : `All voices${libraryVoices.length > 0 ? ' (library + curated)' : ''}`}
             </span>
-            <div className="grid grid-cols-2 gap-1.5">
-              {otherVoices.map(v => renderCuratedCard(v))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              {otherVoices.map(v => renderVoiceCard(v))}
             </div>
           </div>
         )}

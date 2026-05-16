@@ -91,10 +91,8 @@ import { useRecording } from '@/hooks/useRecording';
 import { connectSocket } from '@/lib/socket';
 import { Framework, SessionType, FRAMEWORK_INFO } from '@/types';
 import { AvatarDisplay } from '@/components/practice/PersonaAvatars';
+import { useElevenLabsStore } from '@/lib/store';
 import clsx from 'clsx';
-
-const EL_AGENT_ID = import.meta.env.VITE_ELEVENLABS_AGENT_ID || '';
-const EL_API_KEY  = import.meta.env.VITE_ELEVENLABS_API_KEY  || '';
 
 interface Message { role: 'user' | 'assistant'; content: string; timestampMs: number; }
 
@@ -148,6 +146,8 @@ export function CallInterface(props: Props) {
 }
 
 function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLimitMins, onEnd }: Props) {
+  const { agentId: EL_AGENT_ID, apiKey: EL_API_KEY } = useElevenLabsStore();
+
   const [phase, setPhase] = useState<'ringing' | 'active'>('ringing');
   const [ringDot, setRingDot] = useState(0);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -212,7 +212,7 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
   }, [persona]);
 
   const getSignedUrl = useCallback(async (): Promise<string | null> => {
-    if (!EL_API_KEY) return null;
+    if (!EL_API_KEY || !EL_AGENT_ID) return null;
     try {
       const res = await fetch(
         `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${EL_AGENT_ID}`,
@@ -224,7 +224,7 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
       }
     } catch { /* fall back to agentId */ }
     return null;
-  }, []);
+  }, [EL_AGENT_ID, EL_API_KEY]);
 
   // ── Session lifecycle ─────────────────────────────────────────────────────────
   useEffect(() => {

@@ -84,6 +84,26 @@ export const useThemeStore = create<ThemeState>()(
   )
 );
 
+// ─── ElevenLabs Config ────────────────────────────────────────────────────────
+interface ElevenLabsConfigState {
+  agentId: string;
+  apiKey: string;
+  setAgentId: (id: string) => void;
+  setApiKey: (key: string) => void;
+}
+
+export const useElevenLabsStore = create<ElevenLabsConfigState>()(
+  persist(
+    (set) => ({
+      agentId: import.meta.env.VITE_ELEVENLABS_AGENT_ID || '',
+      apiKey:  import.meta.env.VITE_ELEVENLABS_API_KEY  || '',
+      setAgentId: (agentId) => set({ agentId }),
+      setApiKey:  (apiKey)  => set({ apiKey }),
+    }),
+    { name: 'pitchiq-elevenlabs' }
+  )
+);
+
 // ─── Session UI State ─────────────────────────────────────────────────────────
 interface SessionState {
   activeSessionId: string | null;
