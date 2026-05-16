@@ -1214,25 +1214,28 @@ export function FeedbackPage() {
                                 {isRep ? 'You' : personaName.split(' ')[0]}
                               </span>
                               {!isRep && <span className="text-[8px] font-bold px-1 py-0.5 rounded" style={{ background: 'rgba(91,111,255,0.15)', color: 'var(--accent)' }}>AI</span>}
-                              <button
-                                className="flex items-center gap-1 text-[9.5px] font-mono transition-all hover:scale-105"
-                                style={{ color: 'var(--text3)' }}
-                                onClick={() => jumpToTimestamp(m.timestampMs)}
-                                title="Jump to this moment"
-                              >
-                                <Play size={7} fill="currentColor" />
+                              <span className="text-[9.5px] font-mono" style={{ color: 'var(--text3)' }}>
                                 {fmt(m.timestampMs)}
-                              </button>
+                              </span>
                             </div>
-                            <div
-                              className="px-3 py-2.5 rounded-[10px] text-[12.5px] leading-relaxed"
+                            <button
+                              className="group/bubble relative text-left px-3 py-2.5 rounded-[10px] text-[12.5px] leading-relaxed transition-all hover:brightness-110 active:scale-[0.98]"
                               style={isRep
                                 ? { background: 'rgba(91,111,255,0.1)', border: '1px solid rgba(91,111,255,0.15)', color: 'var(--text)' }
                                 : { background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text2)' }
                               }
+                              onClick={() => jumpToTimestamp(m.timestampMs)}
+                              title={`Play from ${fmt(m.timestampMs)}`}
                             >
                               {highlightText(m.content, transcriptSearch)}
-                            </div>
+                              {/* Play icon overlay on hover */}
+                              <span
+                                className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover/bubble:opacity-100 transition-opacity pointer-events-none"
+                                style={{ background: 'rgba(91,111,255,0.85)' }}
+                              >
+                                <Play size={8} fill="white" color="white" />
+                              </span>
+                            </button>
                           </div>
                         </div>
                       );
