@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Phone, Monitor, Sparkles, Loader as Loader2, ChevronDown, ChevronUp, RefreshCw, Play, Plus, X, Settings, Info, Pencil, Trash2, ArrowLeft, BookOpen, Lock, Check, User, Layers, Globe, Database, FileText } from 'lucide-react';
 import { practiceApi, sessionsApi, personasApi, teamRoleplaysApi } from '@/lib/api';
+import type { AssignmentScope, AssignmentTarget } from '@/types';
 import { Framework, SessionType, FRAMEWORK_INFO, ScenarioConfig, Persona, TeamRoleplay, KnowledgeBaseEntry } from '@/types';
 import { CallInterface, PersonaDisplay } from '@/components/practice/CallInterface';
 import { PersonaBuilder } from '@/components/practice/PersonaBuilder';
@@ -311,6 +312,17 @@ export function PracticePage() {
   const [editSaving, setEditSaving]           = useState(false);
   const [quickLaunchData, setQuickLaunchData] = useState<{ label: string; desc: string } | null>(null);
 
+  // ── Assignment targeting ───────────────────────────────────────────────────
+  const [assignScope, setAssignScope]         = useState<AssignmentScope>('all');
+  const [assignRegions, setAssignRegions]     = useState<string[]>([]);
+  const [assignTeams, setAssignTeams]         = useState<string[]>([]);
+  const [assignUserIds, setAssignUserIds]     = useState<string[]>([]);
+  const [allowPeerListening, setAllowPeerListening] = useState(true);
+  const [targetOptions, setTargetOptions]     = useState<{
+    regions: string[]; teams: string[]; territories: string[];
+    users: { id: string; name: string; team?: string; region?: string }[];
+  } | null>(null);
+
   const contextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoGenRef      = useRef('');
 
@@ -513,14 +525,36 @@ export function PracticePage() {
     }
   };
 
+  const openSaveModal = () => {
+    setSaveRoleplayName(selectedLabel && selectedLabel !== 'New Roleplay' ? selectedLabel : '');
+    setSaveRoleplayDesc(selectedDesc || '');
+    setAssignScope('all');
+    setAssignRegions([]);
+    setAssignTeams([]);
+    setAssignUserIds([]);
+    setAllowPeerListening(true);
+    setShowSaveModal(true);
+    if (!targetOptions) {
+      teamRoleplaysApi.getTargetOptions().then(setTargetOptions).catch(() => {});
+    }
+  };
+
   const handleSaveRoleplay = async () => {
     if (!saveRoleplayName.trim()) return toast.error('Enter a name');
     const timeLimitMinsNum = timeLimitMins ? parseInt(timeLimitMins, 10) || null : null;
+    const assignmentTarget: AssignmentTarget = {
+      scope: assignScope,
+      ...(assignScope === 'region' && { regions: assignRegions }),
+      ...(assignScope === 'team' && { teamIds: assignTeams }),
+      ...(assignScope === 'individual' && { userIds: assignUserIds }),
+    };
     setSavingRoleplay(true);
     try {
       const saved = await teamRoleplaysApi.create({
         name: saveRoleplayName.trim(),
         description: saveRoleplayDesc.trim() || undefined,
+        assignmentTarget,
+        allowPeerListening,
         scenarioConfig: {
           industry, roleplayType, personaContext,
           displayName, displayTitle, displayEmoji,
@@ -835,11 +869,7 @@ export function PracticePage() {
             )}
             {setupMode === 'edit' && (
               <button
-                onClick={() => {
-                  setSaveRoleplayName(selectedLabel && selectedLabel !== 'New Roleplay' ? selectedLabel : '');
-                  setSaveRoleplayDesc(selectedDesc || '');
-                  setShowSaveModal(true);
-                }}
+                onClick={openSaveModal}
                 disabled={!isReady}
                 className="flex items-center gap-1.5 text-[12.5px] font-medium px-3 py-1.5 rounded-[8px] border border-white/[0.1] text-white/70 hover:text-white hover:border-white/25 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0"
               >
@@ -1621,11 +1651,7 @@ export function PracticePage() {
                             <p className="text-[10px] text-white/70">{isManagerOrAdmin ? 'Publish so your team can practice' : 'Save to reuse in future sessions'}</p>
                           </div>
                           <button
-                            onClick={() => {
-                              setSaveRoleplayName(selectedLabel && selectedLabel !== 'New Roleplay' ? selectedLabel : '');
-                              setSaveRoleplayDesc(selectedDesc || '');
-                              setShowSaveModal(true);
-                            }}
+                            onClick={openSaveModal}
                             disabled={!isReady}
                             className="flex items-center gap-1.5 text-[11.5px] font-medium px-2.5 py-1.5 rounded-[7px] border border-accent/25 text-accent/80 hover:text-accent hover:border-accent hover:bg-accent/[0.06] disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0"
                           >
@@ -1745,7 +1771,7 @@ export function PracticePage() {
       <AnimatePresence>
         {showSaveModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowSaveModal(false)}>
-            <motion.div initial={{ scale: 0.95, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }} onClick={e => e.stopPropagation()} className="bg-bg-2 border border-white/10 rounded-[18px] p-6 w-full max-w-md shadow-[0_24px_80px_rgba(0,0,0,0.6)]">
+            <motion.div initial={{ scale: 0.95, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }} onClick={e => e.stopPropagation()} className="bg-bg-2 border border-white/10 rounded-[18px] p-6 w-full max-w-lg shadow-[0_24px_80px_rgba(0,0,0,0.6)] max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <h3 className="font-display font-bold text-[16px]">
@@ -1753,12 +1779,14 @@ export function PracticePage() {
                   </h3>
                   <p className="text-[11.5px] text-white/75 mt-0.5">
                     {isManagerOrAdmin
-                      ? 'Your teammates will see this in "Assigned to Me".'
+                      ? 'Assign to teammates and configure access.'
                       : 'Saved to "Created by Me" — reuse it anytime.'}
                   </p>
                 </div>
                 <button onClick={() => setShowSaveModal(false)} className="text-white/70 hover:text-white"><X size={16} /></button>
               </div>
+
+              {/* Persona preview */}
               <div className="flex items-center gap-3 p-3 rounded-[10px] bg-white/[0.04] border border-white/[0.07] mb-4">
                 <div className="rounded-full overflow-hidden flex-shrink-0"><AvatarDisplay avatarId={avatarId} size={40} /></div>
                 <div className="min-w-0">
@@ -1766,20 +1794,161 @@ export function PracticePage() {
                   <div className="text-[11px] text-white/80">{industry}{roleplayType && ` · ${roleplayType}`}</div>
                 </div>
               </div>
-              <div className="flex flex-col gap-3">
+
+              <div className="flex flex-col gap-4">
+                {/* Name & Description */}
                 <div>
                   <label className="text-[11px] text-white/80 block mb-1.5">Name <span className="text-accent-4">*</span></label>
                   <input value={saveRoleplayName} onChange={e => setSaveRoleplayName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSaveRoleplay()} placeholder={industry ? `${industry} ${roleplayType}` : 'Enter name…'} className="input-base text-[13px] w-full" maxLength={80} autoFocus />
                 </div>
                 <div>
                   <label className="text-[11px] text-white/80 block mb-1.5">Description <span className="text-white/65">(optional)</span></label>
-                  <textarea value={saveRoleplayDesc} onChange={e => setSaveRoleplayDesc(e.target.value)} placeholder="Brief note about this scenario…" className="input-base resize-none text-[12.5px] w-full min-h-[70px]" maxLength={200} />
+                  <textarea value={saveRoleplayDesc} onChange={e => setSaveRoleplayDesc(e.target.value)} placeholder="Brief note about this scenario…" className="input-base resize-none text-[12.5px] w-full min-h-[60px]" maxLength={200} />
                 </div>
+
+                {/* Assignment targeting — managers/admins only */}
+                {isManagerOrAdmin && (
+                  <div className="rounded-[12px] border border-white/[0.08] bg-white/[0.02] p-4 flex flex-col gap-3">
+                    <p className="text-[11px] font-semibold text-white/70 uppercase tracking-wider">Assign To</p>
+
+                    {/* Scope selector */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {(['all', 'team', 'region', 'individual'] as AssignmentScope[]).map(scope => {
+                        const labels: Record<AssignmentScope, string> = { all: 'All Users', team: 'Team(s)', region: 'Region(s)', individual: 'Individuals' };
+                        const icons: Record<AssignmentScope, React.ReactNode> = {
+                          all: <User size={11} />,
+                          team: <Layers size={11} />,
+                          region: <Globe size={11} />,
+                          individual: <User size={11} />,
+                        };
+                        const active = assignScope === scope;
+                        return (
+                          <button
+                            key={scope}
+                            onClick={() => setAssignScope(scope)}
+                            className={clsx(
+                              'flex items-center gap-2 px-3 py-2 rounded-[9px] text-[12px] border transition-all',
+                              active
+                                ? 'bg-accent/10 border-accent text-accent'
+                                : 'border-white/[0.08] text-white/60 hover:text-white hover:bg-white/[0.05]',
+                            )}
+                          >
+                            {icons[scope]}
+                            {labels[scope]}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Summary line */}
+                    <p className="text-[11px] text-white/50">
+                      {assignScope === 'all' && 'Everyone in your company will see this roleplay.'}
+                      {assignScope === 'team' && (assignTeams.length > 0 ? `Assigned to: ${assignTeams.join(', ')}` : 'Select one or more teams below.')}
+                      {assignScope === 'region' && (assignRegions.length > 0 ? `Assigned to: ${assignRegions.join(', ')}` : 'Select one or more regions below.')}
+                      {assignScope === 'individual' && (assignUserIds.length > 0 ? `${assignUserIds.length} user(s) selected.` : 'Search and select individual users below.')}
+                    </p>
+
+                    {/* Team picker */}
+                    {assignScope === 'team' && targetOptions && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {targetOptions.teams.map(t => {
+                          const sel = assignTeams.includes(t);
+                          return (
+                            <button
+                              key={t}
+                              onClick={() => setAssignTeams(prev => sel ? prev.filter(x => x !== t) : [...prev, t])}
+                              className={clsx(
+                                'px-2.5 py-1 rounded-full text-[11px] border transition-all',
+                                sel ? 'bg-accent/15 border-accent/50 text-accent' : 'border-white/10 text-white/60 hover:border-white/30',
+                              )}
+                            >
+                              {sel && <Check size={9} className="inline mr-1" />}{t}
+                            </button>
+                          );
+                        })}
+                        {targetOptions.teams.length === 0 && <p className="text-[11px] text-white/40">No teams found.</p>}
+                      </div>
+                    )}
+
+                    {/* Region picker */}
+                    {assignScope === 'region' && targetOptions && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {targetOptions.regions.map(r => {
+                          const sel = assignRegions.includes(r);
+                          return (
+                            <button
+                              key={r}
+                              onClick={() => setAssignRegions(prev => sel ? prev.filter(x => x !== r) : [...prev, r])}
+                              className={clsx(
+                                'px-2.5 py-1 rounded-full text-[11px] border transition-all',
+                                sel ? 'bg-accent/15 border-accent/50 text-accent' : 'border-white/10 text-white/60 hover:border-white/30',
+                              )}
+                            >
+                              {sel && <Check size={9} className="inline mr-1" />}{r}
+                            </button>
+                          );
+                        })}
+                        {targetOptions.regions.length === 0 && <p className="text-[11px] text-white/40">No regions found.</p>}
+                      </div>
+                    )}
+
+                    {/* Individual user picker */}
+                    {assignScope === 'individual' && targetOptions && (
+                      <div className="flex flex-col gap-1.5 max-h-[160px] overflow-y-auto">
+                        {targetOptions.users.map(u => {
+                          const sel = assignUserIds.includes(u.id);
+                          return (
+                            <button
+                              key={u.id}
+                              onClick={() => setAssignUserIds(prev => sel ? prev.filter(x => x !== u.id) : [...prev, u.id])}
+                              className={clsx(
+                                'flex items-center gap-2.5 px-3 py-2 rounded-[9px] border text-left transition-all',
+                                sel ? 'bg-accent/10 border-accent/40' : 'border-white/[0.07] hover:bg-white/[0.04]',
+                              )}
+                            >
+                              <div className={clsx('w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors', sel ? 'bg-accent border-accent' : 'border-white/20')}>
+                                {sel && <Check size={10} color="white" />}
+                              </div>
+                              <span className="text-[12px] font-medium flex-1">{u.name}</span>
+                              <span className="text-[10px] text-white/40">{[u.team, u.region].filter(Boolean).join(' · ')}</span>
+                            </button>
+                          );
+                        })}
+                        {targetOptions.users.length === 0 && <p className="text-[11px] text-white/40">No users found.</p>}
+                      </div>
+                    )}
+
+                    {/* Loading state */}
+                    {!targetOptions && (
+                      <div className="flex items-center gap-2 text-[11px] text-white/40">
+                        <Loader2 size={12} className="animate-spin" /> Loading options…
+                      </div>
+                    )}
+
+                    {/* Peer listening toggle */}
+                    <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
+                      <div>
+                        <p className="text-[12px] font-medium text-white/80">Allow peer listening</p>
+                        <p className="text-[10.5px] text-white/45 mt-0.5">Team members can replay each other's sessions.</p>
+                      </div>
+                      <button
+                        onClick={() => setAllowPeerListening(v => !v)}
+                        className={clsx(
+                          'relative w-10 h-5 rounded-full transition-colors flex-shrink-0',
+                          allowPeerListening ? 'bg-accent' : 'bg-white/20',
+                        )}
+                      >
+                        <span className={clsx('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform', allowPeerListening ? 'translate-x-5' : 'translate-x-0.5')} />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
+
               <div className="flex gap-2 mt-5">
                 <button onClick={() => setShowSaveModal(false)} className="btn-ghost flex-1">Cancel</button>
                 <button onClick={handleSaveRoleplay} disabled={savingRoleplay || !saveRoleplayName.trim()} className="btn-primary flex-1 gap-1.5 disabled:opacity-50">
-                  {savingRoleplay ? <><Loader2 size={13} className="animate-spin" /> Saving…</> : 'Save for Team'}
+                  {savingRoleplay ? <><Loader2 size={13} className="animate-spin" /> Saving…</> : (isManagerOrAdmin ? 'Save & Assign' : 'Save Roleplay')}
                 </button>
               </div>
             </motion.div>

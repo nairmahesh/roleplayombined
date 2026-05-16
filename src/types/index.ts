@@ -103,6 +103,10 @@ export interface User {
   avgScore?: number;
   sessionCount?: number;
   location?: string;
+  region?: string;       // geographic region e.g. 'EMEA', 'APAC', 'North America'
+  team?: string;         // team name e.g. 'Enterprise', 'SMB', 'SDR Team'
+  territory?: string;    // sales territory
+  zone?: string;         // zone/district
   _count?: { sessions: number };
 }
 
@@ -231,6 +235,31 @@ export interface Session {
   messages?: Message[];
 }
 
+// ── Assignment targeting ───────────────────────────────────────────────────────
+export type AssignmentScope = 'all' | 'team' | 'region' | 'individual';
+
+export interface AssignmentTarget {
+  scope: AssignmentScope;
+  teamIds?: string[];       // if scope = 'team'
+  regions?: string[];       // if scope = 'region'
+  userIds?: string[];       // if scope = 'individual'
+}
+
+// ── Peer session listening ─────────────────────────────────────────────────────
+export interface PeerSession {
+  sessionId: string;
+  userId: string;
+  userName: string;
+  userLocation?: string;
+  userTeam?: string;
+  score: number;
+  rank: number;
+  durationSeconds: number;
+  completedAt: string;
+  canListen: boolean;   // manager allowed listening
+  playbackUrl?: string;
+}
+
 export interface TeamRoleplay {
   id: string;
   name: string;
@@ -241,6 +270,10 @@ export interface TeamRoleplay {
   createdBy: Pick<User, 'id' | 'firstName' | 'lastName'>;
   createdAt: string;
   updatedAt: string;
+  // Assignment targeting
+  assignmentTarget?: AssignmentTarget;
+  allowPeerListening?: boolean;  // whether peers can hear each other's sessions
+  completionCount?: number;      // how many people have completed it
 }
 
 export interface DashboardRecentSession {

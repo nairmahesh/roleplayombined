@@ -330,35 +330,143 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
 ];
 
 const MOCK_TEAM_USERS: User[] = [
-  { id: 'u2', email: 'jordan@demo.com', firstName: 'Jordan', lastName: 'Lee', role: 'AGENT', companyId: 'c1', avgScore: 91, sessionCount: 24, location: 'San Francisco' },
-  { id: 'u3', email: 'taylor@demo.com', firstName: 'Taylor', lastName: 'Morgan', role: 'AGENT', companyId: 'c1', avgScore: 87, sessionCount: 18, location: 'Chicago' },
-  { id: 'u4', email: 'morgan@demo.com', firstName: 'Morgan', lastName: 'Kim', role: 'AGENT', companyId: 'c1', avgScore: 83, sessionCount: 21, location: 'Austin' },
-  { id: 'u5', email: 'sam@demo.com', firstName: 'Sam', lastName: 'Patel', role: 'AGENT', companyId: 'c1', avgScore: 71, sessionCount: 15, location: 'London' },
-  MOCK_USER,
+  { id: 'u2', email: 'jordan@demo.com', firstName: 'Jordan', lastName: 'Lee', role: 'AGENT', companyId: 'c1', avgScore: 91, sessionCount: 24, location: 'San Francisco', region: 'North America', team: 'Enterprise', territory: 'West Coast', zone: 'Pacific' },
+  { id: 'u3', email: 'taylor@demo.com', firstName: 'Taylor', lastName: 'Morgan', role: 'AGENT', companyId: 'c1', avgScore: 87, sessionCount: 18, location: 'Chicago', region: 'North America', team: 'Enterprise', territory: 'Midwest', zone: 'Central' },
+  { id: 'u4', email: 'morgan@demo.com', firstName: 'Morgan', lastName: 'Kim', role: 'AGENT', companyId: 'c1', avgScore: 83, sessionCount: 21, location: 'Austin', region: 'North America', team: 'SMB', territory: 'South', zone: 'Central' },
+  { id: 'u5', email: 'sam@demo.com', firstName: 'Sam', lastName: 'Patel', role: 'AGENT', companyId: 'c1', avgScore: 71, sessionCount: 15, location: 'London', region: 'EMEA', team: 'SMB', territory: 'UK & Ireland', zone: 'Northern Europe' },
+  { id: 'u6', email: 'casey@demo.com', firstName: 'Casey', lastName: 'Zhang', role: 'AGENT', companyId: 'c1', avgScore: 68, sessionCount: 9, location: 'Singapore', region: 'APAC', team: 'Enterprise', territory: 'SEA', zone: 'Southeast Asia' },
+  { id: 'u7', email: 'riley@demo.com', firstName: 'Riley', lastName: 'Johnson', role: 'AGENT', companyId: 'c1', avgScore: 65, sessionCount: 7, location: 'Sydney', region: 'APAC', team: 'SMB', territory: 'ANZ', zone: 'Pacific' },
+  { id: 'u8', email: 'drew@demo.com', firstName: 'Drew', lastName: 'Okonkwo', role: 'MANAGER', companyId: 'c1', avgScore: 79, sessionCount: 12, location: 'London', region: 'EMEA', team: 'Enterprise', territory: 'UK & Europe', zone: 'Northern Europe' },
+  { ...MOCK_USER, region: 'North America', team: 'Enterprise', territory: 'East Coast', zone: 'Northeast' },
 ];
 
 const MOCK_TEAM_ROLEPLAYS: TeamRoleplay[] = [
   {
     id: 'tr1',
     name: 'Cold Call Blitz',
-    description: 'Practice rapid cold calling with a skeptical VP',
+    description: 'Practice rapid cold calling with a skeptical VP. Required for all Enterprise reps before Q4.',
     scenarioConfig: {
       industry: 'SaaS',
-      roleplayType: 'cold_call',
-      personaContext: 'Skeptical VP of Sales',
+      roleplayType: 'Cold Call',
+      personaContext: 'You are a skeptical VP of Sales at a mid-sized SaaS company. You are busy, dismissive of cold callers, but can be won over with a sharp, research-backed opener. Push back on anything vague.',
       displayName: 'Sarah Chen',
-      displayTitle: 'VP of Sales',
+      displayTitle: 'VP of Sales, TechCorp',
       displayEmoji: '',
-      difficulty: 'MEDIUM',
-      suggestedQuestions: [],
+      difficulty: 'Hard',
+      suggestedQuestions: ['How did you get this number?', 'What makes you different?', "I'm busy — 30 seconds.", 'What does it cost?'],
     },
     isActive: true,
-    createdById: 'u1',
-    createdBy: { id: 'u1', firstName: 'Alex', lastName: 'Rivera' },
+    allowPeerListening: true,
+    completionCount: 6,
+    createdById: 'u8',
+    createdBy: { id: 'u8', firstName: 'Drew', lastName: 'Okonkwo' },
+    assignmentTarget: { scope: 'team', teamIds: ['Enterprise'] },
     createdAt: new Date(Date.now() - 7 * 86_400_000).toISOString(),
     updatedAt: new Date(Date.now() - 7 * 86_400_000).toISOString(),
   },
+  {
+    id: 'tr2',
+    name: 'EMEA Discovery Call',
+    description: 'Regional discovery call practice — banking & fintech personas for the EMEA market.',
+    scenarioConfig: {
+      industry: 'Banking',
+      roleplayType: 'Discovery Call',
+      personaContext: 'You are the Head of Treasury at a European bank evaluating a new fintech partnership. You are compliance-focused and risk-averse. Ask about SLAs, data residency (GDPR), and integration timelines.',
+      displayName: 'Emma Hartmann',
+      displayTitle: 'Head of Treasury, Erste Bank',
+      displayEmoji: '',
+      difficulty: 'Hard',
+      suggestedQuestions: ['Is your platform GDPR-compliant?', 'Where is data hosted?', 'What are your SLAs?'],
+    },
+    isActive: true,
+    allowPeerListening: true,
+    completionCount: 3,
+    createdById: 'u8',
+    createdBy: { id: 'u8', firstName: 'Drew', lastName: 'Okonkwo' },
+    assignmentTarget: { scope: 'region', regions: ['EMEA'] },
+    createdAt: new Date(Date.now() - 3 * 86_400_000).toISOString(),
+    updatedAt: new Date(Date.now() - 3 * 86_400_000).toISOString(),
+  },
+  {
+    id: 'tr3',
+    name: 'SMB Objection Drill',
+    description: 'Handle the toughest SMB price objections. All SMB reps must complete before end of month.',
+    scenarioConfig: {
+      industry: 'SaaS',
+      roleplayType: 'Objection Handling',
+      personaContext: 'You are the owner of a 50-person company being pitched a SaaS product you cannot afford. Your main objection is price — you like the product but the budget simply isn\'t there. Push hard on discounts, payment terms, and ROI justification.',
+      displayName: 'Carlos Mendez',
+      displayTitle: 'CEO, GrowthBridge',
+      displayEmoji: '',
+      difficulty: 'Medium',
+      suggestedQuestions: ["That's too expensive.", 'Can you do a free trial?', 'What\'s the minimum to get started?'],
+    },
+    isActive: true,
+    allowPeerListening: false,
+    completionCount: 8,
+    createdById: 'u8',
+    createdBy: { id: 'u8', firstName: 'Drew', lastName: 'Okonkwo' },
+    assignmentTarget: { scope: 'team', teamIds: ['SMB'] },
+    createdAt: new Date(Date.now() - 14 * 86_400_000).toISOString(),
+    updatedAt: new Date(Date.now() - 14 * 86_400_000).toISOString(),
+  },
 ];
+
+// ── Peer sessions (for leaderboard tab listening) ─────────────────────────────
+
+import type { PeerSession } from '@/types';
+
+const MOCK_PEER_SESSIONS: PeerSession[] = [
+  {
+    sessionId: 's-peer-1', userId: 'u2', userName: 'Jordan Lee', userLocation: 'San Francisco',
+    userTeam: 'Enterprise', score: 88, rank: 1, durationSeconds: 734, canListen: true,
+    playbackUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+    completedAt: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+  },
+  {
+    sessionId: 's-peer-2', userId: 'u3', userName: 'Taylor Morgan', userLocation: 'Chicago',
+    userTeam: 'Enterprise', score: 84, rank: 2, durationSeconds: 680, canListen: true,
+    playbackUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+    completedAt: new Date(Date.now() - 3 * 86_400_000).toISOString(),
+  },
+  {
+    sessionId: 's1', userId: 'u1', userName: 'Alex Rivera', userLocation: 'New York',
+    userTeam: 'Enterprise', score: 81, rank: 3, durationSeconds: 720, canListen: true,
+    playbackUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+    completedAt: new Date(Date.now() - 3_600_000).toISOString(),
+  },
+  {
+    sessionId: 's-peer-4', userId: 'u4', userName: 'Morgan Kim', userLocation: 'Austin',
+    userTeam: 'SMB', score: 76, rank: 4, durationSeconds: 590, canListen: true,
+    playbackUrl: undefined,
+    completedAt: new Date(Date.now() - 5 * 86_400_000).toISOString(),
+  },
+  {
+    sessionId: 's-peer-5', userId: 'u5', userName: 'Sam Patel', userLocation: 'London',
+    userTeam: 'SMB', score: 71, rank: 5, durationSeconds: 810, canListen: false,
+    playbackUrl: undefined,
+    completedAt: new Date(Date.now() - 6 * 86_400_000).toISOString(),
+  },
+  {
+    sessionId: 's-peer-6', userId: 'u6', userName: 'Casey Zhang', userLocation: 'Singapore',
+    userTeam: 'Enterprise', score: 65, rank: 6, durationSeconds: 445, canListen: false,
+    playbackUrl: undefined,
+    completedAt: new Date(Date.now() - 8 * 86_400_000).toISOString(),
+  },
+  {
+    sessionId: 's-peer-7', userId: 'u7', userName: 'Riley Johnson', userLocation: 'Sydney',
+    userTeam: 'SMB', score: 58, rank: 7, durationSeconds: 360, canListen: false,
+    playbackUrl: undefined,
+    completedAt: new Date(Date.now() - 10 * 86_400_000).toISOString(),
+  },
+];
+
+export const peerSessionsApi = {
+  list: async (_sessionId: string): Promise<PeerSession[]> => {
+    await delay(300);
+    return MOCK_PEER_SESSIONS;
+  },
+};
 
 // ── Auth API ──────────────────────────────────────────────────────────────────
 
@@ -501,9 +609,31 @@ export const practiceApi = {
 
 export const teamRoleplaysApi = {
   list: async () => { await delay(200); return MOCK_TEAM_ROLEPLAYS; },
-  create: async (data: any) => { await delay(300); return { ...data, id: `tr-${Date.now()}`, isActive: true, createdById: 'u1', createdBy: { id: 'u1', firstName: 'Alex', lastName: 'Rivera' }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }; },
+  create: async (data: any) => {
+    await delay(300);
+    return {
+      ...data,
+      id: `tr-${Date.now()}`,
+      isActive: true,
+      completionCount: 0,
+      createdById: 'u1',
+      createdBy: { id: 'u1', firstName: 'Alex', lastName: 'Rivera' },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+  },
   update: async (id: string, data: any) => { await delay(200); return { id, ...data }; },
   delete: async (_id: string) => { await delay(200); },
+  // Returns all distinct regions and teams across users — for targeting UI
+  getTargetOptions: async () => {
+    await delay(100);
+    return {
+      regions: ['North America', 'EMEA', 'APAC', 'LATAM'],
+      teams: ['Enterprise', 'SMB', 'SDR Team', 'Customer Success'],
+      territories: ['East Coast', 'West Coast', 'Midwest', 'UK & Ireland', 'DACH', 'Nordics', 'SEA', 'ANZ'],
+      users: MOCK_TEAM_USERS.map(u => ({ id: u.id, name: `${u.firstName} ${u.lastName}`, team: u.team, region: u.region })),
+    };
+  },
 };
 
 // ── Evaluation Prompts API ────────────────────────────────────────────────────

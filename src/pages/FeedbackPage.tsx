@@ -5,9 +5,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { RefreshCw, Share2, ChevronRight, CircleCheck as CheckCircle, TriangleAlert as AlertTriangle, Lightbulb, Play, Pause, Search, Copy, Download, MessageSquare, Clock, Shield, BarChart3, Gauge, Activity, Mic, ChevronDown, CircleAlert as AlertCircle, X, Info, Trophy, RotateCcw, Zap, Target, ChevronLeft } from 'lucide-react';
-import { sessionsApi } from '@/lib/api';
+import { sessionsApi, peerSessionsApi } from '@/lib/api';
 import { connectSocket } from '@/lib/socket';
-import { Session, ParsedFeedback, FRAMEWORK_INFO, ScorecardGroup } from '@/types';
+import { Session, ParsedFeedback, FRAMEWORK_INFO, ScorecardGroup, PeerSession } from '@/types';
 import clsx from 'clsx';
 
 type Tab = 'scorecard' | 'transcript' | 'analytics' | 'objections' | 'leaderboard';
@@ -250,6 +250,12 @@ export function FeedbackPage() {
   const [expandedId, setExpandedId]       = useState<string | null>(null);
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
   const [peerScores, setPeerScores]       = useState<PeerScore[]>([]);
+  const [peerSessions, setPeerSessions]   = useState<PeerSession[]>([]);
+  const [listeningId, setListeningId]     = useState<string | null>(null);
+  const [peerAudioEl, setPeerAudioEl]     = useState<HTMLAudioElement | null>(null);
+  const [peerPlaying, setPeerPlaying]     = useState(false);
+  const [peerProgress, setPeerProgress]   = useState(0);
+  const [peerDuration, setPeerDuration]   = useState(0);
   const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
   const [lastJumpMs, setLastJumpMs]       = useState<number | null>(null);
   const [audioBarFlash, setAudioBarFlash] = useState(false);
@@ -266,12 +272,14 @@ export function FeedbackPage() {
     if (!id) return;
     const load = async () => {
       try {
-        const [data, peers] = await Promise.all([
+        const [data, peers, peerSess] = await Promise.all([
           sessionsApi.get(id),
           sessionsApi.getPeerScores(id),
+          peerSessionsApi.list(id),
         ]);
         setSession(data);
         setPeerScores(peers);
+        setPeerSessions(peerSess);
         if (data.recordingUrl) setPlaybackUrl(data.recordingUrl);
         if (data.status === 'COMPLETED' && !data.totalScore) setAnalysing(true);
       } catch {
@@ -300,6 +308,36 @@ export function FeedbackPage() {
     if (!audioRef.current) return;
     if (isPlaying) audioRef.current.pause(); else audioRef.current.play();
   }, [isPlaying]);
+
+  const openPeerAudio = useCallback((ps: PeerSession) => {
+    if (!ps.playbackUrl) return;
+    if (listeningId === ps.sessionId) {
+      peerAudioEl?.pause();
+      peerAudioEl?.remove();
+      setPeerAudioEl(null);
+      setListeningId(null);
+      setPeerPlaying(false);
+      setPeerProgress(0);
+      setPeerDuration(0);
+      return;
+    }
+    peerAudioEl?.pause();
+    const el = new Audio(ps.playbackUrl);
+    el.addEventListener('loadedmetadata', () => setPeerDuration(el.duration));
+    el.addEventListener('timeupdate', () => setPeerProgress(el.currentTime));
+    el.addEventListener('ended', () => setPeerPlaying(false));
+    el.play().catch(() => {});
+    setPeerAudioEl(el);
+    setListeningId(ps.sessionId);
+    setPeerPlaying(true);
+    setPeerProgress(0);
+  }, [listeningId, peerAudioEl]);
+
+  const togglePeerPlay = useCallback(() => {
+    if (!peerAudioEl) return;
+    if (peerPlaying) { peerAudioEl.pause(); setPeerPlaying(false); }
+    else { peerAudioEl.play().catch(() => {}); setPeerPlaying(true); }
+  }, [peerAudioEl, peerPlaying]);
 
   const pendingSeekRef = useRef<number | null>(null);
 
@@ -1697,6 +1735,125 @@ export function FeedbackPage() {
                     })}
                   </div>
                 </div>
+
+                {/* Peer session listening */}
+                {peerSessions.length > 0 && (
+                  <div className="flex flex-col gap-3">
+                    <div>
+                      <div className="text-[13px] font-semibold mb-0.5" style={{ color: 'var(--text)' }}>Listen to Peer Sessions</div>
+                      <p className="text-[11.5px]" style={{ color: 'var(--text3)' }}>
+                        Replay how top performers handled this scenario. Enabled by your manager.
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {peerSessions.map(ps => {
+                        const isActive = listeningId === ps.sessionId;
+                        const rankEntry = peerScores.find(p => p.userId === ps.userId);
+                        return (
+                          <motion.div
+                            key={ps.sessionId}
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="rounded-[12px] border overflow-hidden"
+                            style={{
+                              borderColor: isActive ? 'rgba(91,111,255,0.4)' : 'var(--border)',
+                              background: isActive ? 'rgba(91,111,255,0.05)' : 'var(--bg2)',
+                            }}
+                          >
+                            <div className="flex items-center gap-3 px-4 py-3">
+                              {/* Rank badge */}
+                              <div
+                                className="w-8 h-8 rounded-full flex items-center justify-center font-display text-[12px] font-bold flex-shrink-0"
+                                style={rankEntry?.rank && rankEntry.rank <= 3
+                                  ? { background: rankEntry.rank === 1 ? 'rgba(255,209,102,0.15)' : 'rgba(180,180,180,0.15)', color: rankEntry.rank === 1 ? '#FFD166' : '#aaa' }
+                                  : { background: 'var(--bg3)', color: 'var(--text3)' }}
+                              >
+                                {rankEntry?.rank && rankEntry.rank <= 3
+                                  ? <Trophy size={14} style={{ color: rankEntry.rank === 1 ? '#FFD166' : rankEntry.rank === 2 ? '#aaa' : '#cd7f32' }} />
+                                  : `#${rankEntry?.rank ?? '—'}`}
+                              </div>
+
+                              {/* Info */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[13px] font-medium truncate" style={{ color: 'var(--text)' }}>{ps.userName}</span>
+                                  {ps.userTeam && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--bg3)', color: 'var(--text3)' }}>{ps.userTeam}</span>}
+                                </div>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-[11px]" style={{ color: 'var(--text3)' }}>{fmtSecs(ps.durationSeconds)}</span>
+                                  {ps.userLocation && <span className="text-[11px]" style={{ color: 'var(--text3)' }}>· {ps.userLocation}</span>}
+                                </div>
+                              </div>
+
+                              {/* Score */}
+                              <span className="text-[14px] font-bold font-display mr-2 flex-shrink-0" style={scoreStyle(ps.score)}>{ps.score}</span>
+
+                              {/* Play / locked */}
+                              {ps.canListen && ps.playbackUrl ? (
+                                <button
+                                  onClick={() => openPeerAudio(ps)}
+                                  className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 flex-shrink-0"
+                                  style={{ background: isActive ? 'var(--accent)' : 'rgba(91,111,255,0.15)', color: isActive ? '#fff' : 'var(--accent)' }}
+                                  title={isActive ? 'Stop listening' : 'Listen to session'}
+                                >
+                                  {isActive ? <Pause size={14} /> : <Play size={14} />}
+                                </button>
+                              ) : (
+                                <div
+                                  className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                                  style={{ background: 'var(--bg3)', color: 'var(--text3)' }}
+                                  title="Listening not permitted"
+                                >
+                                  <Shield size={14} />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Inline mini player */}
+                            {isActive && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="px-4 pb-3 border-t"
+                                style={{ borderColor: 'rgba(91,111,255,0.2)' }}
+                              >
+                                <div className="flex items-center gap-3 mt-3">
+                                  <button
+                                    onClick={togglePeerPlay}
+                                    className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-colors"
+                                    style={{ background: 'var(--accent)', color: '#fff' }}
+                                  >
+                                    {peerPlaying ? <Pause size={11} /> : <Play size={11} />}
+                                  </button>
+                                  <div className="flex-1 flex items-center gap-2">
+                                    <span className="text-[10px] font-mono flex-shrink-0" style={{ color: 'var(--text3)' }}>{fmtSecs(peerProgress)}</span>
+                                    <div
+                                      className="flex-1 h-1.5 rounded-full cursor-pointer"
+                                      style={{ background: 'var(--bg4)' }}
+                                      onClick={e => {
+                                        if (!peerAudioEl || !peerDuration) return;
+                                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                        const frac = (e.clientX - rect.left) / rect.width;
+                                        peerAudioEl.currentTime = frac * peerDuration;
+                                      }}
+                                    >
+                                      <div
+                                        className="h-full rounded-full transition-all"
+                                        style={{ width: `${peerDuration ? (peerProgress / peerDuration) * 100 : 0}%`, background: 'var(--accent)' }}
+                                      />
+                                    </div>
+                                    <span className="text-[10px] font-mono flex-shrink-0" style={{ color: 'var(--text3)' }}>{fmtSecs(peerDuration)}</span>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Practice again nudge */}
                 <div
