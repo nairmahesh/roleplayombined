@@ -251,6 +251,8 @@ export function FeedbackPage() {
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
   const [peerScores, setPeerScores]       = useState<PeerScore[]>([]);
   const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
+  const [lastJumpMs, setLastJumpMs]       = useState<number | null>(null);
+  const jumpLabelRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const audioRef  = useRef<HTMLAudioElement | null>(null);
   const trackRef  = useRef<HTMLDivElement>(null);
@@ -302,9 +304,13 @@ export function FeedbackPage() {
     setIsPlaying(true);
   }, []);
 
-  const jumpToTimestamp = useCallback((timestampMs: number) => {
+  const jumpToTimestamp = useCallback((timestampMs: number, switchToTranscript = false) => {
     seekTo(timestampMs / 1000);
-    // Find nearest message and highlight it
+    // Pulse the header timeline marker
+    setLastJumpMs(timestampMs);
+    if (jumpLabelRef.current) clearTimeout(jumpLabelRef.current);
+    jumpLabelRef.current = setTimeout(() => setLastJumpMs(null), 2800);
+    // Find nearest message for transcript highlighting
     const messages = session?.messages || [];
     let nearest = messages[0];
     for (const m of messages) {
@@ -312,10 +318,19 @@ export function FeedbackPage() {
     }
     if (nearest) {
       setHighlightedMsgId(nearest.id);
-      setActiveTab('transcript');
-      setTimeout(() => {
-        msgRefs.current[nearest.id]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
+      if (switchToTranscript) {
+        setActiveTab('transcript');
+        setTimeout(() => {
+          msgRefs.current[nearest.id]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      } else {
+        // Show a brief seeked-to indicator without switching tabs
+        toast(`▶ Audio seeked to ${fmt(timestampMs)}`, {
+          duration: 1800,
+          style: { fontSize: '12px', padding: '8px 14px', minWidth: 'unset' },
+          icon: undefined,
+        });
+      }
       setTimeout(() => setHighlightedMsgId(null), 3000);
     }
   }, [session?.messages, seekTo]);
@@ -514,14 +529,28 @@ export function FeedbackPage() {
                 {sortedEvents.map(e => {
                   const pct = totalDurMs > 0 ? Math.min(99, (e.timestampMs / totalDurMs) * 100) : 0;
                   const dotColor = e.type === 'GOOD' ? '#06D6A0' : e.type === 'ISSUE' ? '#FF6B6B' : e.type === 'WARNING' ? '#FFD166' : '#888';
+                  const isActive = activeEventId === e.id;
+                  const isPulsing = lastJumpMs !== null && Math.abs(e.timestampMs - lastJumpMs) < 5000;
                   return (
                     <div
                       key={e.id}
-                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full border-2 cursor-pointer z-10 transition-transform hover:scale-150"
-                      style={{ left: `${pct}%`, background: dotColor, borderColor: 'var(--bg2)' }}
+                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 cursor-pointer z-10"
+                      style={{ left: `${pct}%` }}
                       title={`${fmt(e.timestampMs)} — ${e.title}`}
                       onClick={ev => { ev.stopPropagation(); jumpToTimestamp(e.timestampMs); setActiveEventId(e.id); }}
-                    />
+                    >
+                      {/* Pulse ring when jumped-to */}
+                      {isPulsing && (
+                        <div
+                          className="absolute inset-0 -m-1.5 rounded-full animate-ping"
+                          style={{ background: `${dotColor}40` }}
+                        />
+                      )}
+                      <div
+                        className={`w-2.5 h-2.5 rounded-full border-2 transition-transform ${isActive ? 'scale-150' : 'hover:scale-150'}`}
+                        style={{ background: dotColor, borderColor: 'var(--bg2)', boxShadow: isPulsing ? `0 0 0 2px ${dotColor}` : undefined }}
+                      />
+                    </div>
                   );
                 })}
                 {/* Progress fill */}
@@ -673,7 +702,11 @@ export function FeedbackPage() {
                                 className="overflow-hidden"
                               >
                                 <div className="border-t" style={{ borderColor: 'var(--border)' }}>
-                                  {group.criteria.map((criterion, ci) => (
+                                  {group.criteria.map((criterion, ci) => {
+                                    // Extract any timestamp from reasoning text e.g. "at 0:28" or "2:45"
+                                    const tsInReasoning = criterion.reasoning?.match(/\b(\d+):(\d{2})\b/);
+                                    const criterionTsMs = tsInReasoning ? (parseInt(tsInReasoning[1]) * 60 + parseInt(tsInReasoning[2])) * 1000 : null;
+                                    return (
                                     <div
                                       key={ci}
                                       className={clsx('px-4 py-3.5 flex gap-3', ci > 0 && 'border-t')}
@@ -686,7 +719,19 @@ export function FeedbackPage() {
                                         }
                                       </div>
                                       <div className="flex-1 min-w-0">
-                                        <div className="text-[13px] font-semibold mb-1" style={{ color: 'var(--text)' }}>{criterion.question}</div>
+                                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                                          <span className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>{criterion.question}</span>
+                                          {criterionTsMs !== null && (
+                                            <button
+                                              onClick={() => jumpToTimestamp(criterionTsMs)}
+                                              className="flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] text-[10px] font-medium flex-shrink-0 transition-all hover:scale-105"
+                                              style={{ background: 'rgba(91,111,255,0.1)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.2)' }}
+                                              title={`Seek audio to ${fmt(criterionTsMs)}`}
+                                            >
+                                              <Play size={7} fill="currentColor" /> {fmt(criterionTsMs)}
+                                            </button>
+                                          )}
+                                        </div>
                                         <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text3)' }}>{criterion.reasoning}</p>
                                         {!criterion.passed && (
                                           <div className="mt-2 flex items-start gap-1.5 text-[11.5px] leading-relaxed" style={{ color: '#FFD166' }}>
@@ -704,7 +749,7 @@ export function FeedbackPage() {
                                         </span>
                                       </div>
                                     </div>
-                                  ))}
+                                  ); })}
                                 </div>
                               </motion.div>
                             )}
@@ -833,7 +878,7 @@ export function FeedbackPage() {
                                               <span className="text-[12px] leading-relaxed flex-1" style={{ color: 'var(--text2)' }}>{ev}</span>
                                               {tsMs != null && (
                                                 <button
-                                                  onClick={() => { jumpToTimestamp(tsMs); setActiveTab('transcript'); }}
+                                                  onClick={() => jumpToTimestamp(tsMs, true)}
                                                   className="flex items-center gap-1 px-2 py-0.5 rounded-[6px] text-[10.5px] font-medium flex-shrink-0 opacity-70 group-hover/ev:opacity-100 transition-all hover:scale-105"
                                                   style={{ background: 'rgba(91,111,255,0.12)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.2)' }}
                                                 >
@@ -935,7 +980,7 @@ export function FeedbackPage() {
                               <span className="flex-1 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>{ev.title}</span>
                               {/* Jump button */}
                               <button
-                                onClick={() => { jumpToTimestamp(ev.timestampMs); setActiveTab('transcript'); }}
+                                onClick={() => jumpToTimestamp(ev.timestampMs)}
                                 className="flex items-center gap-1 px-2 py-0.5 rounded-[6px] text-[10.5px] font-medium flex-shrink-0 transition-all hover:scale-105"
                                 style={{ background: 'rgba(91,111,255,0.1)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.2)' }}
                               >
@@ -1387,7 +1432,7 @@ export function FeedbackPage() {
                                     <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ background: ev.type === 'GOOD' ? '#06D6A0' : ev.type === 'ISSUE' ? '#FF6B6B' : '#FFD166' }} />
                                     <p className="text-[12px] leading-relaxed flex-1" style={{ color: 'var(--text2)' }}>{ev.description}</p>
                                     <button
-                                      onClick={() => { jumpToTimestamp(ev.timestampMs); setActiveTab('transcript'); }}
+                                      onClick={() => jumpToTimestamp(ev.timestampMs)}
                                       className="flex items-center gap-1 px-2 py-0.5 rounded-[6px] text-[10px] font-medium flex-shrink-0 transition-all hover:scale-105"
                                       style={{ background: 'rgba(91,111,255,0.1)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.2)' }}
                                     >
@@ -1436,7 +1481,7 @@ export function FeedbackPage() {
                           }
                           <span className="text-[13px] font-semibold flex-1" style={{ color: 'var(--text)' }}>{ev.title}</span>
                           <button
-                            onClick={() => { jumpToTimestamp(ev.timestampMs); setActiveTab('transcript'); }}
+                            onClick={() => jumpToTimestamp(ev.timestampMs)}
                             className="flex items-center gap-1 px-2 py-0.5 rounded-[6px] text-[10px] flex-shrink-0 transition-all hover:scale-105"
                             style={{ background: 'rgba(91,111,255,0.1)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.15)' }}
                           >
