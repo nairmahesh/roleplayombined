@@ -35,7 +35,7 @@ export const useAuthStore = create<AuthState>()(
       setAuth: (user, accessToken, refreshToken) =>
         set({ user, accessToken, refreshToken, isAuthenticated: true }),
       clearAuth: () =>
-        set({ user: DEMO_USER, accessToken: 'mock-token', refreshToken: 'mock-refresh', isAuthenticated: true }),
+        set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false }),
       updateToken: (accessToken, refreshToken) =>
         set({ accessToken, refreshToken }),
     }),
