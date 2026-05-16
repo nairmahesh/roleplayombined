@@ -1,6 +1,87 @@
 // pitchiq/frontend/src/types/index.ts
 
 export type UserRole = 'SUPER_ADMIN' | 'COMPANY_ADMIN' | 'MANAGER' | 'AGENT';
+
+// ── Plan / Feature system ──────────────────────────────────────────────────────
+export type PlanTier = 'starter' | 'growth' | 'pro' | 'enterprise';
+
+export interface PlanFeatures {
+  // core limits
+  sessionsPerMonth: number | null;   // null = unlimited
+  agentsMax: number | null;
+  sessionMinutesMax: number | null;  // per session cap, null = unlimited
+  // modules
+  knowledgeBase: boolean;            // train bot on docs/URLs
+  preCallBriefing: boolean;          // user reads content before call
+  customPersonas: boolean;
+  teamRoleplays: boolean;
+  analytics: boolean;
+  leaderboard: boolean;
+  recordings: boolean;
+  aiCoaching: boolean;
+  evaluationPrompts: boolean;
+  multiLanguage: boolean;
+  apiAccess: boolean;
+}
+
+export const PLAN_CONFIGS: Record<PlanTier, { label: string; price: string; color: string; features: PlanFeatures }> = {
+  starter: {
+    label: 'Starter', price: '$49/mo', color: '#6B7280',
+    features: {
+      sessionsPerMonth: 20, agentsMax: 3, sessionMinutesMax: 5,
+      knowledgeBase: false, preCallBriefing: false,
+      customPersonas: false, teamRoleplays: false,
+      analytics: false, leaderboard: true, recordings: false,
+      aiCoaching: false, evaluationPrompts: false,
+      multiLanguage: false, apiAccess: false,
+    },
+  },
+  growth: {
+    label: 'Growth', price: '$149/mo', color: '#06D6A0',
+    features: {
+      sessionsPerMonth: 100, agentsMax: 15, sessionMinutesMax: 10,
+      knowledgeBase: false, preCallBriefing: false,
+      customPersonas: true, teamRoleplays: true,
+      analytics: true, leaderboard: true, recordings: true,
+      aiCoaching: true, evaluationPrompts: false,
+      multiLanguage: false, apiAccess: false,
+    },
+  },
+  pro: {
+    label: 'Pro', price: '$349/mo', color: '#5B6FFF',
+    features: {
+      sessionsPerMonth: 500, agentsMax: 50, sessionMinutesMax: 20,
+      knowledgeBase: true, preCallBriefing: true,
+      customPersonas: true, teamRoleplays: true,
+      analytics: true, leaderboard: true, recordings: true,
+      aiCoaching: true, evaluationPrompts: true,
+      multiLanguage: true, apiAccess: false,
+    },
+  },
+  enterprise: {
+    label: 'Enterprise', price: 'Custom', color: '#FFD166',
+    features: {
+      sessionsPerMonth: null, agentsMax: null, sessionMinutesMax: null,
+      knowledgeBase: true, preCallBriefing: true,
+      customPersonas: true, teamRoleplays: true,
+      analytics: true, leaderboard: true, recordings: true,
+      aiCoaching: true, evaluationPrompts: true,
+      multiLanguage: true, apiAccess: true,
+    },
+  },
+};
+
+// ── Knowledge base attachment ──────────────────────────────────────────────────
+export type KnowledgeBaseEntryType = 'text' | 'url' | 'file';
+
+export interface KnowledgeBaseEntry {
+  id: string;
+  type: KnowledgeBaseEntryType;
+  label: string;     // display name
+  content: string;   // raw text / url / filename
+  forRole: 'bot' | 'user' | 'both';
+  createdAt: string;
+}
 export type SessionType = 'PHONE_CALL' | 'ONLINE_MEETING';
 export type SessionStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
 export type Framework = 'MEDDIC' | 'MEDDICC' | 'SPIN' | 'BANT' | 'CHALLENGER' | 'SNAP';
@@ -125,6 +206,9 @@ export interface ScenarioConfig {
   avatarId?: string;
   elevenlabsVoiceId?: string;
   language?: string;
+  // Knowledge base
+  botKnowledge?: KnowledgeBaseEntry[];    // context fed to the AI bot
+  userBriefing?: KnowledgeBaseEntry[];    // content shown to user before call
 }
 
 export interface Session {

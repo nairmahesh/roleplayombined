@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User } from '@/types';
+import { User, PlanTier, PLAN_CONFIGS, PlanFeatures } from '@/types';
 
 const DEMO_USER: User = {
   id: 'u1',
@@ -101,6 +101,40 @@ export const useElevenLabsStore = create<ElevenLabsConfigState>()(
       setApiKey:  (apiKey)  => set({ apiKey }),
     }),
     { name: 'pitchiq-elevenlabs' }
+  )
+);
+
+// ─── Plan / Feature Store ─────────────────────────────────────────────────────
+interface PlanState {
+  plan: PlanTier;
+  // per-module overrides (admin can toggle modules on/off)
+  moduleOverrides: Partial<Record<keyof PlanFeatures, boolean>>;
+  setPlan: (plan: PlanTier) => void;
+  setModuleOverride: (key: keyof PlanFeatures, value: boolean) => void;
+  getFeatures: () => PlanFeatures;
+  can: (feature: keyof PlanFeatures) => boolean;
+}
+
+export const usePlanStore = create<PlanState>()(
+  persist(
+    (set, get) => ({
+      plan: 'pro' as PlanTier, // demo defaults to pro so all features visible
+      moduleOverrides: {},
+      setPlan: (plan) => set({ plan }),
+      setModuleOverride: (key, value) =>
+        set(s => ({ moduleOverrides: { ...s.moduleOverrides, [key]: value } })),
+      getFeatures: () => {
+        const base = PLAN_CONFIGS[get().plan].features;
+        const overrides = get().moduleOverrides;
+        return { ...base, ...overrides } as PlanFeatures;
+      },
+      can: (feature) => {
+        const overrides = get().moduleOverrides;
+        if (feature in overrides) return Boolean(overrides[feature]);
+        return Boolean(PLAN_CONFIGS[get().plan].features[feature]);
+      },
+    }),
+    { name: 'pitchiq-plan' }
   )
 );
 

@@ -2,15 +2,18 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Phone, Monitor, Sparkles, Loader as Loader2, ChevronDown, ChevronUp, RefreshCw, Play, Plus, X, Settings, Info, Pencil, Trash2, ArrowLeft, BookOpen, Lock, Check, User, Layers, Globe } from 'lucide-react';
+import { Phone, Monitor, Sparkles, Loader as Loader2, ChevronDown, ChevronUp, RefreshCw, Play, Plus, X, Settings, Info, Pencil, Trash2, ArrowLeft, BookOpen, Lock, Check, User, Layers, Globe, Database, FileText } from 'lucide-react';
 import { practiceApi, sessionsApi, personasApi, teamRoleplaysApi } from '@/lib/api';
-import { Framework, SessionType, FRAMEWORK_INFO, ScenarioConfig, Persona, TeamRoleplay } from '@/types';
+import { Framework, SessionType, FRAMEWORK_INFO, ScenarioConfig, Persona, TeamRoleplay, KnowledgeBaseEntry } from '@/types';
 import { CallInterface, PersonaDisplay } from '@/components/practice/CallInterface';
 import { PersonaBuilder } from '@/components/practice/PersonaBuilder';
 import { AvatarDisplay, EthnicityAvatarPicker, AVATAR_VOICE_CONFIG, AVATARS, type AvatarId } from '@/components/practice/PersonaAvatars';
 import { VoicePickerModal } from '@/components/practice/VoicePickerModal';
 import { CURATED_VOICES } from '@/components/practice/VoicePicker';
-import { useAuthStore } from '@/lib/store';
+import { KnowledgeBaseEditor } from '@/components/practice/KnowledgeBaseEditor';
+import { PreCallBriefing } from '@/components/practice/PreCallBriefing';
+import { PlanGate } from '@/components/PlanGate';
+import { useAuthStore, usePlanStore } from '@/lib/store';
 import clsx from 'clsx';
 
 // ── Static config ─────────────────────────────────────────────────────────────
@@ -311,6 +314,15 @@ export function PracticePage() {
   const contextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoGenRef      = useRef('');
 
+  // ── Knowledge base state ──────────────────────────────────────────────────
+  const [botKnowledge, setBotKnowledge]   = useState<KnowledgeBaseEntry[]>([]);
+  const [userBriefing, setUserBriefing]   = useState<KnowledgeBaseEntry[]>([]);
+  const [showBriefing, setShowBriefing]   = useState(false);
+  const [pendingSession, setPendingSession] = useState<{ id: string; personaDisplay: PersonaDisplay } | null>(null);
+
+  const canKnowledgeBase = usePlanStore(s => s.can('knowledgeBase'));
+  const canPreCallBriefing = usePlanStore(s => s.can('preCallBriefing'));
+
   const isManagerOrAdmin  = !!(user?.role && ['COMPANY_ADMIN', 'MANAGER', 'SUPER_ADMIN'].includes(user.role));
   const canCreatePersona  = isManagerOrAdmin;
   const myRoleplays       = teamRoleplays.filter(tr => tr.createdById === user?.id);
@@ -384,6 +396,8 @@ export function PracticePage() {
     setEndCondition('');
     setTimeLimitMins('3');
     setActiveTeamRoleplayId(null);
+    setBotKnowledge([]);
+    setUserBriefing([]);
     autoGenRef.current = `${t.industry}::${t.roleplayType}`;
   };
 
@@ -406,6 +420,8 @@ export function PracticePage() {
     setEndCondition(sc.endCondition ?? '');
     setTimeLimitMins(sc.timeLimitMins ? String(sc.timeLimitMins) : '3');
     setActiveTeamRoleplayId(tr.id);
+    setBotKnowledge(sc.botKnowledge ?? []);
+    setUserBriefing(sc.userBriefing ?? []);
     autoGenRef.current = `${sc.industry}::${sc.roleplayType}`;
   };
 
@@ -449,6 +465,8 @@ export function PracticePage() {
     setEndCondition('');
     setTimeLimitMins('3');
     setActiveTeamRoleplayId(null);
+    setBotKnowledge([]);
+    setUserBriefing([]);
     autoGenRef.current = '';
     openSetup('edit', 'New Roleplay', '', '');
   };
@@ -509,7 +527,7 @@ export function PracticePage() {
           difficulty, suggestedQuestions, objections,
           aiCanEnd, endCondition, timeLimitMins: timeLimitMinsNum,
           avatarId, elevenlabsVoiceId: selectedVoiceId,
-          language,
+          language, botKnowledge, userBriefing,
         } as any,
       });
       setTeamRoleplays(prev => [saved, ...prev]);
@@ -598,10 +616,17 @@ export function PracticePage() {
         displayEmoji, difficulty, suggestedQuestions, objections,
         aiCanEnd, endCondition, timeLimitMins: timeLimitMins ? parseInt(timeLimitMins, 10) || null : null,
         avatarId, elevenlabsVoiceId: selectedVoiceId,
-        language,
+        language, botKnowledge, userBriefing,
       } as ScenarioConfig & { language: string };
       const session = await sessionsApi.create({ scenarioConfig: sc, type: sessionType, framework });
-      setActiveSession({ id: session.id, personaDisplay: { name: displayName, title: displayTitle, emoji: displayEmoji, avatarId, elevenlabsVoiceId: selectedVoiceId } });
+      const pd: PersonaDisplay = { name: displayName, title: displayTitle, emoji: displayEmoji, avatarId, elevenlabsVoiceId: selectedVoiceId };
+      // Show pre-call briefing if user has content to review
+      if (canPreCallBriefing && userBriefing.length > 0) {
+        setPendingSession({ id: session.id, personaDisplay: pd });
+        setShowBriefing(true);
+      } else {
+        setActiveSession({ id: session.id, personaDisplay: pd });
+      }
       setQuickLaunchData(null);
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Failed to start session');
@@ -959,7 +984,8 @@ export function PracticePage() {
                   {[
                     { n: 1, label: 'Context', sub: industry || 'Industry & type' },
                     { n: 2, label: 'Persona', sub: displayName !== 'Custom Persona' ? displayName : 'Avatar & context' },
-                    { n: 3, label: 'Launch', sub: roleplayType || 'Settings & start' },
+                    { n: 3, label: 'Knowledge', sub: (botKnowledge.length + userBriefing.length) > 0 ? `${botKnowledge.length + userBriefing.length} items` : 'Docs & briefing' },
+                    { n: 4, label: 'Launch', sub: roleplayType || 'Settings & start' },
                   ].map(({ n, label, sub }) => {
                     const done = n < currentStep;
                     const active = n === currentStep;
@@ -1383,12 +1409,81 @@ export function PracticePage() {
 
                       <div className="flex items-center justify-between pt-1 border-t border-white/[0.06]">
                         <button onClick={() => goToStep(1)} className="btn-ghost gap-1.5 text-[13px]"><ArrowLeft size={12} /> Context</button>
-                        <button onClick={() => goToStep(3)} className="btn-primary gap-2 text-[13px]">Launch <ArrowLeft size={12} className="rotate-180" /></button>
+                        <button onClick={() => goToStep(3)} className="btn-primary gap-2 text-[13px]">Knowledge <ArrowLeft size={12} className="rotate-180" /></button>
                       </div>
                     </motion.div>
                   )}
 
                   {currentStep === 3 && (
+                    <motion.div
+                      key="s3-kb"
+                      initial={{ opacity: 0, x: stepDirection.current * 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: stepDirection.current * -20 }}
+                      transition={{ duration: 0.18, ease: 'easeOut' }}
+                      className="card p-4 sm:p-5 flex flex-col gap-6"
+                    >
+                      <div>
+                        <h3 className="font-display text-[14px] font-bold text-white mb-0.5">Knowledge Base</h3>
+                        <p className="text-[11.5px] text-white/70">Attach content to train the AI bot and optionally brief the user before the call starts.</p>
+                      </div>
+
+                      {/* Bot knowledge */}
+                      <div className="rounded-[12px] border border-white/[0.07] p-4">
+                        {canKnowledgeBase ? (
+                          <KnowledgeBaseEditor
+                            label="Bot Training"
+                            description="Context the AI persona will use during the call — product docs, FAQs, competitor info, pricing."
+                            forRole="bot"
+                            entries={botKnowledge}
+                            onChange={setBotKnowledge}
+                            maxEntries={5}
+                          />
+                        ) : (
+                          <PlanGate feature="knowledgeBase" overlay={false} upgradeLabel="Bot Knowledge Base — Pro feature">
+                            <KnowledgeBaseEditor
+                              label="Bot Training"
+                              description="Context the AI persona will use during the call."
+                              forRole="bot"
+                              entries={[]}
+                              onChange={() => {}}
+                            />
+                          </PlanGate>
+                        )}
+                      </div>
+
+                      {/* User briefing */}
+                      <div className="rounded-[12px] border border-white/[0.07] p-4">
+                        {canPreCallBriefing ? (
+                          <KnowledgeBaseEditor
+                            label="Pre-Call User Briefing"
+                            description="Material shown to the user before the call starts — product brochure, LinkedIn profile, website URL. Tests how well they've absorbed the content."
+                            forRole="user"
+                            entries={userBriefing}
+                            onChange={setUserBriefing}
+                            maxEntries={5}
+                          />
+                        ) : (
+                          <PlanGate feature="preCallBriefing" overlay={false} upgradeLabel="Pre-Call Briefing — Pro feature">
+                            <KnowledgeBaseEditor
+                              label="Pre-Call User Briefing"
+                              description="Material shown to the user before the call."
+                              forRole="user"
+                              entries={[]}
+                              onChange={() => {}}
+                            />
+                          </PlanGate>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 border-t border-white/[0.06]">
+                        <button onClick={() => goToStep(2)} className="btn-ghost gap-1.5 text-[13px]"><ArrowLeft size={12} /> Persona</button>
+                        <button onClick={() => goToStep(4)} className="btn-primary gap-2 text-[13px]">Launch <ArrowLeft size={12} className="rotate-180" /></button>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {currentStep === 4 && (
                     <motion.div
                       key="s3"
                       initial={{ opacity: 0, x: stepDirection.current * 20 }}
@@ -1538,7 +1633,7 @@ export function PracticePage() {
                           </button>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => goToStep(2)} className="btn-ghost gap-1.5 text-[13px]"><ArrowLeft size={12} /> Persona</button>
+                          <button onClick={() => goToStep(3)} className="btn-ghost gap-1.5 text-[13px]"><ArrowLeft size={12} /> Knowledge</button>
                           <button onClick={handleStart} disabled={starting || !isReady} className="flex-1 btn-primary gap-2 py-2.5 text-[13.5px] justify-center disabled:opacity-40">
                             {starting ? <><Loader2 size={14} className="animate-spin" /> Starting…</> : <><Play size={14} /> Start Session</>}
                           </button>
@@ -1578,6 +1673,34 @@ export function PracticePage() {
                 ))}
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Pre-call briefing ─────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showBriefing && pendingSession && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-[var(--bg)] overflow-y-auto p-4 md:p-8"
+          >
+            <PreCallBriefing
+              personaName={pendingSession.personaDisplay.name}
+              personaTitle={pendingSession.personaDisplay.title}
+              briefing={userBriefing}
+              onReady={() => {
+                setShowBriefing(false);
+                setActiveSession(pendingSession);
+                setPendingSession(null);
+              }}
+              onSkip={() => {
+                setShowBriefing(false);
+                setActiveSession(pendingSession);
+                setPendingSession(null);
+              }}
+            />
           </motion.div>
         )}
       </AnimatePresence>
