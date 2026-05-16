@@ -252,9 +252,12 @@ export function FeedbackPage() {
   const [peerScores, setPeerScores]       = useState<PeerScore[]>([]);
   const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
   const [lastJumpMs, setLastJumpMs]       = useState<number | null>(null);
-  const jumpLabelRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [audioBarFlash, setAudioBarFlash] = useState(false);
+  const jumpLabelRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const audioFlashRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const audioRef  = useRef<HTMLAudioElement | null>(null);
+  const audioBarRef = useRef<HTMLDivElement>(null);
   const trackRef  = useRef<HTMLDivElement>(null);
   const msgRefs   = useRef<Record<string, HTMLDivElement | null>>({});
   const socket    = connectSocket();
@@ -306,6 +309,11 @@ export function FeedbackPage() {
 
   const jumpToTimestamp = useCallback((timestampMs: number, switchToTranscript = false) => {
     seekTo(timestampMs / 1000);
+    // Scroll audio bar into view and flash it
+    audioBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    setAudioBarFlash(true);
+    if (audioFlashRef.current) clearTimeout(audioFlashRef.current);
+    audioFlashRef.current = setTimeout(() => setAudioBarFlash(false), 1200);
     // Pulse the header timeline marker
     setLastJumpMs(timestampMs);
     if (jumpLabelRef.current) clearTimeout(jumpLabelRef.current);
@@ -323,13 +331,6 @@ export function FeedbackPage() {
         setTimeout(() => {
           msgRefs.current[nearest.id]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 100);
-      } else {
-        // Show a brief seeked-to indicator without switching tabs
-        toast(`▶ Audio seeked to ${fmt(timestampMs)}`, {
-          duration: 1800,
-          style: { fontSize: '12px', padding: '8px 14px', minWidth: 'unset' },
-          icon: undefined,
-        });
       }
       setTimeout(() => setHighlightedMsgId(null), 3000);
     }
@@ -493,9 +494,17 @@ export function FeedbackPage() {
           </div>
         </div>
 
-        {/* Audio player */}
-        {playbackUrl && (
-          <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+        {/* Audio player — always visible */}
+        <div
+          ref={audioBarRef}
+          className="mt-3 pt-3 border-t transition-all duration-300"
+          style={{
+            borderColor: 'var(--border)',
+            boxShadow: audioBarFlash ? '0 0 0 2px var(--accent)' : undefined,
+            borderRadius: audioBarFlash ? '10px' : undefined,
+          }}
+        >
+          {playbackUrl && (
             <audio
               ref={el => {
                 audioRef.current = el;
@@ -510,10 +519,12 @@ export function FeedbackPage() {
               src={playbackUrl}
               preload="metadata"
             />
+          )}
             <div className="flex items-center gap-3">
               <button
                 onClick={togglePlay}
-                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all hover:scale-110"
+                disabled={!playbackUrl}
+                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all hover:scale-110 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
                 style={{ background: 'rgba(91,111,255,0.15)', border: '1px solid rgba(91,111,255,0.3)', color: 'var(--accent)' }}
               >
                 {isPlaying ? <Pause size={12} fill="currentColor" /> : <Play size={12} fill="currentColor" />}
@@ -521,8 +532,8 @@ export function FeedbackPage() {
               <span className="text-[10px] font-mono flex-shrink-0 w-9" style={{ color: 'var(--text3)' }}>{fmt(audioProgress * 1000)}</span>
               <div
                 ref={trackRef}
-                onClick={handleTrackClick}
-                className="flex-1 h-[5px] rounded-full relative cursor-pointer"
+                onClick={playbackUrl ? handleTrackClick : undefined}
+                className={clsx('flex-1 h-[5px] rounded-full relative', playbackUrl ? 'cursor-pointer' : 'cursor-default')}
                 style={{ background: 'var(--bg4)' }}
               >
                 {/* Event markers */}
@@ -554,16 +565,24 @@ export function FeedbackPage() {
                   );
                 })}
                 {/* Progress fill */}
-                <div
-                  className="h-full rounded-full relative"
-                  style={{
-                    width: `${trackProgress}%`,
-                    background: 'linear-gradient(90deg, var(--accent), var(--accent3))',
-                  }}
-                >
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full translate-x-1.5 shadow-sm"
-                    style={{ background: '#fff', border: '2px solid var(--accent)' }} />
-                </div>
+                {playbackUrl && (
+                  <div
+                    className="h-full rounded-full relative"
+                    style={{
+                      width: `${trackProgress}%`,
+                      background: 'linear-gradient(90deg, var(--accent), var(--accent3))',
+                    }}
+                  >
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full translate-x-1.5 shadow-sm"
+                      style={{ background: '#fff', border: '2px solid var(--accent)' }} />
+                  </div>
+                )}
+                {/* No recording indicator */}
+                {!playbackUrl && (
+                  <div className="absolute inset-0 flex items-center px-2">
+                    <span className="text-[9px]" style={{ color: 'var(--text3)' }}>No recording available</span>
+                  </div>
+                )}
               </div>
               <span className="text-[10px] font-mono flex-shrink-0" style={{ color: 'var(--text3)' }}>
                 {audioDuration ? fmt(audioDuration * 1000) : session.durationSeconds ? fmt(session.durationSeconds * 1000) : '--:--'}
@@ -571,14 +590,14 @@ export function FeedbackPage() {
               <button
                 onClick={() => { if (playbackUrl) { const a = document.createElement('a'); a.href = playbackUrl; a.download = `session-${id}.mp3`; a.click(); } }}
                 title="Download"
+                disabled={!playbackUrl}
                 style={{ color: 'var(--text3)' }}
-                className="hover:text-white transition-colors flex-shrink-0"
+                className="hover:text-white transition-colors flex-shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <Download size={13} />
               </button>
             </div>
-          </div>
-        )}
+        </div>
       </div>
 
       {/* ── Tab bar ───────────────────────────────────────────────────────────── */}
