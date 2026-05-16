@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Mic, MicOff, Phone, Pause, Play, BarChart3 } from 'lucide-react';
-import { useConversationControls, useConversationStatus, useConversationMode, useConversationInput } from '@elevenlabs/react';
+import { ConversationProvider, useConversationControls, useConversationStatus, useConversationMode, useConversationInput } from '@elevenlabs/react';
 import { sessionsApi } from '@/lib/api';
 import { useRecording } from '@/hooks/useRecording';
 import { connectSocket } from '@/lib/socket';
@@ -58,7 +58,15 @@ function playRings(): Promise<void> {
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
-export function CallInterface({ sessionId, persona, sessionType, framework, timeLimitMins, onEnd }: Props) {
+export function CallInterface(props: Props) {
+  return (
+    <ConversationProvider>
+      <CallInterfaceInner {...props} />
+    </ConversationProvider>
+  );
+}
+
+function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLimitMins, onEnd }: Props) {
   const [phase, setPhase] = useState<'ringing' | 'active'>('ringing');
   const [ringDot, setRingDot] = useState(0);
   const [messages, setMessages] = useState<Message[]>([]);
