@@ -4,6 +4,17 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User } from '@/types';
 
+const DEMO_USER: User = {
+  id: 'u1',
+  email: 'agent@demo.com',
+  firstName: 'Alex',
+  lastName: 'Rivera',
+  role: 'AGENT',
+  companyId: 'c1',
+  avgScore: 74,
+  sessionCount: 12,
+};
+
 interface AuthState {
   user: User | null;
   accessToken: string | null;
@@ -17,14 +28,14 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      user: null,
-      accessToken: null,
-      refreshToken: null,
-      isAuthenticated: false,
+      user: DEMO_USER,
+      accessToken: 'mock-token',
+      refreshToken: 'mock-refresh',
+      isAuthenticated: true,
       setAuth: (user, accessToken, refreshToken) =>
         set({ user, accessToken, refreshToken, isAuthenticated: true }),
       clearAuth: () =>
-        set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false }),
+        set({ user: DEMO_USER, accessToken: 'mock-token', refreshToken: 'mock-refresh', isAuthenticated: true }),
       updateToken: (accessToken, refreshToken) =>
         set({ accessToken, refreshToken }),
     }),

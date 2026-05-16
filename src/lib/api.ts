@@ -1,135 +1,325 @@
-// pitchiq/frontend/src/lib/api.ts
+// Mock API — no backend required for preview
+import type {
+  DashboardStats,
+  LeaderboardEntry,
+  Session,
+  Persona,
+  User,
+  TeamRoleplay,
+  Framework,
+  CompanyDetail,
+} from '@/types';
 
-import axios from 'axios';
-import { useAuthStore } from './store';
-import { resetSocket } from './socket';
+const delay = (ms = 300) => new Promise(r => setTimeout(r, ms));
 
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+// ── Mock data ────────────────────────────────────────────────────────────────
 
-export const api = axios.create({
-  baseURL: BASE_URL,
-  headers: { 'Content-Type': 'application/json' },
-  timeout: 30000,
-});
+const MOCK_USER: User = {
+  id: 'u1',
+  email: 'agent@demo.com',
+  firstName: 'Alex',
+  lastName: 'Rivera',
+  role: 'AGENT',
+  companyId: 'c1',
+  avgScore: 74,
+  sessionCount: 12,
+};
 
-// Attach JWT to every request
-api.interceptors.request.use(config => {
-  const token = useAuthStore.getState().accessToken;
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+const MOCK_DASHBOARD: DashboardStats = {
+  totalSessions: 12,
+  avgScore: 74,
+  activeUsers: 8,
+  passRate: 67,
+  recentSessions: [
+    { id: 's1', endedAt: new Date(Date.now() - 3_600_000).toISOString(), durationSeconds: 720, framework: 'MEDDIC', sessionType: 'PHONE_CALL', personaName: 'Sarah Chen', personaEmoji: '👩‍💼', userFirstName: 'Alex', userLastName: 'Rivera', totalScore: 81 },
+    { id: 's2', endedAt: new Date(Date.now() - 86_400_000).toISOString(), durationSeconds: 540, framework: 'SPIN', sessionType: 'ONLINE_MEETING', personaName: 'Marcus Thompson', personaEmoji: '🧑‍💼', userFirstName: 'Alex', userLastName: 'Rivera', totalScore: 68 },
+    { id: 's3', endedAt: new Date(Date.now() - 2 * 86_400_000).toISOString(), durationSeconds: 900, framework: 'BANT', sessionType: 'PHONE_CALL', personaName: 'Priya Patel', personaEmoji: '👩‍🔬', userFirstName: 'Alex', userLastName: 'Rivera', totalScore: 75 },
+    { id: 's4', endedAt: new Date(Date.now() - 4 * 86_400_000).toISOString(), durationSeconds: 480, framework: 'MEDDIC', sessionType: 'ONLINE_MEETING', personaName: 'James Kim', personaEmoji: '👨‍💻', userFirstName: 'Alex', userLastName: 'Rivera', totalScore: 55 },
+  ],
+  frameworkStats: [
+    { component: 'Metrics', avgScore: 82, count: 8 },
+    { component: 'Economic Buyer', avgScore: 71, count: 8 },
+    { component: 'Decision Criteria', avgScore: 65, count: 8 },
+    { component: 'Decision Process', avgScore: 78, count: 8 },
+    { component: 'Identify Pain', avgScore: 88, count: 8 },
+    { component: 'Champion', avgScore: 60, count: 8 },
+  ],
+  agentExtra: { sessionsThisWeek: 3, streak: 2, rank: 4 },
+};
 
-// Handle 401 → refresh token → retry
-let isRefreshing = false;
-let failedQueue: Array<{ resolve: (token: string | null) => void; reject: (err: unknown) => void }> = [];
+const MOCK_SESSIONS: Session[] = [
+  {
+    id: 's1',
+    type: 'PHONE_CALL',
+    status: 'COMPLETED',
+    framework: 'MEDDIC',
+    totalScore: 81,
+    durationSeconds: 720,
+    startedAt: new Date(Date.now() - 3_700_000).toISOString(),
+    endedAt: new Date(Date.now() - 3_600_000).toISOString(),
+    createdAt: new Date(Date.now() - 3_700_000).toISOString(),
+    persona: { id: 'p1', name: 'Sarah Chen', title: 'VP of Sales', emoji: '👩‍💼', difficulty: 'MEDIUM' },
+    frameworkScores: [
+      { id: 'fs1', component: 'Metrics', score: 85, feedback: 'Good use of quantitative metrics', evidence: ['You mentioned a 20% efficiency gain'] },
+      { id: 'fs2', component: 'Economic Buyer', score: 78, feedback: 'Identified the buyer well', evidence: ['Asked about budget authority early'] },
+      { id: 'fs3', component: 'Identify Pain', score: 92, feedback: 'Excellent pain discovery', evidence: ['Uncovered 3 distinct pain points'] },
+      { id: 'fs4', component: 'Champion', score: 68, feedback: 'Could build champion relationship more', evidence: ['Did not ask about internal advocates'] },
+    ],
+    aiFeedback: JSON.stringify({
+      overallFeedback: 'Strong discovery call with excellent pain identification. Your ability to quantify business impact was impressive.',
+      strengths: ['Excellent pain point discovery', 'Strong metric articulation', 'Professional tone throughout'],
+      improvements: ['Build champion relationships earlier', 'Ask more about decision timeline', 'Follow up on budget qualification'],
+      proTip: 'Try using the "impact gap" technique — ask "what happens if this problem persists for another 6 months?" to create urgency.',
+    }),
+    timelineEvents: [
+      { id: 'te1', type: 'GOOD', timestampMs: 45000, title: 'Strong opener', description: 'Opened with a relevant industry insight', suggestion: undefined },
+      { id: 'te2', type: 'ISSUE', timestampMs: 180000, title: 'Missed objection', description: 'Prospect raised pricing concern but you moved on', suggestion: 'Acknowledge pricing objections directly', betterResponse: 'I understand cost is a concern — what ROI threshold would make this a clear yes for you?' },
+      { id: 'te3', type: 'GOOD', timestampMs: 320000, title: 'Pain identified', description: 'Uncovered key operational pain point', suggestion: undefined },
+    ],
+  },
+  {
+    id: 's2',
+    type: 'ONLINE_MEETING',
+    status: 'COMPLETED',
+    framework: 'SPIN',
+    totalScore: 68,
+    durationSeconds: 540,
+    startedAt: new Date(Date.now() - 87_000_000).toISOString(),
+    endedAt: new Date(Date.now() - 86_400_000).toISOString(),
+    createdAt: new Date(Date.now() - 87_000_000).toISOString(),
+    persona: { id: 'p2', name: 'Marcus Thompson', title: 'CTO', emoji: '🧑‍💼', difficulty: 'HARD' },
+    frameworkScores: [
+      { id: 'fs5', component: 'Situation Questions', score: 75, feedback: 'Good situational awareness', evidence: [] },
+      { id: 'fs6', component: 'Problem Questions', score: 62, feedback: 'Could dig deeper into problems', evidence: [] },
+      { id: 'fs7', component: 'Implication Questions', score: 58, feedback: 'Implication questions were surface-level', evidence: [] },
+      { id: 'fs8', component: 'Need-Payoff Questions', score: 77, feedback: 'Good need-payoff alignment', evidence: [] },
+    ],
+    aiFeedback: JSON.stringify({
+      overallFeedback: 'A decent SPIN session but implication questions need more depth to create compelling urgency.',
+      strengths: ['Good situation framing', 'Strong need-payoff close'],
+      improvements: ['Deepen implication questions', 'Spend more time on problem exploration'],
+      proTip: 'Chain your implication questions: each answer should naturally lead to the next deeper implication.',
+    }),
+    timelineEvents: [],
+  },
+  {
+    id: 's3',
+    type: 'PHONE_CALL',
+    status: 'COMPLETED',
+    framework: 'BANT',
+    totalScore: 75,
+    durationSeconds: 900,
+    startedAt: new Date(Date.now() - 2 * 86_400_000 - 600_000).toISOString(),
+    endedAt: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+    createdAt: new Date(Date.now() - 2 * 86_400_000 - 600_000).toISOString(),
+    persona: { id: 'p3', name: 'Priya Patel', title: 'Head of Engineering', emoji: '👩‍🔬', difficulty: 'MEDIUM' },
+    frameworkScores: [
+      { id: 'fs9', component: 'Budget', score: 70, feedback: 'Budget discussed but not qualified', evidence: [] },
+      { id: 'fs10', component: 'Authority', score: 80, feedback: 'Clearly identified decision maker', evidence: [] },
+      { id: 'fs11', component: 'Need', score: 85, feedback: 'Strong need identification', evidence: [] },
+      { id: 'fs12', component: 'Timeline', score: 65, feedback: 'Timeline discussion was vague', evidence: [] },
+    ],
+    aiFeedback: JSON.stringify({
+      overallFeedback: 'Good BANT qualification with strong need identification. Budget and timeline need more precision.',
+      strengths: ['Strong authority identification', 'Clear need articulation'],
+      improvements: ['Qualify budget more precisely', 'Establish concrete timeline milestones'],
+      proTip: 'When asking about budget, try "What investment range have you allocated for solving this?" instead of a direct budget question.',
+    }),
+    timelineEvents: [],
+  },
+];
 
-function processQueue(error: unknown, token: string | null = null) {
-  failedQueue.forEach(({ resolve, reject }) => (error ? reject(error) : resolve(token)));
-  failedQueue = [];
-}
+const MOCK_PERSONAS: Persona[] = [
+  { id: 'p1', name: 'Sarah Chen', title: 'VP of Sales', company: 'TechCorp', industry: 'SaaS', emoji: '👩‍💼', difficulty: 'MEDIUM', personality: 'Analytical, data-driven', systemPrompt: '', objections: ['Too expensive', 'Already have a solution'], buyingSignals: ['Asking about ROI', 'Mentioning budget'], frameworks: ['MEDDIC', 'BANT'], isPreset: true },
+  { id: 'p2', name: 'Marcus Thompson', title: 'CTO', company: 'FinanceFlow', industry: 'FinTech', emoji: '🧑‍💼', difficulty: 'HARD', personality: 'Technical, skeptical', systemPrompt: '', objections: ['Security concerns', 'Integration complexity'], buyingSignals: ['Technical deep-dive questions'], frameworks: ['SPIN', 'MEDDICC'], isPreset: true },
+  { id: 'p3', name: 'Priya Patel', title: 'Head of Engineering', company: 'BuildFast', industry: 'Construction Tech', emoji: '👩‍🔬', difficulty: 'MEDIUM', personality: 'Practical, ROI-focused', systemPrompt: '', objections: ['Implementation time', 'Team adoption'], buyingSignals: ['Asking about timelines'], frameworks: ['BANT', 'CHALLENGER'], isPreset: true },
+  { id: 'p4', name: 'Robert Blake', title: 'CFO', company: 'RetailPro', industry: 'Retail', emoji: '👨‍💼', difficulty: 'EXPERT', personality: 'Cost-conscious, risk-averse', systemPrompt: '', objections: ['High cost', 'Not priority', 'Already tried similar'], buyingSignals: ['Asking about payment terms'], frameworks: ['MEDDIC', 'SNAP'], isPreset: true },
+  { id: 'p5', name: 'Emma Wilson', title: 'Marketing Director', company: 'GrowthCo', industry: 'Marketing', emoji: '👩‍🎨', difficulty: 'EASY', personality: 'Creative, results-oriented', systemPrompt: '', objections: ['Internal bandwidth', 'Timing'], buyingSignals: ['Campaign ideas', 'Asking about case studies'], frameworks: ['SPIN', 'SNAP'], isPreset: true },
+  { id: 'p6', name: 'Carlos Rodriguez', title: 'Operations Manager', company: 'LogiSync', industry: 'Logistics', emoji: '🧑‍🏭', difficulty: 'MEDIUM', personality: 'Process-driven, methodical', systemPrompt: '', objections: ['Process disruption', 'Training required'], buyingSignals: ['Asking about workflow integration'], frameworks: ['BANT', 'CHALLENGER'], isPreset: true },
+];
 
-api.interceptors.response.use(
-  res => res,
-  async error => {
-    const original = error.config;
-    if (error.response?.status !== 401 || original._retry) return Promise.reject(error);
+const MOCK_LEADERBOARD: LeaderboardEntry[] = [
+  { rank: 1, user: { id: 'u2', firstName: 'Jordan', lastName: 'Lee', avatarUrl: undefined }, avgScore: 91, sessionCount: 24 },
+  { rank: 2, user: { id: 'u3', firstName: 'Taylor', lastName: 'Morgan', avatarUrl: undefined }, avgScore: 87, sessionCount: 18 },
+  { rank: 3, user: { id: 'u4', firstName: 'Morgan', lastName: 'Kim', avatarUrl: undefined }, avgScore: 83, sessionCount: 21 },
+  { rank: 4, user: { id: 'u1', firstName: 'Alex', lastName: 'Rivera', avatarUrl: undefined }, avgScore: 74, sessionCount: 12 },
+  { rank: 5, user: { id: 'u5', firstName: 'Sam', lastName: 'Patel', avatarUrl: undefined }, avgScore: 71, sessionCount: 15 },
+  { rank: 6, user: { id: 'u6', firstName: 'Casey', lastName: 'Zhang', avatarUrl: undefined }, avgScore: 68, sessionCount: 9 },
+  { rank: 7, user: { id: 'u7', firstName: 'Riley', lastName: 'Johnson', avatarUrl: undefined }, avgScore: 65, sessionCount: 7 },
+  { rank: 8, user: { id: 'u8', firstName: 'Drew', lastName: 'Okonkwo', avatarUrl: undefined }, avgScore: 59, sessionCount: 5 },
+];
 
-    if (isRefreshing) {
-      return new Promise((resolve, reject) => failedQueue.push({ resolve, reject }))
-        .then(token => { original.headers.Authorization = `Bearer ${token}`; return api(original); });
-    }
+const MOCK_TEAM_USERS: User[] = [
+  { id: 'u2', email: 'jordan@demo.com', firstName: 'Jordan', lastName: 'Lee', role: 'AGENT', companyId: 'c1', avgScore: 91, sessionCount: 24 },
+  { id: 'u3', email: 'taylor@demo.com', firstName: 'Taylor', lastName: 'Morgan', role: 'AGENT', companyId: 'c1', avgScore: 87, sessionCount: 18 },
+  { id: 'u4', email: 'morgan@demo.com', firstName: 'Morgan', lastName: 'Kim', role: 'AGENT', companyId: 'c1', avgScore: 83, sessionCount: 21 },
+  { id: 'u5', email: 'sam@demo.com', firstName: 'Sam', lastName: 'Patel', role: 'AGENT', companyId: 'c1', avgScore: 71, sessionCount: 15 },
+  MOCK_USER,
+];
 
-    original._retry = true;
-    isRefreshing = true;
+const MOCK_TEAM_ROLEPLAYS: TeamRoleplay[] = [
+  {
+    id: 'tr1',
+    name: 'Cold Call Blitz',
+    description: 'Practice rapid cold calling with a skeptical VP',
+    scenarioConfig: {
+      industry: 'SaaS',
+      roleplayType: 'cold_call',
+      personaContext: 'Skeptical VP of Sales',
+      displayName: 'Sarah Chen',
+      displayTitle: 'VP of Sales',
+      displayEmoji: '👩‍💼',
+      difficulty: 'MEDIUM',
+      suggestedQuestions: [],
+    },
+    isActive: true,
+    createdById: 'u1',
+    createdBy: { id: 'u1', firstName: 'Alex', lastName: 'Rivera' },
+    createdAt: new Date(Date.now() - 7 * 86_400_000).toISOString(),
+    updatedAt: new Date(Date.now() - 7 * 86_400_000).toISOString(),
+  },
+];
 
-    try {
-      const { refreshToken } = useAuthStore.getState();
-      if (!refreshToken) throw new Error('No refresh token');
-      const { data } = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken });
-      useAuthStore.getState().updateToken(data.accessToken, data.refreshToken);
-      processQueue(null, data.accessToken);
-      original.headers.Authorization = `Bearer ${data.accessToken}`;
-      return api(original);
-    } catch (err) {
-      processQueue(err, null);
-      resetSocket();
-      useAuthStore.getState().clearAuth();
-      window.location.href = '/login';
-      return Promise.reject(err);
-    } finally {
-      isRefreshing = false;
-    }
-  }
-);
-
-// ── API helpers ───────────────────────────────────────────────────────────────
+// ── Auth API ──────────────────────────────────────────────────────────────────
 
 export const authApi = {
-  login:   (email: string, password: string) => api.post('/auth/login', { email, password }).then(r => r.data),
-  register:(data: any) => api.post('/auth/register', data).then(r => r.data),
-  logout:  (refreshToken: string) => api.post('/auth/logout', { refreshToken }),
-  me:      () => api.get('/auth/me').then(r => r.data),
+  login: async (email: string, _password: string) => {
+    await delay(400);
+    const roleMap: Record<string, typeof MOCK_USER> = {
+      'agent@demo.com': MOCK_USER,
+      'admin@demo.com': { ...MOCK_USER, id: 'u-admin', email: 'admin@demo.com', firstName: 'Dana', lastName: 'Brooks', role: 'COMPANY_ADMIN' },
+      'manager@demo.com': { ...MOCK_USER, id: 'u-mgr', email: 'manager@demo.com', firstName: 'Jamie', lastName: 'Scott', role: 'MANAGER' },
+      'superadmin@demo.com': { ...MOCK_USER, id: 'u-sa', email: 'superadmin@demo.com', firstName: 'Super', lastName: 'Admin', role: 'SUPER_ADMIN' },
+    };
+    const user = roleMap[email] ?? MOCK_USER;
+    return { user, accessToken: 'mock-token', refreshToken: 'mock-refresh' };
+  },
+  register: async (data: any) => {
+    await delay(400);
+    return { user: { ...MOCK_USER, ...data, id: 'u-new' }, accessToken: 'mock-token', refreshToken: 'mock-refresh' };
+  },
+  logout: async (_refreshToken?: string) => { await delay(100); },
+  me: async () => { await delay(100); return MOCK_USER; },
 };
+
+// ── Sessions API ──────────────────────────────────────────────────────────────
 
 export const sessionsApi = {
-  list:          (params?: any)        => api.get('/sessions', { params }).then(r => r.data),
-  create:        (data: any)           => api.post('/sessions', data).then(r => r.data),
-  get:           (id: string)          => api.get(`/sessions/${id}`).then(r => r.data),
-  start:         (id: string)          => api.post(`/sessions/${id}/start`).then(r => r.data),
-  end:           (id: string, data: any) => api.post(`/sessions/${id}/end`, data).then(r => r.data),
-  addMessage:    (id: string, data: any) => api.post(`/sessions/${id}/messages`, data).then(r => r.data),
-  // Calls the backend AI proxy — API key never touches the browser
-  getAIResponse: (id: string, userMessage: string) =>
-    api.post(`/sessions/${id}/respond`, { userMessage }).then(r => r.data),
-  share:         (id: string)          => api.post(`/sessions/${id}/share`).then(r => r.data),
+  list: async (_params?: any) => { await delay(300); return { sessions: MOCK_SESSIONS, total: MOCK_SESSIONS.length }; },
+  create: async (_data: any) => {
+    await delay(300);
+    return { ...MOCK_SESSIONS[0], id: `s-new-${Date.now()}`, status: 'PENDING' };
+  },
+  get: async (id: string) => { await delay(200); return MOCK_SESSIONS.find(s => s.id === id) ?? MOCK_SESSIONS[0]; },
+  start: async (_id: string) => { await delay(200); return { status: 'IN_PROGRESS' }; },
+  end: async (_id: string, _data: any) => { await delay(300); return MOCK_SESSIONS[0]; },
+  addMessage: async (_id: string, data: any) => { await delay(100); return { id: `m-${Date.now()}`, ...data }; },
+  getAIResponse: async (_id: string, _userMessage: string) => {
+    await delay(800);
+    return { response: "That's an interesting point. Can you tell me more about your current process and where the bottlenecks are?" };
+  },
+  share: async (_id: string) => { await delay(200); return { shareUrl: '#' }; },
 };
+
+// ── Personas API ──────────────────────────────────────────────────────────────
 
 export const personasApi = {
-  list:   ()           => api.get('/personas').then(r => r.data),
-  create: (data: any)  => api.post('/personas', data).then(r => r.data),
-  delete: (id: string) => api.delete(`/personas/${id}`),
+  list: async () => { await delay(200); return MOCK_PERSONAS; },
+  create: async (data: any) => { await delay(300); return { ...data, id: `p-${Date.now()}`, isPreset: false }; },
+  delete: async (_id: string) => { await delay(200); },
 };
+
+// ── Analytics API ─────────────────────────────────────────────────────────────
 
 export const analyticsApi = {
-  dashboard:   () =>            api.get('/analytics/dashboard').then(r => r.data),
-  leaderboard: (period?: string) => api.get('/analytics/leaderboard', { params: { period } }).then(r => r.data),
+  dashboard: async () => { await delay(350); return MOCK_DASHBOARD; },
+  leaderboard: async (_period?: string) => { await delay(300); return MOCK_LEADERBOARD; },
 };
+
+// ── Users API ─────────────────────────────────────────────────────────────────
 
 export const usersApi = {
-  list:          ()                      => api.get('/users').then(r => r.data),
-  invite:        (data: any)             => api.post('/users/invite', data).then(r => r.data),
-  update:        (id: string, data: any) => api.patch(`/users/${id}`, data).then(r => r.data),
-  stats:         (id: string)            => api.get(`/users/${id}/stats`).then(r => r.data),
-  resetPassword: (id: string)            => api.post(`/users/${id}/reset-password`).then(r => r.data),
+  list: async () => { await delay(250); return MOCK_TEAM_USERS; },
+  invite: async (data: any) => { await delay(300); return { ...data, id: `u-${Date.now()}` }; },
+  update: async (id: string, data: any) => { await delay(200); return { id, ...data }; },
+  stats: async (_id: string) => { await delay(200); return { sessionCount: 12, avgScore: 74 }; },
+  resetPassword: async (_id: string) => { await delay(200); return { tempPassword: 'TempPass123!' }; },
 };
+
+// ── Superadmin API ────────────────────────────────────────────────────────────
+
+const MOCK_COMPANIES: CompanyDetail[] = [
+  { id: 'c1', name: 'TechCorp', slug: 'techcorp', defaultFramework: 'MEDDIC' as Framework, passThreshold: 70, isActive: true, industry: 'SaaS', agentCount: 8, adminCount: 2, totalSessions: 127, createdAt: new Date(Date.now() - 90 * 86_400_000).toISOString(), admins: [] },
+  { id: 'c2', name: 'FinanceFlow', slug: 'financeflow', defaultFramework: 'BANT' as Framework, passThreshold: 75, isActive: true, industry: 'FinTech', agentCount: 12, adminCount: 3, totalSessions: 214, createdAt: new Date(Date.now() - 180 * 86_400_000).toISOString(), admins: [] },
+  { id: 'c3', name: 'RetailPro', slug: 'retailpro', defaultFramework: 'SPIN' as Framework, passThreshold: 65, isActive: false, industry: 'Retail', agentCount: 5, adminCount: 1, totalSessions: 43, createdAt: new Date(Date.now() - 30 * 86_400_000).toISOString(), admins: [] },
+];
 
 export const superadminApi = {
-  setup:         (data: any)             => api.post('/superadmin/setup', data).then(r => r.data),
-  getStats:      ()                      => api.get('/superadmin/stats').then(r => r.data),
-  listCompanies: ()                      => api.get('/superadmin/companies').then(r => r.data),
-  createCompany: (data: any)             => api.post('/superadmin/companies', data).then(r => r.data),
-  getCompany:    (id: string)            => api.get(`/superadmin/companies/${id}`).then(r => r.data),
-  updateCompany: (id: string, data: any) => api.patch(`/superadmin/companies/${id}`, data).then(r => r.data),
-  getCompanyUsers: (id: string)          => api.get(`/superadmin/companies/${id}/users`).then(r => r.data),
-  updateCompanyUser: (companyId: string, userId: string, data: any) =>
-    api.patch(`/superadmin/companies/${companyId}/users/${userId}`, data).then(r => r.data),
+  setup: async (data: any) => { await delay(400); return data; },
+  getStats: async () => {
+    await delay(300);
+    return { totalCompanies: 3, activeCompanies: 2, totalUsers: 25, totalSessions: 384, activeUsersThisMonth: 18 };
+  },
+  listCompanies: async () => { await delay(300); return MOCK_COMPANIES; },
+  createCompany: async (data: any) => { await delay(400); return { ...data, id: `c-${Date.now()}`, isActive: true, agentCount: 0, adminCount: 0, totalSessions: 0, admins: [] }; },
+  getCompany: async (id: string) => { await delay(200); return MOCK_COMPANIES.find(c => c.id === id) ?? MOCK_COMPANIES[0]; },
+  updateCompany: async (id: string, data: any) => { await delay(300); return { id, ...data }; },
+  getCompanyUsers: async (_id: string) => { await delay(200); return MOCK_TEAM_USERS; },
+  updateCompanyUser: async (_companyId: string, userId: string, data: any) => { await delay(200); return { id: userId, ...data }; },
 };
+
+// ── Voice API ─────────────────────────────────────────────────────────────────
 
 export const voiceApi = {
-  getTTSUrl: (voiceId: string) => `${BASE_URL}/voice/${voiceId}/tts`,
+  getTTSUrl: (_voiceId: string) => '',
 };
+
+// ── Practice API ──────────────────────────────────────────────────────────────
 
 export const practiceApi = {
-  generateScenario: (data: { keywords: string; industry: string; roleplayType: string }) =>
-    api.post('/practice/generate-scenario', data).then(r => r.data),
-  generateQuestions: (data: { personaContext: string; roleplayType: string }) =>
-    api.post('/practice/generate-questions', data).then(r => r.data),
+  generateScenario: async (_data: any) => {
+    await delay(600);
+    return {
+      personaContext: 'You are a skeptical VP of Sales at a mid-sized SaaS company.',
+      displayName: 'Jennifer Walsh',
+      displayTitle: 'VP of Sales',
+      displayEmoji: '👩‍💼',
+      difficulty: 'MEDIUM',
+      suggestedQuestions: [
+        "What's your current sales cycle length?",
+        "How are you measuring team performance today?",
+        "What would success look like in 90 days?",
+      ],
+      objections: ["We already have a solution", "Not in budget right now"],
+    };
+  },
+  generateQuestions: async (_data: any) => {
+    await delay(400);
+    return {
+      questions: [
+        "What's your biggest challenge with your current process?",
+        "How does this impact your revenue targets?",
+        "Who else is involved in this decision?",
+      ],
+    };
+  },
 };
 
+// ── Team Roleplays API ────────────────────────────────────────────────────────
+
 export const teamRoleplaysApi = {
-  list:   ()                      => api.get('/team-roleplays').then(r => r.data),
-  create: (data: { name: string; description?: string; scenarioConfig: any }) =>
-    api.post('/team-roleplays', data).then(r => r.data),
-  update: (id: string, data: any) => api.patch(`/team-roleplays/${id}`, data).then(r => r.data),
-  delete: (id: string)            => api.delete(`/team-roleplays/${id}`),
+  list: async () => { await delay(200); return MOCK_TEAM_ROLEPLAYS; },
+  create: async (data: any) => { await delay(300); return { ...data, id: `tr-${Date.now()}`, isActive: true, createdById: 'u1', createdBy: { id: 'u1', firstName: 'Alex', lastName: 'Rivera' }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }; },
+  update: async (id: string, data: any) => { await delay(200); return { id, ...data }; },
+  delete: async (_id: string) => { await delay(200); },
 };
+
+// Stub axios instance used by a few pages directly (VoicePicker, FeedbackPage)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const _apiStub: any = {
+  get: (_url: string, _config?: any) => Promise.resolve({ data: {} as any }),
+  post: (_url: string, _data?: any) => Promise.resolve({ data: {} as any }),
+  patch: (_url: string, _data?: any) => Promise.resolve({ data: {} as any }),
+  delete: (_url: string) => Promise.resolve({ data: {} as any }),
+};
+export const api: any = _apiStub;

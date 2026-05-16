@@ -4,12 +4,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import {
-  RefreshCw, Share2, ChevronRight, CheckCircle, AlertTriangle,
-  Lightbulb, Play, Pause, Search, Copy, Download,
-  MessageSquare, Clock, Shield, BarChart3, Gauge, Activity, Mic,
-  ChevronDown, AlertCircle, X,
-} from 'lucide-react';
+import { RefreshCw, Share2, ChevronRight, CircleCheck as CheckCircle, TriangleAlert as AlertTriangle, Lightbulb, Play, Pause, Search, Copy, Download, MessageSquare, Clock, Shield, BarChart3, Gauge, Activity, Mic, ChevronDown, CircleAlert as AlertCircle, X } from 'lucide-react';
 import { sessionsApi, api } from '@/lib/api';
 import { connectSocket } from '@/lib/socket';
 import { Session, ParsedFeedback, FRAMEWORK_INFO } from '@/types';
@@ -124,7 +119,7 @@ export function FeedbackPage() {
         if (data.status === 'COMPLETED' && !data.totalScore) setAnalysing(true);
         if (data.recordingUrl) {
           api.get(`/recordings/playback/${id}`)
-            .then(res => setPlaybackUrl((res.data as any).url))
+            .then((res: any) => setPlaybackUrl((res.data as any).url))
             .catch(() => {});
         }
       } catch {
@@ -145,7 +140,7 @@ export function FeedbackPage() {
         toast.success('🎯 AI analysis complete!');
         if (data.recordingUrl) {
           api.get(`/recordings/playback/${id}`)
-            .then(res => setPlaybackUrl((res.data as any).url))
+            .then((res: any) => setPlaybackUrl((res.data as any).url))
             .catch(() => {});
         }
       } catch {

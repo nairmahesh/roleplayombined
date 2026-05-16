@@ -1,6 +1,6 @@
 // Voice selector — regional accent voices (ElevenLabs shared library) + curated fallbacks
 import { useState, useRef, useEffect } from 'react';
-import { Play, Square, Star, Globe2 } from 'lucide-react';
+import { Play, Square, Star, Globe as Globe2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { AVATARS, AVATAR_VOICE_CONFIG, type AvatarId, type Ethnicity } from './PersonaAvatars';
 import clsx from 'clsx';
@@ -81,7 +81,7 @@ export function VoicePicker({
     let cancelled = false;
     setLoadingRegional(true);
     api.get('/voice/library', { params: { accent: accentTarget, gender: genderFilter } })
-      .then(res => { if (!cancelled) setRegionalVoices((res.data as RegionalVoice[]).slice(0, 8)); })
+      .then((res: any) => { if (!cancelled) setRegionalVoices((res.data as RegionalVoice[]).slice(0, 8)); })
       .catch(() => { if (!cancelled) setRegionalVoices([]); })
       .finally(() => { if (!cancelled) setLoadingRegional(false); });
     return () => { cancelled = true; };
