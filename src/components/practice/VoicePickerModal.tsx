@@ -66,8 +66,12 @@ export function VoicePickerModal({
   const [previewErr, setPreviewErr] = useState<Set<string>>(new Set());
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // pending = highlighted selection (not yet saved)
+  const [pending, setPending] = useState<string | undefined>(value);
+
   const avatar        = AVATARS.find(a => a.id === avatarId);
   const recommendedId = avatarId ? AVATAR_VOICE_CONFIG[avatarId as AvatarId]?.elevenlabsId : undefined;
+  const pendingVoice  = pending ? voices.find(v => v.id === pending) : undefined;
 
   // ── Load account voice library on mount ─────────────────────────────────────
   const loadLibrary = useCallback(async (force = false) => {
@@ -202,11 +206,17 @@ export function VoicePickerModal({
     }
   };
 
-  // ── Select & save ────────────────────────────────────────────────────────────
-  const selectVoice = (v: VoiceEntry) => {
+  // ── Highlight (pending) — clicking a card stages the selection ───────────────
+  const highlightVoice = (v: VoiceEntry) => {
+    setPending(prev => prev === v.id ? undefined : v.id);
+  };
+
+  // ── Save — commit pending selection and close ─────────────────────────────────
+  const saveSelection = () => {
     stopPreview();
+    const v = pending ? voices.find(x => x.id === pending) : undefined;
     // Add regional/shared voices to account library in background
-    if (v.source === 'regional') {
+    if (v?.source === 'regional') {
       api.get('/voice/library', { params: { accent: v.accent, gender: v.gender } })
         .then((res: any) => {
           const match = (res.data as any[]).find((r: any) => r.id === v.id);
@@ -215,7 +225,7 @@ export function VoicePickerModal({
           }
         }).catch(() => {});
     }
-    onSelect(v.id);
+    onSelect(pending);
     onClose();
   };
 
@@ -362,11 +372,12 @@ export function VoicePickerModal({
                 <VoiceCard
                   key={v.id}
                   voice={v}
-                  isSelected={value === v.id}
+                  isSelected={pending === v.id}
+                  isSaved={value === v.id}
                   isRecommended={v.id === recommendedId}
                   isPreviewing={previewing === v.id}
                   hasError={previewErr.has(v.id)}
-                  onSelect={() => selectVoice(v)}
+                  onSelect={() => highlightVoice(v)}
                   onPreview={() => playPreview(v)}
                 />
               ))}
@@ -376,27 +387,51 @@ export function VoicePickerModal({
 
         {/* Footer */}
         <div
-          className="flex items-center justify-between px-5 py-3 flex-shrink-0"
+          className="flex items-center justify-between gap-3 px-5 py-3 flex-shrink-0"
           style={{ borderTop: '1px solid var(--border)', background: 'var(--bg3)' }}
         >
-          <span className="text-[10.5px]" style={{ color: 'var(--text3)' }}>
-            {sorted.length} result{sorted.length !== 1 ? 's' : ''}
-            {loadingRegional && REGIONAL_ACCENTS.has(accent) ? ' · loading more…' : ''}
-          </span>
-          <div className="flex gap-2">
-            {value && (
-              <button
-                onClick={() => { stopPreview(); onSelect(undefined); onClose(); }}
-                className="btn-ghost text-[12px] px-3 py-1.5"
-              >
-                Clear voice
-              </button>
+          {/* Selected voice preview */}
+          <div className="flex-1 min-w-0">
+            {pendingVoice ? (
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0" />
+                <span className="text-[12px] font-semibold text-white/90 truncate">{pendingVoice.name}</span>
+                {pendingVoice.accent && (
+                  <span className="text-[10.5px] flex-shrink-0" style={{ color: 'var(--text3)' }}>
+                    {pendingVoice.accent}
+                    {pendingVoice.style ? ` · ${pendingVoice.style}` : ''}
+                  </span>
+                )}
+                <button
+                  onClick={() => setPending(undefined)}
+                  className="ml-auto flex-shrink-0 text-[9px] transition-colors hover:opacity-70"
+                  style={{ color: 'var(--text3)' }}
+                >
+                  <X size={11} />
+                </button>
+              </div>
+            ) : (
+              <span className="text-[11px]" style={{ color: 'var(--text3)' }}>
+                No voice selected — click a voice to choose
+              </span>
             )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={() => { stopPreview(); onClose(); }}
               className="btn-ghost text-[12px] px-3 py-1.5"
             >
               Cancel
+            </button>
+            <button
+              onClick={saveSelection}
+              disabled={pending === value}
+              className="btn-primary text-[12px] px-4 py-1.5 gap-1.5 disabled:opacity-50"
+            >
+              <Check size={11} strokeWidth={2.5} />
+              {pending ? 'Save Voice' : 'Save (no voice)'}
             </button>
           </div>
         </div>
@@ -436,9 +471,10 @@ function DropFilter({ label, options, value, onChange }: {
 }
 
 // ── Voice card ────────────────────────────────────────────────────────────────
-function VoiceCard({ voice, isSelected, isRecommended, isPreviewing, hasError, onSelect, onPreview }: {
+function VoiceCard({ voice, isSelected, isSaved, isRecommended, isPreviewing, hasError, onSelect, onPreview }: {
   voice: VoiceEntry;
-  isSelected: boolean;
+  isSelected: boolean;   // highlighted / pending
+  isSaved: boolean;      // previously committed value
   isRecommended: boolean;
   isPreviewing: boolean;
   hasError: boolean;
@@ -455,22 +491,34 @@ function VoiceCard({ voice, isSelected, isRecommended, isPreviewing, hasError, o
       onClick={onSelect}
       className={clsx(
         'flex items-center gap-3 px-3 py-2.5 rounded-[10px] border cursor-pointer transition-all select-none group',
-        isSelected ? 'border-accent bg-accent/[0.08]' : 'hover:bg-white/[0.03]',
+        isSelected
+          ? 'border-accent bg-accent/[0.10]'
+          : isSaved
+          ? 'border-accent/30 bg-accent/[0.03]'
+          : 'hover:bg-white/[0.03]',
       )}
-      style={{ borderColor: isSelected ? 'var(--accent)' : 'var(--border)' }}
+      style={{ borderColor: isSelected ? 'var(--accent)' : isSaved ? 'rgba(91,111,255,0.3)' : 'var(--border)' }}
     >
-      {/* Checkmark */}
+      {/* Radio circle */}
       <div className={clsx(
         'w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all',
-        isSelected ? 'bg-accent border-accent' : 'border-white/20 group-hover:border-white/40'
+        isSelected
+          ? 'bg-accent border-accent'
+          : isSaved
+          ? 'border-accent/40'
+          : 'border-white/20 group-hover:border-white/40'
       )}>
         {isSelected && <Check size={8} strokeWidth={3} className="text-white" />}
+        {!isSelected && isSaved && <div className="w-1.5 h-1.5 rounded-full bg-accent/40" />}
       </div>
 
       {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className={clsx('text-[12.5px] font-semibold truncate leading-tight', isSelected ? 'text-accent' : 'text-white/90')}>
+          <span className={clsx(
+            'text-[12.5px] font-semibold truncate leading-tight',
+            isSelected ? 'text-accent' : 'text-white/90'
+          )}>
             {voice.name}
           </span>
           {isRecommended && (
@@ -478,7 +526,12 @@ function VoiceCard({ voice, isSelected, isRecommended, isPreviewing, hasError, o
               <Star size={6} fill="currentColor" /> Pick
             </span>
           )}
-          {voice.source === 'library' && (
+          {isSaved && !isSelected && (
+            <span className="text-[7.5px] px-1 py-0.5 rounded bg-accent/10 border border-accent/20 text-accent/60 font-medium uppercase tracking-wide leading-none flex-shrink-0">
+              Current
+            </span>
+          )}
+          {voice.source === 'library' && !isSaved && (
             <span className="text-[7.5px] px-1 py-0.5 rounded bg-white/[0.05] border border-white/[0.08] text-white/35 font-medium uppercase tracking-wide leading-none flex-shrink-0">
               Library
             </span>
@@ -505,7 +558,7 @@ function VoiceCard({ voice, isSelected, isRecommended, isPreviewing, hasError, o
         {hasError && <p className="text-[9px] text-red-400/70 mt-0.5">Preview unavailable</p>}
       </div>
 
-      {/* Preview */}
+      {/* Preview button */}
       <button
         type="button"
         onClick={e => { e.stopPropagation(); onPreview(); }}
