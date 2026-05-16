@@ -9,7 +9,7 @@ import { sessionsApi } from '@/lib/api';
 import { useRecording } from '@/hooks/useRecording';
 import { connectSocket } from '@/lib/socket';
 import { Framework, SessionType, FRAMEWORK_INFO } from '@/types';
-import { AvatarDisplay, AVATAR_VOICE_CONFIG, type AvatarId } from '@/components/practice/PersonaAvatars';
+import { AvatarDisplay } from '@/components/practice/PersonaAvatars';
 import clsx from 'clsx';
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -731,6 +731,3 @@ function CtrlBtn({ icon: Icon, active, muted, onClick, label }: {
     </button>
   );
 }
-
-
-export { CallInterface }
