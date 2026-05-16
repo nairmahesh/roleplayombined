@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Mic, MicOff, Phone, Pause, Play } from 'lucide-react';
+import { Mic, MicOff, Phone, Pause, Play, BarChart3, Clock } from 'lucide-react';
 import { sessionsApi } from '@/lib/api';
 import { useRecording } from '@/hooks/useRecording';
 import { connectSocket } from '@/lib/socket';
@@ -454,7 +454,7 @@ export function CallInterface({ sessionId, persona, sessionType, framework, time
     const limitMs = timeLimitMins * 60 * 1000;
     if (!timeLimitWarnRef.current && elapsed >= limitMs - 60_000 && elapsed < limitMs) {
       timeLimitWarnRef.current = true;
-      toast('1 minute remaining', { icon: '⏱' });
+      toast('1 minute remaining');
     }
     if (elapsed >= limitMs) {
       toast('Time limit reached — ending session', { icon: '⏱' });
@@ -684,7 +684,7 @@ export function CallInterface({ sessionId, persona, sessionType, framework, time
             animate={{ scale: 1, opacity: 1 }}
             className="bg-bg-2 border border-white/10 rounded-[18px] p-7 w-[340px] flex flex-col items-center gap-5 shadow-[0_20px_60px_rgba(0,0,0,0.7)]"
           >
-            <div className="w-11 h-11 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center text-xl">📊</div>
+            <div className="w-11 h-11 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center"><BarChart3 size={20} className="text-accent" /></div>
             <div className="text-center">
               <div className="font-display font-bold text-[16px] mb-1.5">Analyze this session?</div>
               <p className="text-[12.5px] text-white/50 leading-relaxed">Get AI feedback on your pitch, objection handling, and framework score.</p>

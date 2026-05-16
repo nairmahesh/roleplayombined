@@ -69,8 +69,8 @@ export function LeaderboardPage() {
                 transition={{ delay: i * 0.04 }}
                 className={`flex items-center gap-4 px-5 py-3.5 ${entry.user.id === user?.id ? 'bg-accent/[0.05]' : 'hover:bg-white/[0.02]'} transition-colors`}
               >
-                <span className={`font-display text-[15px] font-bold w-5 text-center flex-shrink-0 ${rankStyle(entry.rank)}`}>
-                  {entry.rank <= 3 ? ['🥇', '🥈', '🥉'][entry.rank - 1] : entry.rank}
+                <span className={`font-display text-[13px] font-bold w-5 text-center flex-shrink-0 ${rankStyle(entry.rank)}`}>
+                  #{entry.rank}
                 </span>
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-accent-2 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
                   {entry.user.firstName[0]}{entry.user.lastName[0]}

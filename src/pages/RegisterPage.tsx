@@ -26,7 +26,7 @@ export function RegisterPage() {
       const data = await authApi.register(form);
       setAuth(data.user, data.accessToken, data.refreshToken);
       navigate('/dashboard');
-      toast.success('Account created! Welcome to PitchIQ 🎯');
+      toast.success('Account created! Welcome to PitchIQ');
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Registration failed');
     } finally {

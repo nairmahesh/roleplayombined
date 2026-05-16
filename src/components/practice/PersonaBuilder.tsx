@@ -4,14 +4,30 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { X, Plus, Trash2, Sparkles } from 'lucide-react';
+import { X, Plus, Trash2, Sparkles, Check, User, Frown, Smile, CircleHelp as HelpCircle, Smartphone, Building2, CircleAlert as AlertCircle, Search, Briefcase, Target, DollarSign, Microscope } from 'lucide-react';
 import { personasApi } from '@/lib/api';
 import { Persona, Framework } from '@/types';
 import clsx from 'clsx';
 
 const FRAMEWORKS: Framework[] = ['MEDDIC', 'MEDDICC', 'SPIN', 'BANT', 'CHALLENGER', 'SNAP'];
 const DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD', 'EXPERT'] as const;
-const EMOJIS = ['👤', '😤', '😊', '🤔', '📱', '🏢', '😡', '🧐', '💼', '🎯', '💰', '🔬'];
+
+const PERSONA_ICONS = [
+  { id: 'user',         Icon: User,         label: 'Professional'  },
+  { id: 'frown',        Icon: Frown,        label: 'Frustrated'    },
+  { id: 'smile',        Icon: Smile,        label: 'Friendly'      },
+  { id: 'help',         Icon: HelpCircle,   label: 'Skeptical'     },
+  { id: 'phone',        Icon: Smartphone,   label: 'Mobile-first'  },
+  { id: 'building',     Icon: Building2,    label: 'Enterprise'    },
+  { id: 'alert',        Icon: AlertCircle,  label: 'Demanding'     },
+  { id: 'search',       Icon: Search,       label: 'Analytical'    },
+  { id: 'briefcase',    Icon: Briefcase,    label: 'Executive'     },
+  { id: 'target',       Icon: Target,       label: 'Goal-driven'   },
+  { id: 'dollar',       Icon: DollarSign,   label: 'Cost-conscious'},
+  { id: 'microscope',   Icon: Microscope,   label: 'Technical'     },
+] as const;
+
+type PersonaIconId = typeof PERSONA_ICONS[number]['id'];
 
 interface Props {
   onCreated: (persona: Persona) => void;
@@ -26,7 +42,7 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
     title: '',
     company: '',
     industry: '',
-    emoji: '👤',
+    iconId: 'user' as PersonaIconId,
     difficulty: 'MEDIUM' as const,
     personality: '',
     systemPrompt: '',
@@ -56,6 +72,9 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
     );
   };
 
+  const selectedIconEntry = PERSONA_ICONS.find(p => p.id === form.iconId) ?? PERSONA_ICONS[0];
+  const SelectedIcon = selectedIconEntry.Icon;
+
   const handleSave = async () => {
     if (!form.name || !form.title || !form.systemPrompt) {
       toast.error('Name, title, and system prompt are required');
@@ -65,12 +84,13 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
     try {
       const persona = await personasApi.create({
         ...form,
+        emoji: form.iconId,
         objections: form.objections.filter(Boolean),
         buyingSignals: form.buyingSignals.filter(Boolean),
         personality: JSON.stringify({ description: form.personality }),
       });
       onCreated(persona);
-      toast.success(`Persona "${form.name}" created!`);
+      toast.success(`Persona "${form.name}" created`);
       onClose();
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to create persona');
@@ -109,11 +129,11 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
               <button
                 onClick={() => setStep(s)}
                 className={clsx(
-                  'w-6 h-6 rounded-full text-[11px] font-bold transition-all',
+                  'w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold transition-all',
                   step === s ? 'bg-accent text-white' : step > s ? 'bg-accent-3 text-white' : 'bg-white/[0.08] text-white/30'
                 )}
               >
-                {step > s ? '✓' : s}
+                {step > s ? <Check size={10} /> : s}
               </button>
               {s < 3 && <div className={clsx('w-8 h-px', step > s ? 'bg-accent-3' : 'bg-white/10')} />}
             </div>
@@ -128,17 +148,22 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
           <AnimatePresence mode="wait">
             {step === 1 && (
               <motion.div key="s1" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex flex-col gap-4">
-                {/* Emoji picker */}
+                {/* Icon picker */}
                 <div>
-                  <label className="text-xs font-medium text-white/50 block mb-2">Persona Avatar</label>
-                  <div className="flex flex-wrap gap-2">
-                    {EMOJIS.map(e => (
+                  <label className="text-xs font-medium text-white/50 block mb-2">Persona Icon</label>
+                  <div className="grid grid-cols-6 gap-2">
+                    {PERSONA_ICONS.map(({ id, Icon, label }) => (
                       <button
-                        key={e}
-                        onClick={() => set('emoji', e)}
-                        className={clsx('w-10 h-10 rounded-[10px] text-lg border transition-all hover:scale-110', form.emoji === e ? 'border-accent bg-accent/15' : 'border-white/[0.08] bg-white/[0.04]')}
+                        key={id}
+                        onClick={() => set('iconId', id)}
+                        title={label}
+                        className={clsx(
+                          'flex flex-col items-center gap-1 p-2 rounded-[10px] border transition-all hover:scale-105',
+                          form.iconId === id ? 'border-accent bg-accent/15' : 'border-white/[0.08] bg-white/[0.04] hover:border-white/20'
+                        )}
                       >
-                        {e}
+                        <Icon size={16} className={form.iconId === id ? 'text-accent' : 'text-white/50'} />
+                        <span className="text-[9px] text-white/35 truncate w-full text-center">{label}</span>
                       </button>
                     ))}
                   </div>
@@ -210,7 +235,6 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
                   />
                 </div>
 
-                {/* Objections */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-xs font-medium text-white/50">Common Objections</label>
@@ -237,7 +261,6 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
                   </div>
                 </div>
 
-                {/* Buying signals */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-xs font-medium text-white/50">Buying Signals (what makes them receptive)</label>
@@ -290,12 +313,13 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
                   </div>
                 </div>
 
-                {/* Preview */}
                 {form.name && (
                   <div className="p-4 rounded-[12px] bg-bg-3 border border-white/[0.08]">
                     <div className="text-[11px] font-semibold text-white/30 uppercase tracking-wider mb-3">Preview</div>
                     <div className="flex items-start gap-3">
-                      <div className="text-3xl">{form.emoji}</div>
+                      <div className="w-10 h-10 rounded-full bg-accent/15 border border-accent/25 flex items-center justify-center flex-shrink-0">
+                        <SelectedIcon size={18} className="text-accent" />
+                      </div>
                       <div>
                         <div className="font-display font-bold">{form.name}</div>
                         <div className="text-[12px] text-white/50 mb-2">{form.title}{form.company ? ` · ${form.company}` : ''}</div>
@@ -322,12 +346,12 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
             disabled={step === 1}
             className="btn-ghost disabled:opacity-30"
           >
-            ← Back
+            Back
           </button>
           <div className="flex gap-2">
             {step < 3 ? (
               <button onClick={() => setStep(s => s + 1)} className="btn-primary">
-                Continue →
+                Continue
               </button>
             ) : (
               <button onClick={handleSave} disabled={saving} className="btn-primary gap-2">

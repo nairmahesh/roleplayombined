@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { TrendingUp, Users, Play, Trophy, Lightbulb, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Flame, Award, Zap } from 'lucide-react';
+import { TrendingUp, Users, Play, Trophy, Lightbulb, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Flame, Award, Zap, Phone, Monitor } from 'lucide-react';
 import { analyticsApi } from '@/lib/api';
 import {
   DashboardStats,
@@ -81,10 +81,14 @@ function SessionRow({
       onClick={onClick}
       className="flex items-center gap-4 px-5 py-3.5 cursor-pointer hover:bg-white/[0.03] transition-colors group"
     >
-      <span className="text-xl flex-shrink-0">{session.personaEmoji}</span>
+      <div className="w-7 h-7 rounded-full bg-accent/15 border border-accent/20 flex items-center justify-center flex-shrink-0">
+        {session.sessionType === 'PHONE_CALL'
+          ? <Phone size={13} className="text-accent" />
+          : <Monitor size={13} className="text-accent" />}
+      </div>
       <div className="flex-1 min-w-0">
         <div className="text-[13.5px] font-medium truncate group-hover:text-white transition-colors">
-          {session.sessionType === 'PHONE_CALL' ? '📞' : '💻'} {session.personaName}
+          {session.personaName}
           {showAgent && (
             <span className="text-white/65"> · {session.userFirstName} {session.userLastName}</span>
           )}
@@ -142,16 +146,18 @@ function QuickPractice({ navigate }: { navigate: (path: string) => void }) {
       </div>
       <div className="p-3 flex flex-col gap-1.5">
         {[
-          { icon: '📞', label: 'Cold Call Blitz', duration: '3 min', color: 'text-accent-4' },
-          { icon: '💻', label: 'Discovery Meeting', duration: '10 min', color: 'text-accent-3' },
-          { icon: '🎯', label: 'Objection Handling', duration: '7 min', color: 'text-accent-5' },
+          { Icon: Phone,   label: 'Cold Call Blitz',    duration: '3 min',  color: 'text-accent-4', iconColor: 'text-accent-4', bg: 'bg-accent-4/10' },
+          { Icon: Monitor, label: 'Discovery Meeting',  duration: '10 min', color: 'text-accent-3', iconColor: 'text-accent-3', bg: 'bg-accent-3/10' },
+          { Icon: Trophy,  label: 'Objection Handling', duration: '7 min',  color: 'text-accent-5', iconColor: 'text-accent-5', bg: 'bg-accent-5/10' },
         ].map(item => (
           <button
             key={item.label}
             onClick={() => navigate('/practice')}
             className="flex items-center gap-3 px-3 py-2.5 rounded-[9px] bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.07] hover:border-white/10 transition-all text-left group"
           >
-            <span className="text-base">{item.icon}</span>
+            <div className={clsx('w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0', item.bg)}>
+              <item.Icon size={12} className={item.iconColor} />
+            </div>
             <span className="flex-1 text-[13px] font-medium text-white/70 group-hover:text-white transition-colors">{item.label}</span>
             <span className={clsx('text-[11px] font-medium', item.color)}>{item.duration}</span>
           </button>
@@ -448,7 +454,7 @@ function ManagerView({ stats, navigate }: { stats: DashboardStats; navigate: (p:
 function AdminView({ stats, navigate }: { stats: DashboardStats; navigate: (p: string) => void }) {
   const me = stats.managerExtra;
   const topMembers = me?.members.slice(0, 5) ?? [];
-  const MEDALS = ['🥇', '🥈', '🥉'];
+  const MEDALS = ['#1', '#2', '#3'];
 
   return (
     <>
@@ -535,8 +541,11 @@ function AdminView({ stats, navigate }: { stats: DashboardStats; navigate: (p: s
                 transition={{ delay: 0.2 + i * 0.06 }}
                 className="flex items-center gap-3 px-4 py-3"
               >
-                <span className="w-6 text-center text-base shrink-0">
-                  {i < 3 ? MEDALS[i] : <span className="text-[13px] text-white/30 font-semibold">#{i + 1}</span>}
+                <span className={clsx(
+                  'w-6 text-center text-[12px] font-bold shrink-0',
+                  i === 0 ? 'text-accent-5' : i === 1 ? 'text-[#aaa]' : i === 2 ? 'text-[#cd7f32]' : 'text-white/30'
+                )}>
+                  {i < 3 ? MEDALS[i] : `#${i + 1}`}
                 </span>
                 <div className="flex-1 min-w-0">
                   <div className="text-[13px] font-medium truncate">{m.firstName} {m.lastName}</div>
@@ -584,7 +593,7 @@ export function DashboardPage() {
       <div className="flex items-start sm:items-center justify-between gap-3">
         <div className="min-w-0">
           <h2 className="font-display text-xl sm:text-2xl font-bold truncate">
-            {greeting()}, {user?.firstName} 👋
+            {greeting()}, {user?.firstName}
           </h2>
           <p className="text-sm text-white/65 mt-0.5">{subtitle}</p>
         </div>

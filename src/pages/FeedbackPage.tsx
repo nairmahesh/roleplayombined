@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { RefreshCw, Share2, ChevronRight, CircleCheck as CheckCircle, TriangleAlert as AlertTriangle, Lightbulb, Play, Pause, Search, Copy, Download, MessageSquare, Clock, Shield, BarChart3, Gauge, Activity, Mic, ChevronDown, CircleAlert as AlertCircle, X } from 'lucide-react';
+import { RefreshCw, Share2, ChevronRight, CircleCheck as CheckCircle, TriangleAlert as AlertTriangle, Lightbulb, Play, Pause, Search, Copy, Download, MessageSquare, Clock, Shield, BarChart3, Gauge, Activity, Mic, ChevronDown, CircleAlert as AlertCircle, X, Info, Phone, Monitor } from 'lucide-react';
 import { sessionsApi, api } from '@/lib/api';
 import { connectSocket } from '@/lib/socket';
 import { Session, ParsedFeedback, FRAMEWORK_INFO } from '@/types';
@@ -137,7 +137,7 @@ export function FeedbackPage() {
       try {
         const data = await sessionsApi.get(id);
         setSession(data);
-        toast.success('🎯 AI analysis complete!');
+        toast.success('AI analysis complete!');
         if (data.recordingUrl) {
           api.get(`/recordings/playback/${id}`)
             .then((res: any) => setPlaybackUrl((res.data as any).url))
@@ -415,8 +415,10 @@ export function FeedbackPage() {
                   <span className="tag tag-green">{Math.round(session.durationSeconds / 60)}m {session.durationSeconds % 60}s</span>
                 )}
                 {session.totalScore != null && (
-                  <span className={clsx('tag', session.totalScore >= 70 ? 'tag-green' : 'tag-red')}>
-                    {session.totalScore >= 70 ? '✓ Passed' : '✗ Below threshold'}
+                  <span className={clsx('tag flex items-center gap-1', session.totalScore >= 70 ? 'tag-green' : 'tag-red')}>
+                    {session.totalScore >= 70
+                      ? <><CheckCircle size={9} /> Passed</>
+                      : <><X size={9} /> Below threshold</>}
                   </span>
                 )}
               </div>
@@ -580,8 +582,15 @@ export function FeedbackPage() {
                         >
                           <div className="flex items-center gap-2 mb-0.5">
                             <span className="text-[10px] font-mono text-white/25 flex-shrink-0">{formatMs(event.timestampMs)}</span>
-                            <span className="text-[12.5px] font-medium text-white/80 flex-1">
-                              {isGood ? '✅' : isIssue ? '❌' : isWarn ? '⚠' : 'ℹ'} {event.title}
+                            <span className="text-[12.5px] font-medium text-white/80 flex-1 flex items-center gap-1.5">
+                              {isGood
+                                ? <CheckCircle size={13} className="text-accent-3 flex-shrink-0" />
+                                : isIssue
+                                ? <X size={13} className="text-accent-4 flex-shrink-0" />
+                                : isWarn
+                                ? <AlertTriangle size={13} className="text-accent-5 flex-shrink-0" />
+                                : <Info size={13} className="text-white/40 flex-shrink-0" />}
+                              {event.title}
                             </span>
                           </div>
                           <p className="text-[11.5px] text-white/45 leading-relaxed pl-10">{event.description}</p>
@@ -779,8 +788,10 @@ export function FeedbackPage() {
                       return (
                         <div key={event.id} className="p-5 flex flex-col gap-3">
                           <div className="flex items-center gap-2">
-                            <span className={clsx('text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border', isIssue ? 'text-accent-4 border-accent-4/30 bg-accent-4/8' : 'text-accent-5 border-accent-5/30 bg-accent-5/8')}>
-                              {isIssue ? '❌ Issue' : '⚠ Warning'}
+                            <span className={clsx('flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border', isIssue ? 'text-accent-4 border-accent-4/30 bg-accent-4/8' : 'text-accent-5 border-accent-5/30 bg-accent-5/8')}>
+                              {isIssue
+                                ? <><X size={9} /> Issue</>
+                                : <><AlertTriangle size={9} /> Warning</>}
                             </span>
                             <span className="text-[12px] font-semibold text-white/70">{event.title}</span>
                             <span className="text-[10px] font-mono text-white/25 ml-auto">{formatMs(event.timestampMs)}</span>

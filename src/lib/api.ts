@@ -31,10 +31,10 @@ const MOCK_DASHBOARD: DashboardStats = {
   activeUsers: 8,
   passRate: 67,
   recentSessions: [
-    { id: 's1', endedAt: new Date(Date.now() - 3_600_000).toISOString(), durationSeconds: 720, framework: 'MEDDIC', sessionType: 'PHONE_CALL', personaName: 'Sarah Chen', personaEmoji: '👩‍💼', userFirstName: 'Alex', userLastName: 'Rivera', totalScore: 81 },
-    { id: 's2', endedAt: new Date(Date.now() - 86_400_000).toISOString(), durationSeconds: 540, framework: 'SPIN', sessionType: 'ONLINE_MEETING', personaName: 'Marcus Thompson', personaEmoji: '🧑‍💼', userFirstName: 'Alex', userLastName: 'Rivera', totalScore: 68 },
-    { id: 's3', endedAt: new Date(Date.now() - 2 * 86_400_000).toISOString(), durationSeconds: 900, framework: 'BANT', sessionType: 'PHONE_CALL', personaName: 'Priya Patel', personaEmoji: '👩‍🔬', userFirstName: 'Alex', userLastName: 'Rivera', totalScore: 75 },
-    { id: 's4', endedAt: new Date(Date.now() - 4 * 86_400_000).toISOString(), durationSeconds: 480, framework: 'MEDDIC', sessionType: 'ONLINE_MEETING', personaName: 'James Kim', personaEmoji: '👨‍💻', userFirstName: 'Alex', userLastName: 'Rivera', totalScore: 55 },
+    { id: 's1', endedAt: new Date(Date.now() - 3_600_000).toISOString(), durationSeconds: 720, framework: 'MEDDIC', sessionType: 'PHONE_CALL', personaName: 'Sarah Chen', personaEmoji: '', userFirstName: 'Alex', userLastName: 'Rivera', totalScore: 81 },
+    { id: 's2', endedAt: new Date(Date.now() - 86_400_000).toISOString(), durationSeconds: 540, framework: 'SPIN', sessionType: 'ONLINE_MEETING', personaName: 'Marcus Thompson', personaEmoji: '', userFirstName: 'Alex', userLastName: 'Rivera', totalScore: 68 },
+    { id: 's3', endedAt: new Date(Date.now() - 2 * 86_400_000).toISOString(), durationSeconds: 900, framework: 'BANT', sessionType: 'PHONE_CALL', personaName: 'Priya Patel', personaEmoji: '', userFirstName: 'Alex', userLastName: 'Rivera', totalScore: 75 },
+    { id: 's4', endedAt: new Date(Date.now() - 4 * 86_400_000).toISOString(), durationSeconds: 480, framework: 'MEDDIC', sessionType: 'ONLINE_MEETING', personaName: 'James Kim', personaEmoji: '', userFirstName: 'Alex', userLastName: 'Rivera', totalScore: 55 },
   ],
   frameworkStats: [
     { component: 'Metrics', avgScore: 82, count: 8 },
@@ -58,7 +58,7 @@ const MOCK_SESSIONS: Session[] = [
     startedAt: new Date(Date.now() - 3_700_000).toISOString(),
     endedAt: new Date(Date.now() - 3_600_000).toISOString(),
     createdAt: new Date(Date.now() - 3_700_000).toISOString(),
-    persona: { id: 'p1', name: 'Sarah Chen', title: 'VP of Sales', emoji: '👩‍💼', difficulty: 'MEDIUM' },
+    persona: { id: 'p1', name: 'Sarah Chen', title: 'VP of Sales', emoji: '', difficulty: 'MEDIUM' },
     frameworkScores: [
       { id: 'fs1', component: 'Metrics', score: 85, feedback: 'Good use of quantitative metrics', evidence: ['You mentioned a 20% efficiency gain'] },
       { id: 'fs2', component: 'Economic Buyer', score: 78, feedback: 'Identified the buyer well', evidence: ['Asked about budget authority early'] },
@@ -87,7 +87,7 @@ const MOCK_SESSIONS: Session[] = [
     startedAt: new Date(Date.now() - 87_000_000).toISOString(),
     endedAt: new Date(Date.now() - 86_400_000).toISOString(),
     createdAt: new Date(Date.now() - 87_000_000).toISOString(),
-    persona: { id: 'p2', name: 'Marcus Thompson', title: 'CTO', emoji: '🧑‍💼', difficulty: 'HARD' },
+    persona: { id: 'p2', name: 'Marcus Thompson', title: 'CTO', emoji: '', difficulty: 'HARD' },
     frameworkScores: [
       { id: 'fs5', component: 'Situation Questions', score: 75, feedback: 'Good situational awareness', evidence: [] },
       { id: 'fs6', component: 'Problem Questions', score: 62, feedback: 'Could dig deeper into problems', evidence: [] },
@@ -112,7 +112,7 @@ const MOCK_SESSIONS: Session[] = [
     startedAt: new Date(Date.now() - 2 * 86_400_000 - 600_000).toISOString(),
     endedAt: new Date(Date.now() - 2 * 86_400_000).toISOString(),
     createdAt: new Date(Date.now() - 2 * 86_400_000 - 600_000).toISOString(),
-    persona: { id: 'p3', name: 'Priya Patel', title: 'Head of Engineering', emoji: '👩‍🔬', difficulty: 'MEDIUM' },
+    persona: { id: 'p3', name: 'Priya Patel', title: 'Head of Engineering', emoji: '', difficulty: 'MEDIUM' },
     frameworkScores: [
       { id: 'fs9', component: 'Budget', score: 70, feedback: 'Budget discussed but not qualified', evidence: [] },
       { id: 'fs10', component: 'Authority', score: 80, feedback: 'Clearly identified decision maker', evidence: [] },
@@ -130,12 +130,12 @@ const MOCK_SESSIONS: Session[] = [
 ];
 
 const MOCK_PERSONAS: Persona[] = [
-  { id: 'p1', name: 'Sarah Chen', title: 'VP of Sales', company: 'TechCorp', industry: 'SaaS', emoji: '👩‍💼', difficulty: 'MEDIUM', personality: 'Analytical, data-driven', systemPrompt: '', objections: ['Too expensive', 'Already have a solution'], buyingSignals: ['Asking about ROI', 'Mentioning budget'], frameworks: ['MEDDIC', 'BANT'], isPreset: true },
-  { id: 'p2', name: 'Marcus Thompson', title: 'CTO', company: 'FinanceFlow', industry: 'FinTech', emoji: '🧑‍💼', difficulty: 'HARD', personality: 'Technical, skeptical', systemPrompt: '', objections: ['Security concerns', 'Integration complexity'], buyingSignals: ['Technical deep-dive questions'], frameworks: ['SPIN', 'MEDDICC'], isPreset: true },
-  { id: 'p3', name: 'Priya Patel', title: 'Head of Engineering', company: 'BuildFast', industry: 'Construction Tech', emoji: '👩‍🔬', difficulty: 'MEDIUM', personality: 'Practical, ROI-focused', systemPrompt: '', objections: ['Implementation time', 'Team adoption'], buyingSignals: ['Asking about timelines'], frameworks: ['BANT', 'CHALLENGER'], isPreset: true },
-  { id: 'p4', name: 'Robert Blake', title: 'CFO', company: 'RetailPro', industry: 'Retail', emoji: '👨‍💼', difficulty: 'EXPERT', personality: 'Cost-conscious, risk-averse', systemPrompt: '', objections: ['High cost', 'Not priority', 'Already tried similar'], buyingSignals: ['Asking about payment terms'], frameworks: ['MEDDIC', 'SNAP'], isPreset: true },
-  { id: 'p5', name: 'Emma Wilson', title: 'Marketing Director', company: 'GrowthCo', industry: 'Marketing', emoji: '👩‍🎨', difficulty: 'EASY', personality: 'Creative, results-oriented', systemPrompt: '', objections: ['Internal bandwidth', 'Timing'], buyingSignals: ['Campaign ideas', 'Asking about case studies'], frameworks: ['SPIN', 'SNAP'], isPreset: true },
-  { id: 'p6', name: 'Carlos Rodriguez', title: 'Operations Manager', company: 'LogiSync', industry: 'Logistics', emoji: '🧑‍🏭', difficulty: 'MEDIUM', personality: 'Process-driven, methodical', systemPrompt: '', objections: ['Process disruption', 'Training required'], buyingSignals: ['Asking about workflow integration'], frameworks: ['BANT', 'CHALLENGER'], isPreset: true },
+  { id: 'p1', name: 'Sarah Chen', title: 'VP of Sales', company: 'TechCorp', industry: 'SaaS', emoji: '', difficulty: 'MEDIUM', personality: 'Analytical, data-driven', systemPrompt: '', objections: ['Too expensive', 'Already have a solution'], buyingSignals: ['Asking about ROI', 'Mentioning budget'], frameworks: ['MEDDIC', 'BANT'], isPreset: true },
+  { id: 'p2', name: 'Marcus Thompson', title: 'CTO', company: 'FinanceFlow', industry: 'FinTech', emoji: '', difficulty: 'HARD', personality: 'Technical, skeptical', systemPrompt: '', objections: ['Security concerns', 'Integration complexity'], buyingSignals: ['Technical deep-dive questions'], frameworks: ['SPIN', 'MEDDICC'], isPreset: true },
+  { id: 'p3', name: 'Priya Patel', title: 'Head of Engineering', company: 'BuildFast', industry: 'Construction Tech', emoji: '', difficulty: 'MEDIUM', personality: 'Practical, ROI-focused', systemPrompt: '', objections: ['Implementation time', 'Team adoption'], buyingSignals: ['Asking about timelines'], frameworks: ['BANT', 'CHALLENGER'], isPreset: true },
+  { id: 'p4', name: 'Robert Blake', title: 'CFO', company: 'RetailPro', industry: 'Retail', emoji: '', difficulty: 'EXPERT', personality: 'Cost-conscious, risk-averse', systemPrompt: '', objections: ['High cost', 'Not priority', 'Already tried similar'], buyingSignals: ['Asking about payment terms'], frameworks: ['MEDDIC', 'SNAP'], isPreset: true },
+  { id: 'p5', name: 'Emma Wilson', title: 'Marketing Director', company: 'GrowthCo', industry: 'Marketing', emoji: '', difficulty: 'EASY', personality: 'Creative, results-oriented', systemPrompt: '', objections: ['Internal bandwidth', 'Timing'], buyingSignals: ['Campaign ideas', 'Asking about case studies'], frameworks: ['SPIN', 'SNAP'], isPreset: true },
+  { id: 'p6', name: 'Carlos Rodriguez', title: 'Operations Manager', company: 'LogiSync', industry: 'Logistics', emoji: '', difficulty: 'MEDIUM', personality: 'Process-driven, methodical', systemPrompt: '', objections: ['Process disruption', 'Training required'], buyingSignals: ['Asking about workflow integration'], frameworks: ['BANT', 'CHALLENGER'], isPreset: true },
 ];
 
 const MOCK_LEADERBOARD: LeaderboardEntry[] = [
@@ -168,7 +168,7 @@ const MOCK_TEAM_ROLEPLAYS: TeamRoleplay[] = [
       personaContext: 'Skeptical VP of Sales',
       displayName: 'Sarah Chen',
       displayTitle: 'VP of Sales',
-      displayEmoji: '👩‍💼',
+      displayEmoji: '',
       difficulty: 'MEDIUM',
       suggestedQuestions: [],
     },
@@ -283,7 +283,7 @@ export const practiceApi = {
       personaContext: 'You are a skeptical VP of Sales at a mid-sized SaaS company.',
       displayName: 'Jennifer Walsh',
       displayTitle: 'VP of Sales',
-      displayEmoji: '👩‍💼',
+      displayEmoji: '',
       difficulty: 'MEDIUM',
       suggestedQuestions: [
         "What's your current sales cycle length?",

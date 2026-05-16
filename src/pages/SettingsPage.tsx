@@ -14,7 +14,7 @@ export function SettingsPage() {
   );
   const [passThreshold, setPassThreshold] = useState(user?.company?.passThreshold || 70);
 
-  const save = () => toast.success('✅ Settings saved!');
+  const save = () => toast.success('Settings saved');
 
   return (
     <div className="flex flex-col gap-5 max-w-2xl">

@@ -34,7 +34,7 @@ const LANGUAGES = [
 const TEMPLATES: Array<ScenarioConfig & { id: string; label: string; avatarId: string }> = [
   {
     id: 't1', label: 'Enterprise CRM Pitch', avatarId: 'alex',
-    industry: 'SaaS', roleplayType: 'Sales Pitch', displayEmoji: '💼',
+    industry: 'SaaS', roleplayType: 'Sales Pitch', displayEmoji: '',
     displayName: 'Alex Chen', displayTitle: 'Head of Sales, Accenture',
     difficulty: 'Hard',
     suggestedQuestions: [
@@ -50,7 +50,7 @@ How to behave: Start by briefly welcoming the rep and asking them to walk you th
   },
   {
     id: 't2', label: 'SaaS Cold Call', avatarId: 'james',
-    industry: 'SaaS', roleplayType: 'Cold Call', displayEmoji: '📞',
+    industry: 'SaaS', roleplayType: 'Cold Call', displayEmoji: '',
     displayName: "James O'Brien", displayTitle: 'VP of Engineering, TechCorp',
     difficulty: 'Hard',
     suggestedQuestions: [
@@ -66,7 +66,7 @@ How to behave: Be initially dismissive and short. Give the caller 60 seconds. If
   },
   {
     id: 't3', label: 'Healthcare Discovery Call', avatarId: 'sarah',
-    industry: 'Healthcare', roleplayType: 'Discovery Call', displayEmoji: '🏥',
+    industry: 'Healthcare', roleplayType: 'Discovery Call', displayEmoji: '',
     displayName: 'Sarah Mitchell', displayTitle: 'CMO, Regional Health System',
     difficulty: 'Medium',
     suggestedQuestions: [
@@ -82,7 +82,7 @@ How to behave: Probe deeply on compliance, integration, and implementation risk.
   },
   {
     id: 't4', label: 'Objection Handling — Price', avatarId: 'robert',
-    industry: 'Consulting', roleplayType: 'Objection Handling', displayEmoji: '🤔',
+    industry: 'Consulting', roleplayType: 'Objection Handling', displayEmoji: '',
     displayName: 'Robert Hayes', displayTitle: 'Procurement Director, Global Corp',
     difficulty: 'Expert',
     suggestedQuestions: [
@@ -99,7 +99,7 @@ How to behave: Lead with price objections immediately. Push hard on discounts, p
   },
   {
     id: 't5', label: 'Banking Negotiation', avatarId: 'emma',
-    industry: 'Banking', roleplayType: 'Negotiation', displayEmoji: '🏦',
+    industry: 'Banking', roleplayType: 'Negotiation', displayEmoji: '',
     displayName: 'Emma Wilson', displayTitle: 'Head of Treasury, First National Bank',
     difficulty: 'Hard',
     suggestedQuestions: [
@@ -113,7 +113,7 @@ How to behave: Clarify key terms you need addressed: SLAs, regulatory compliance
   },
   {
     id: 't6', label: 'Account Expansion', avatarId: 'priya',
-    industry: 'SaaS', roleplayType: 'Account Expansion', displayEmoji: '📈',
+    industry: 'SaaS', roleplayType: 'Account Expansion', displayEmoji: '',
     displayName: 'Priya Kapoor', displayTitle: 'Head of Operations, ScaleUp Inc',
     difficulty: 'Medium',
     suggestedQuestions: [
@@ -130,7 +130,7 @@ How to behave: Be friendly — you have a good relationship. But be analytically
   },
   {
     id: 't7', label: 'Insurance Cold Call', avatarId: 'layla',
-    industry: 'Insurance', roleplayType: 'Cold Call', displayEmoji: '🛡️',
+    industry: 'Insurance', roleplayType: 'Cold Call', displayEmoji: '',
     displayName: 'Layla Hassan', displayTitle: 'CFO, MidWest Logistics',
     difficulty: 'Hard',
     suggestedQuestions: [
@@ -149,7 +149,7 @@ How to behave: Be initially dismissive. If the rep leads with cost savings and r
   },
   {
     id: 't8', label: 'Real Estate Pitch', avatarId: 'carlos',
-    industry: 'Real Estate', roleplayType: 'Sales Pitch', displayEmoji: '🏢',
+    industry: 'Real Estate', roleplayType: 'Sales Pitch', displayEmoji: '',
     displayName: 'Carlos Rivera', displayTitle: 'Head of Acquisitions, Apex Properties',
     difficulty: 'Medium',
     suggestedQuestions: [
@@ -166,7 +166,7 @@ How to behave: Ask tough questions about valuation methodology, market comparabl
   },
   {
     id: 't9', label: 'HR / Talent Platform', avatarId: 'aisha',
-    industry: 'Consulting', roleplayType: 'Discovery Call', displayEmoji: '👥',
+    industry: 'Consulting', roleplayType: 'Discovery Call', displayEmoji: '',
     displayName: 'Aisha Brown', displayTitle: 'Chief People Officer, GrowthCo',
     difficulty: 'Easy',
     suggestedQuestions: [
@@ -185,7 +185,7 @@ How to behave: Be warm and engaged. Ask practical questions about implementation
   },
   {
     id: 't10', label: 'Manufacturing Demo', avatarId: 'marcus',
-    industry: 'Manufacturing', roleplayType: 'Sales Pitch', displayEmoji: '🏭',
+    industry: 'Manufacturing', roleplayType: 'Sales Pitch', displayEmoji: '',
     displayName: 'Marcus Johnson', displayTitle: 'VP of Operations, PrecisionMfg',
     difficulty: 'Hard',
     suggestedQuestions: [
@@ -248,7 +248,7 @@ export function PracticePage() {
   const [voiceOpen, setVoiceOpen]                 = useState(false);
   const [displayName, setDisplayName]             = useState('Custom Persona');
   const [displayTitle, setDisplayTitle]           = useState('');
-  const [displayEmoji, setDisplayEmoji]           = useState('🧑‍💼');
+  const [displayEmoji, setDisplayEmoji]           = useState('');
   const [personaContext, setPersonaContext]        = useState('');
   const [difficulty, setDifficulty]               = useState('Medium');
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);

@@ -43,7 +43,9 @@ export class ErrorBoundary extends Component<Props, State> {
           }}
         >
           <div style={{ textAlign: 'center', maxWidth: '400px' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+            <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: 'rgba(255,82,82,0.12)', border: '1px solid rgba(255,82,82,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF5252" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
             <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '8px' }}>
               Something went wrong
             </h1>

@@ -236,7 +236,7 @@ export function VoicePicker({
               : 'border-white/[0.08] text-white/30 hover:text-white/55 hover:border-white/20'
           )}
         >
-          {!value ? '✓ Default (Browser)' : 'Use Default'}
+          {!value ? <><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',marginRight:'3px'}}><polyline points="20 6 9 17 4 12"/></svg>Default (Browser)</> : 'Use Default'}
         </button>
       </div>
 

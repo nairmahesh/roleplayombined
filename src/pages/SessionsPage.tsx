@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { sessionsApi } from '@/lib/api';
 import { Session, FRAMEWORK_INFO, DIFFICULTY_CONFIG } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
-import { Phone, Monitor, Download } from 'lucide-react';
+import { Phone, Monitor, Download, ClipboardList } from 'lucide-react';
 import clsx from 'clsx';
 
 export function SessionsPage() {
@@ -53,7 +53,7 @@ export function SessionsPage() {
           <div className="p-8 text-center text-white/30">Loading…</div>
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center">
-            <div className="text-4xl mb-3">🎯</div>
+            <ClipboardList size={32} className="text-white/15 mx-auto mb-3" />
             <p className="text-white/65 text-sm">No sessions yet. <button onClick={() => navigate('/practice')} className="text-accent hover:underline">Start your first one →</button></p>
           </div>
         ) : (
@@ -61,6 +61,7 @@ export function SessionsPage() {
             {filtered.map((session, i) => {
               const score = session.totalScore;
               const scoreColor = score == null ? 'text-white/30' : score >= 80 ? 'text-accent-3' : score >= 65 ? 'text-accent-5' : 'text-accent-4';
+              const TypeIcon = session.type === 'PHONE_CALL' ? Phone : Monitor;
               return (
                 <motion.div
                   key={session.id}
@@ -73,9 +74,9 @@ export function SessionsPage() {
                   {/* Mobile card view */}
                   <div className="md:hidden flex items-center justify-between px-4 py-3 gap-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-base flex-shrink-0">
-                        {session.type === 'PHONE_CALL' ? '📞' : '💻'}
-                      </span>
+                      <div className="w-7 h-7 rounded-md bg-accent/10 flex items-center justify-center flex-shrink-0">
+                        <TypeIcon size={13} className="text-accent" />
+                      </div>
                       <div className="min-w-0">
                         <div className="text-[13.5px] font-medium truncate group-hover:text-white transition-colors">
                           {session.scenarioConfig?.displayName || session.persona?.name || 'Unknown Persona'}
@@ -92,9 +93,9 @@ export function SessionsPage() {
                   {/* Desktop grid row */}
                   <div className="hidden md:grid items-center px-5 py-3.5" style={{ gridTemplateColumns: '2fr 1fr 1fr 1fr 100px' }}>
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-base flex-shrink-0">
-                        {session.type === 'PHONE_CALL' ? '📞' : '💻'}
-                      </span>
+                      <div className="w-7 h-7 rounded-md bg-accent/10 flex items-center justify-center flex-shrink-0">
+                        <TypeIcon size={13} className="text-accent" />
+                      </div>
                       <div className="min-w-0">
                         <div className="text-[13.5px] font-medium truncate group-hover:text-white transition-colors">
                           {session.scenarioConfig?.displayName || session.persona?.name || 'Unknown Persona'}
