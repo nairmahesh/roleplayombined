@@ -1,10 +1,10 @@
-// Live call overlay — ElevenLabs Conversational AI WebSocket
-// Rings 3 times, persona answers, full duplex audio with native barge-in
+// Live call overlay — ElevenLabs Conversational AI via @elevenlabs/react SDK
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Mic, MicOff, Phone, Pause, Play, BarChart3, Clock } from 'lucide-react';
+import { Mic, MicOff, Phone, Pause, Play, BarChart3 } from 'lucide-react';
+import { useConversationControls, useConversationStatus, useConversationMode, useConversationInput } from '@elevenlabs/react';
 import { sessionsApi } from '@/lib/api';
 import { useRecording } from '@/hooks/useRecording';
 import { connectSocket } from '@/lib/socket';
@@ -12,12 +12,9 @@ import { Framework, SessionType, FRAMEWORK_INFO } from '@/types';
 import { AvatarDisplay } from '@/components/practice/PersonaAvatars';
 import clsx from 'clsx';
 
-// ── Config ────────────────────────────────────────────────────────────────────
-const EL_WS_URL = 'wss://api.elevenlabs.io/v1/convai/conversation';
 const EL_AGENT_ID = import.meta.env.VITE_ELEVENLABS_AGENT_ID || '';
 const EL_API_KEY  = import.meta.env.VITE_ELEVENLABS_API_KEY  || '';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
 interface Message { role: 'user' | 'assistant'; content: string; timestampMs: number; }
 
 export interface PersonaDisplay {
@@ -60,131 +57,48 @@ function playRings(): Promise<void> {
   });
 }
 
-// ── PCM16 audio queue + playback ──────────────────────────────────────────────
-// ElevenLabs sends audio as base64-encoded PCM16 @ 16kHz chunks.
-// We decode and queue them into an AudioContext for seamless, gap-free playback.
-class AudioQueue {
-  private ctx: AudioContext;
-  private nextAt = 0;
-  private sources: AudioBufferSourceNode[] = [];
-  onPlaybackStart?: () => void;
-  onPlaybackEnd?: () => void;
-  private playing = false;
-  private endTimer: ReturnType<typeof setTimeout> | null = null;
-
-  constructor() {
-    this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-  }
-
-  resume() { if (this.ctx.state === 'suspended') this.ctx.resume(); }
-
-  enqueue(base64: string) {
-    this.resume();
-    const raw = atob(base64);
-    const buf = new ArrayBuffer(raw.length);
-    const view = new Uint8Array(buf);
-    for (let i = 0; i < raw.length; i++) view[i] = raw.charCodeAt(i);
-
-    // PCM16 LE → Float32
-    const pcm = new Int16Array(buf);
-    const float = new Float32Array(pcm.length);
-    for (let i = 0; i < pcm.length; i++) float[i] = pcm[i] / 32768;
-
-    const audioBuf = this.ctx.createBuffer(1, float.length, 16000);
-    audioBuf.copyToChannel(float, 0);
-
-    const src = this.ctx.createBufferSource();
-    src.buffer = audioBuf;
-    src.connect(this.ctx.destination);
-
-    const startAt = Math.max(this.ctx.currentTime + 0.005, this.nextAt);
-    src.start(startAt);
-    this.nextAt = startAt + audioBuf.duration;
-
-    if (!this.playing) {
-      this.playing = true;
-      this.onPlaybackStart?.();
-    }
-
-    // Schedule end detection
-    if (this.endTimer) clearTimeout(this.endTimer);
-    const msUntilEnd = (this.nextAt - this.ctx.currentTime) * 1000 + 120;
-    this.endTimer = setTimeout(() => {
-      if (this.playing) { this.playing = false; this.onPlaybackEnd?.(); }
-    }, msUntilEnd);
-
-    this.sources.push(src);
-    // Keep sources list lean
-    if (this.sources.length > 20) this.sources.shift();
-  }
-
-  interrupt() {
-    this.nextAt = 0;
-    this.sources.forEach(s => { try { s.stop(); } catch {} });
-    this.sources = [];
-    if (this.endTimer) { clearTimeout(this.endTimer); this.endTimer = null; }
-    if (this.playing) { this.playing = false; this.onPlaybackEnd?.(); }
-  }
-
-  isPlaying() { return this.playing; }
-
-  close() {
-    this.interrupt();
-    this.ctx.close().catch(() => {});
-  }
-}
-
 // ── Main component ─────────────────────────────────────────────────────────────
 export function CallInterface({ sessionId, persona, sessionType, framework, timeLimitMins, onEnd }: Props) {
   const [phase, setPhase] = useState<'ringing' | 'active'>('ringing');
   const [ringDot, setRingDot] = useState(0);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isBotSpeaking, setIsBotSpeaking] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const [isMuted, setIsMuted] = useState(false);
   const [isHeld, setIsHeld] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [showAnalysisPrompt, setShowAnalysisPrompt] = useState(false);
-  const [wsReady, setWsReady] = useState(false);
 
-  const startTimeRef    = useRef(Date.now());
-  const endDataRef      = useRef<{ durationSeconds: number } | null>(null);
-  const timerRef        = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startTimeRef     = useRef(Date.now());
+  const endDataRef       = useRef<{ durationSeconds: number } | null>(null);
+  const timerRef         = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeLimitWarnRef = useRef(false);
-  const callLiveRef     = useRef(false);
-  const wsRef           = useRef<WebSocket | null>(null);
-  const audioQueueRef   = useRef<AudioQueue | null>(null);
-  const micStreamRef    = useRef<MediaStream | null>(null);
-  const micProcRef      = useRef<ScriptProcessorNode | null>(null);
-  const micCtxRef       = useRef<AudioContext | null>(null);
-  const historyRef      = useRef<Message[]>([]);
-  const transcriptRef   = useRef<HTMLDivElement>(null);
-  const handleEndRef    = useRef<(() => void) | null>(null);
-  const isMutedRef      = useRef(false);
-  const isHeldRef       = useRef(false);
-  const pendingUserMsg  = useRef('');
-  const pendingBotMsg   = useRef('');
+  const historyRef       = useRef<Message[]>([]);
+  const transcriptRef    = useRef<HTMLDivElement>(null);
+  const handleEndRef     = useRef<(() => void) | null>(null);
+  const isEndingRef      = useRef(false);
 
   const socket = connectSocket();
   const recording = useRecording({ sessionId, mode: sessionType === 'ONLINE_MEETING' ? 'video' : 'audio' });
-  const tsNow = () => Date.now() - startTimeRef.current;
 
-  useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
-  useEffect(() => { isHeldRef.current = isHeld; }, [isHeld]);
+  // ── SDK hooks ─────────────────────────────────────────────────────────────────
+  const { startSession, endSession } = useConversationControls();
+  const { status } = useConversationStatus();
+  const { isSpeaking: isBotSpeaking } = useConversationMode();
+  const { isMuted, setMuted } = useConversationInput();
+
+  const isConnected = status === 'connected';
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => { if (transcriptRef.current) transcriptRef.current.scrollTop = transcriptRef.current.scrollHeight; }, 50);
   }, []);
 
   const addMsg = useCallback((role: 'user' | 'assistant', content: string) => {
-    const msg: Message = { role, content, timestampMs: tsNow() };
+    const msg: Message = { role, content, timestampMs: Date.now() - startTimeRef.current };
     historyRef.current = [...historyRef.current, msg];
     setMessages(prev => [...prev, msg]);
     sessionsApi.addMessage(sessionId, { role, content, timestampMs: msg.timestampMs }).catch(() => {});
     scrollToBottom();
-  }, [sessionId, scrollToBottom]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sessionId, scrollToBottom]);
 
-  // ── Build persona system prompt for ElevenLabs override ──────────────────────
   const buildSystemPrompt = useCallback(() => {
     if (persona.systemPrompt) return persona.systemPrompt;
     return (
@@ -208,231 +122,107 @@ export function CallInterface({ sessionId, persona, sessionType, framework, time
     return greetings[Math.floor(Math.random() * greetings.length)];
   }, [persona]);
 
-  // ── Mic → PCM16 → WebSocket streaming ────────────────────────────────────────
-  const startMicStreaming = useCallback(async (stream: MediaStream) => {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-    micCtxRef.current = ctx;
-    const src = ctx.createMediaStreamSource(stream);
-    // ScriptProcessor: capture 4096-sample chunks, convert Float32→PCM16, send
-    const proc = ctx.createScriptProcessor(4096, 1, 1);
-    micProcRef.current = proc;
-    proc.onaudioprocess = (e) => {
-      if (!callLiveRef.current || isMutedRef.current || isHeldRef.current) return;
-      const ws = wsRef.current;
-      if (!ws || ws.readyState !== WebSocket.OPEN) return;
-      const float = e.inputBuffer.getChannelData(0);
-      const pcm = new Int16Array(float.length);
-      for (let i = 0; i < float.length; i++) pcm[i] = Math.max(-32768, Math.min(32767, float[i] * 32768));
-      const b64 = btoa(String.fromCharCode(...new Uint8Array(pcm.buffer)));
-      ws.send(JSON.stringify({ user_audio_chunk: b64 }));
-    };
-    src.connect(proc);
-    proc.connect(ctx.destination);
-  }, []);
-
-  const stopMicStreaming = useCallback(() => {
-    if (micProcRef.current) { try { micProcRef.current.disconnect(); } catch {} micProcRef.current = null; }
-    if (micCtxRef.current) { micCtxRef.current.close().catch(() => {}); micCtxRef.current = null; }
-  }, []);
-
-  // ── Connect ElevenLabs WebSocket ──────────────────────────────────────────────
-  const connectElevenLabs = useCallback(async (stream: MediaStream) => {
-    const agentId = EL_AGENT_ID;
-    if (!agentId) {
-      toast.error('ElevenLabs Agent ID not configured (VITE_ELEVENLABS_AGENT_ID)');
-      onEnd(sessionId);
-      return;
-    }
-
-    const queue = new AudioQueue();
-    audioQueueRef.current = queue;
-
-    queue.onPlaybackStart = () => setIsBotSpeaking(true);
-    queue.onPlaybackEnd   = () => setIsBotSpeaking(false);
-
-    // Get signed URL if API key provided (private agents), else connect directly
-    let wsUrl = `${EL_WS_URL}?agent_id=${agentId}`;
-    if (EL_API_KEY) {
-      try {
-        const res = await fetch(
-          `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${agentId}`,
-          { headers: { 'xi-api-key': EL_API_KEY } }
-        );
-        if (res.ok) {
-          const data = await res.json();
-          wsUrl = data.signed_url;
-        }
-      } catch { /* fall back to direct connection */ }
-    }
-
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      // Send persona override so the agent behaves as our custom character
-      ws.send(JSON.stringify({
-        type: 'conversation_initiation_client_data',
-        conversation_config_override: {
-          agent: {
-            prompt: { prompt: buildSystemPrompt() },
-            first_message: buildFirstMessage(),
-            ...(persona.elevenlabsVoiceId ? { voice: { voice_id: persona.elevenlabsVoiceId } } : {}),
-          },
-        },
-      }));
-      setWsReady(true);
-      startMicStreaming(stream);
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-
-        // Keep-alive ping → pong
-        if (data.type === 'ping') {
-          ws.send(JSON.stringify({ type: 'pong', event_id: data.ping_event.event_id }));
-          return;
-        }
-
-        // Audio chunk — enqueue for seamless playback
-        if (data.type === 'audio') {
-          if (!isHeldRef.current) queue.enqueue(data.audio_event.audio_base_64);
-          return;
-        }
-
-        // Agent's final text response → transcript
-        if (data.type === 'agent_response') {
-          const text = data.agent_response_event?.agent_response?.trim();
-          if (text) {
-            pendingBotMsg.current = '';
-            addMsg('assistant', text);
-          }
-          return;
-        }
-
-        // User transcript → transcript
-        if (data.type === 'user_transcript') {
-          const text = data.user_transcription_event?.user_transcript?.trim();
-          if (text) {
-            pendingUserMsg.current = '';
-            addMsg('user', text);
-          }
-          return;
-        }
-
-        // Native interruption — ElevenLabs stops bot audio server-side
-        if (data.type === 'interruption') {
-          queue.interrupt();
-          setIsBotSpeaking(false);
-          return;
-        }
-
-        // Conversation ended by agent
-        if (data.type === 'conversation_initiation_metadata') {
-          // metadata received — connection confirmed
-          return;
-        }
-      } catch { /* ignore malformed frames */ }
-    };
-
-    ws.onerror = () => {
-      if (callLiveRef.current) toast.error('Voice connection lost — check your ElevenLabs config');
-    };
-
-    ws.onclose = () => {
-      wsRef.current = null;
-      if (callLiveRef.current) {
-        // Unexpected close — end session gracefully
-        setTimeout(() => { if (callLiveRef.current) handleEndRef.current?.(); }, 500);
+  const getSignedUrl = useCallback(async (): Promise<string | null> => {
+    if (!EL_API_KEY) return null;
+    try {
+      const res = await fetch(
+        `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${EL_AGENT_ID}`,
+        { headers: { 'xi-api-key': EL_API_KEY } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        return data.signed_url;
       }
-    };
-  }, [sessionId, onEnd, buildSystemPrompt, buildFirstMessage, startMicStreaming, addMsg, persona.elevenlabsVoiceId]);
+    } catch { /* fall back to agentId */ }
+    return null;
+  }, []);
 
   // ── Session lifecycle ─────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
-      // 1. Mic permission
+      if (!EL_AGENT_ID) {
+        toast.error('ElevenLabs Agent ID not configured (VITE_ELEVENLABS_AGENT_ID)');
+        onEnd(sessionId);
+        return;
+      }
+
       let stream: MediaStream;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, sampleRate: 16000 },
-        });
-        micStreamRef.current = stream;
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       } catch {
         toast.error('Microphone access required');
         onEnd(sessionId);
         return;
       }
 
-      // 2. Start backend session
       try { await sessionsApi.start(sessionId); } catch {}
 
-      // 3. Three rings with animated dots
       for (let i = 0; i < 3; i++) {
         setTimeout(() => { if (!cancelled) setRingDot(i + 1); }, i * 2200);
       }
       await playRings();
       if (cancelled) return;
 
-      // 4. Go live
       setPhase('active');
       startTimeRef.current = Date.now();
-      callLiveRef.current = true;
-      handleEndRef.current = handleEnd;
-
-      // 5. Timer
       timerRef.current = setInterval(() => setElapsed(Date.now() - startTimeRef.current), 1000);
-
-      // 6. Recording
       recording.startRecording(stream);
-
-      // 7. Socket join
       socket.emit('session:join', { sessionId });
 
-      // 8. Connect ElevenLabs
-      await connectElevenLabs(stream);
+      const signedUrl = await getSignedUrl();
+      const overrides = {
+        agent: {
+          prompt: { prompt: buildSystemPrompt() },
+          firstMessage: buildFirstMessage(),
+        },
+        ...(persona.elevenlabsVoiceId ? { tts: { voiceId: persona.elevenlabsVoiceId } } : {}),
+      };
+
+      try {
+        await startSession({
+          ...(signedUrl ? { signedUrl } : { agentId: EL_AGENT_ID }),
+          overrides,
+          onMessage: ({ message, source }: { message: string; source: string }) => {
+            if (message?.trim()) {
+              addMsg(source === 'ai' ? 'assistant' : 'user', message.trim());
+            }
+          },
+          onError: (msg: string) => {
+            if (!cancelled) toast.error(`Voice connection error: ${msg}`);
+          },
+          onDisconnect: () => {
+            if (!cancelled && !isEndingRef.current) handleEndRef.current?.();
+          },
+        } as any);
+      } catch (err: any) {
+        if (!cancelled) toast.error('Could not connect to ElevenLabs: ' + err.message);
+      }
     })();
 
     return () => {
       cancelled = true;
       if (timerRef.current) clearInterval(timerRef.current);
-      callLiveRef.current = false;
-      wsRef.current?.close();
-      wsRef.current = null;
-      audioQueueRef.current?.close();
-      audioQueueRef.current = null;
-      stopMicStreaming();
-      micStreamRef.current?.getTracks().forEach(t => t.stop());
-      micStreamRef.current = null;
+      try { endSession(); } catch {}
       socket.emit('session:leave', { sessionId });
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── End call ──────────────────────────────────────────────────────────────────
   const handleEnd = useCallback(() => {
-    handleEndRef.current = handleEnd;
-    if (isEnding) return;
+    if (isEndingRef.current) return;
+    isEndingRef.current = true;
     setIsEnding(true);
-    callLiveRef.current = false;
 
-    // Clean up audio/WS
-    wsRef.current?.close();
-    wsRef.current = null;
-    audioQueueRef.current?.close();
-    audioQueueRef.current = null;
-    stopMicStreaming();
+    try { endSession(); } catch {}
     if (timerRef.current) clearInterval(timerRef.current);
-    recording.stopRecording();
-    micStreamRef.current?.getTracks().forEach(t => t.stop());
-    micStreamRef.current = null;
+    recording.stopRecording?.();
 
     endDataRef.current = { durationSeconds: Math.round((Date.now() - startTimeRef.current) / 1000) };
     setShowAnalysisPrompt(true);
-  }, [isEnding, stopMicStreaming, recording]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [endSession, recording]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Keep handleEndRef in sync
   useEffect(() => { handleEndRef.current = handleEnd; });
 
   const confirmEnd = async (analyze: boolean) => {
@@ -444,6 +234,7 @@ export function CallInterface({ sessionId, persona, sessionType, framework, time
       onEnd(sessionId);
     } catch (err: any) {
       toast.error('Could not end session: ' + err.message);
+      isEndingRef.current = false;
       setIsEnding(false);
     }
   };
@@ -457,31 +248,15 @@ export function CallInterface({ sessionId, persona, sessionType, framework, time
       toast('1 minute remaining');
     }
     if (elapsed >= limitMs) {
-      toast('Time limit reached — ending session', { icon: '⏱' });
+      toast('Time limit reached — ending session');
       handleEnd();
     }
   }, [elapsed, timeLimitMins, phase, isEnding, handleEnd]);
 
-  // ── Controls ──────────────────────────────────────────────────────────────────
-  const toggleMute = () => {
-    setIsMuted(m => {
-      const next = !m;
-      isMutedRef.current = next;
-      if (micStreamRef.current) {
-        micStreamRef.current.getAudioTracks().forEach(t => { t.enabled = !next; });
-      }
-      return next;
-    });
-  };
-
   const toggleHold = () => {
     setIsHeld(h => {
       const next = !h;
-      isHeldRef.current = next;
-      if (next) {
-        // Pause: stop mic + pause queued audio
-        audioQueueRef.current?.interrupt();
-      }
+      setMuted(next);
       return next;
     });
   };
@@ -501,7 +276,6 @@ export function CallInterface({ sessionId, persona, sessionType, framework, time
     >
       <style>{`
         @keyframes rp{0%{transform:scale(.9);opacity:.9}100%{transform:scale(1.08);opacity:0}}
-        @keyframes avr{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.1);opacity:1}}
         @keyframes wv{0%,100%{height:3px;opacity:.3}50%{height:14px;opacity:1}}
       `}</style>
 
@@ -560,7 +334,6 @@ export function CallInterface({ sessionId, persona, sessionType, framework, time
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {/* Speaking indicator — subtle wave bars, no text label */}
                 {isBotSpeaking && (
                   <div className="flex items-center gap-1 h-5">
                     {[0, 0.12, 0.24, 0.36, 0.48].map(d => (
@@ -569,7 +342,7 @@ export function CallInterface({ sessionId, persona, sessionType, framework, time
                   </div>
                 )}
                 <span className="px-2.5 py-1 rounded-full bg-accent-3/10 border border-accent-3/20 text-[10px] text-accent-3 font-medium">● LIVE</span>
-                {!wsReady && phase === 'active' && (
+                {!isConnected && phase === 'active' && (
                   <span className="text-[10px] text-white/55 animate-pulse">Connecting…</span>
                 )}
               </div>
@@ -584,7 +357,6 @@ export function CallInterface({ sessionId, persona, sessionType, framework, time
               )}>
                 <div className="flex flex-col items-center gap-3 p-4">
                   <div className="relative">
-                    {/* Ripple ring when speaking */}
                     {isBotSpeaking && (
                       <>
                         <div className="absolute inset-[-8px] rounded-full border-2 border-accent/40 z-10" style={{ animation: 'rp 1.2s ease-out infinite' }} />
@@ -599,7 +371,6 @@ export function CallInterface({ sessionId, persona, sessionType, framework, time
                     <div className="font-display font-bold text-sm">{persona.name}</div>
                     <div className="text-[11px] text-white/70">{persona.title}</div>
                   </div>
-                  {/* Microphone status indicator */}
                   <div className={clsx(
                     'flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-medium transition-all',
                     isMuted
@@ -654,7 +425,7 @@ export function CallInterface({ sessionId, persona, sessionType, framework, time
                 icon={isMuted ? MicOff : Mic}
                 active={!isMuted}
                 muted={isMuted}
-                onClick={toggleMute}
+                onClick={() => setMuted(!isMuted)}
                 label={isMuted ? 'Unmute' : 'Mute'}
               />
               <CtrlBtn

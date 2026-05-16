@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { ConversationProvider } from '@elevenlabs/react';
 import { useAuthStore, useThemeStore } from '@/lib/store';
 import { AppShell } from '@/components/layout/AppShell';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -67,6 +68,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
+      <ConversationProvider>
       <AvatarPhotoProvider>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <ThemeInit />
@@ -149,6 +151,7 @@ export default function App() {
         </Suspense>
       </BrowserRouter>
       </AvatarPhotoProvider>
+      </ConversationProvider>
     </ErrorBoundary>
   );
 }
