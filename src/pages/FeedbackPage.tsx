@@ -10,12 +10,13 @@ import { connectSocket } from '@/lib/socket';
 import { Session, ParsedFeedback, FRAMEWORK_INFO } from '@/types';
 import clsx from 'clsx';
 
-type Tab = 'scorecard' | 'transcript' | 'analytics' | 'leaderboard';
+type Tab = 'scorecard' | 'transcript' | 'analytics' | 'objections' | 'leaderboard';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'scorecard',   label: 'Scorecard',   icon: Target       },
   { id: 'transcript',  label: 'Transcript',  icon: MessageSquare },
   { id: 'analytics',  label: 'Analytics',   icon: BarChart3     },
+  { id: 'objections',  label: 'Objections',  icon: Shield        },
   { id: 'leaderboard',label: 'Leaderboard', icon: Trophy        },
 ];
 
@@ -88,6 +89,127 @@ function highlightText(text: string, query: string) {
 }
 
 interface PeerScore { userId: string; name: string; score: number; rank: number; }
+
+// ── Coaching content helpers ──────────────────────────────────────────────────
+
+function getComponentCoaching(component: string, passed: boolean, framework: string): string {
+  const c = component.toLowerCase();
+  if (c.includes('metric')) return passed
+    ? 'You surfaced quantifiable impact — now push further: get them to put a dollar figure on the cost of inaction. Numbers-per-month create urgency.'
+    : 'You need to anchor every conversation in numbers. Ask: "What does this problem cost you each quarter?" — then use that figure throughout the rest of the call.';
+  if (c.includes('economic buyer') || c.includes('economic')) return passed
+    ? 'Good — you identified the real decision-maker. Now get them on the next call or get your champion to brief them directly with a one-pager.'
+    : 'The economic buyer is the only person who can say yes to the budget. Before next call, ask your contact: "Who ultimately approves spend of this size, and what does their decision process look like?"';
+  if (c.includes('decision criteria') || c.includes('criteria')) return passed
+    ? 'You mapped their criteria well. Next step: create a scoring matrix that shows how your solution rates on each one — send it before the demo.'
+    : 'Before any demo, ask: "What would an ideal vendor look like to you?" — write down every criterion they mention, then build your pitch around their own words.';
+  if (c.includes('decision process') || c.includes('process')) return passed
+    ? 'You understand how they decide. Make sure you have a mutual success plan in writing — set a decision deadline with the prospect.'
+    : 'Ask: "Walk me through how a decision like this typically gets made — who else needs to be involved, and what are the key milestones?" This prevents last-minute surprises.';
+  if (c.includes('identify pain') || c.includes('pain')) return passed
+    ? 'Pain was clearly established — now quantify it. A pain that costs $200K/year is a lot more compelling than "we have inefficiencies".'
+    : 'You need 3 levels of pain: surface problem, business impact, personal impact on your contact. Use SPIN: "What happens if this isn\'t resolved in the next 6 months?"';
+  if (c.includes('champion')) return passed
+    ? 'You have a champion — now arm them. Give them the 3-sentence pitch for their internal conversations and a 1-page ROI summary they can forward.'
+    : 'Find the person who will fight for you internally and needs your solution to succeed. Ask: "Who else in your org would be most excited about this outcome?"';
+  if (c.includes('competition') || c.includes('competitor')) return passed
+    ? 'You handled competition well. Reinforce your differentiation with a specific win story from a similar company.'
+    : 'When competition comes up, don\'t dismiss it — acknowledge it, then pivot: "That\'s a solid tool for X. What we uniquely do is Y, which matters a lot when you need Z."';
+  if (c.includes('situation')) return passed
+    ? 'Good situation mapping — now use those facts to set up problem questions. The situation alone doesn\'t create urgency.'
+    : 'Gather context efficiently: ask 2–3 targeted situation questions upfront, not 10 — too many feel like an interrogation.';
+  if (c.includes('problem')) return passed
+    ? 'You uncovered problems — push to implications. A problem that has no cost stays unsolved.'
+    : 'After identifying a problem, ask: "How long has this been an issue?" and "What have you tried before?" — this reveals if they\'re actually ready to solve it.';
+  if (c.includes('implication')) return passed
+    ? 'You made the pain felt — now direct that pain toward your solution with a needs-payoff question.'
+    : 'Implication questions make problems painful enough to act on: "If this continues, what does that mean for your team\'s targets next year?"';
+  if (c.includes('need') || c.includes('payoff')) return passed
+    ? 'Needs-payoff landed well — the prospect articulated the value themselves, which is the most powerful form of selling.'
+    : 'Get the prospect to say the value out loud: "If we could eliminate that problem, how valuable would that be for your team?" — their words, not yours.';
+  if (c.includes('budget') || c.includes('bant')) return passed
+    ? 'Budget confirmed — good. Now tie every conversation back to ROI so the number stays justified as you go through approvals.'
+    : 'Qualify budget early, not late: "Is there budget allocated for solving this, or would it need to be approved?" — saves everyone\'s time.';
+  if (c.includes('authority')) return passed
+    ? 'You\'re talking to the right person — make sure they\'re also your champion, not just the gatekeeper.'
+    : 'Confirm authority by asking: "Are you the one who would make the final call, or are others involved?" — do this early, before investing in a full demo cycle.';
+  if (c.includes('timeline')) return passed
+    ? 'Timeline is set — create a mutual success plan with agreed milestones so the timeline stays accountable.'
+    : 'Create urgency around timeline: ask "What\'s your target go-live date?" and "What happens to that goal if you don\'t have a solution by then?"';
+  if (c.includes('teach') || c.includes('tailor') || c.includes('control') || c.includes('challenger')) return passed
+    ? 'Good challenger approach — keep reframing their thinking with insights they haven\'t considered yet.'
+    : 'Lead with insight: share a data point or observation that reframes their problem, then connect it to how your solution uniquely solves it.';
+  if (c.includes('simple') || c.includes('snap')) return passed
+    ? 'Your message was clear — ensure each follow-up communication is equally crisp.'
+    : 'SNAP principle: keep your pitch simple, invaluable, aligned to their priorities. Remove any feature-talk that isn\'t solving their stated pain.';
+  if (c.includes('closing') || c.includes('close')) return passed
+    ? 'Good close — make sure you confirmed next steps in writing within 24 hours.'
+    : 'Always close with a specific next step: "Let\'s block 30 minutes Thursday to review this with your team — does 2pm work?" — vague "I\'ll be in touch" kills momentum.';
+  if (c.includes('objection')) return passed
+    ? 'Strong objection handling — continue using the Feel-Felt-Found or Acknowledge-Align-Pivot framework consistently.'
+    : 'When an objection lands, don\'t defend immediately. First: "That\'s a fair concern — I hear that a lot. Can you tell me more about what\'s driving that?" — understand before you respond.';
+  return passed
+    ? 'You scored well here — focus on consistency and making this a repeatable habit in every call.'
+    : `Review the evidence above and prepare 2–3 specific phrases you can use to strengthen ${component.toLowerCase()} in your next call.`;
+}
+
+function getComponentPhrase(component: string, _framework: string): string {
+  const c = component.toLowerCase();
+  if (c.includes('metric')) return "What does this problem cost you each month in lost productivity or revenue?";
+  if (c.includes('economic buyer') || c.includes('economic')) return "Who else would need to be involved in approving a decision like this?";
+  if (c.includes('decision criteria') || c.includes('criteria')) return "What does an ideal outcome look like for you — what would a successful vendor need to deliver?";
+  if (c.includes('decision process') || c.includes('process')) return "Can you walk me through how a decision of this size typically gets made at your company?";
+  if (c.includes('identify pain') || c.includes('pain')) return "What happens to your team's goals if this isn't resolved in the next quarter?";
+  if (c.includes('champion')) return "Who else in your organization would benefit most from this — someone who'd really champion this internally?";
+  if (c.includes('situation')) return "Tell me about your current setup — how does your team handle this today?";
+  if (c.includes('problem')) return "What's the biggest challenge you're running into with your current approach?";
+  if (c.includes('implication')) return "If this keeps going the way it is, what does that mean for your targets by end of year?";
+  if (c.includes('need') || c.includes('payoff')) return "If we could eliminate that completely, how big of an impact would that have for your team?";
+  if (c.includes('budget')) return "Is there budget set aside for solving this, or would this need to go through an approval process?";
+  if (c.includes('authority')) return "Are you the primary decision-maker here, or would others need to weigh in before moving forward?";
+  if (c.includes('timeline')) return "What's your target date to have something in place — and what's driving that timeline?";
+  if (c.includes('closing') || c.includes('close')) return "What would need to be true for you to be comfortable moving forward with us?";
+  if (c.includes('objection')) return "That's a really common concern — can you help me understand what's driving that for you specifically?";
+  return "What would make this an easy decision for you?";
+}
+
+function getObjectionModelResponse(objection: string): string {
+  const o = objection.toLowerCase();
+  if (o.includes('price') || o.includes('expensive') || o.includes('cost') || o.includes('cheaper')) {
+    return "I understand cost is a factor. Let me ask — what does it cost you today to not solve this? Most of our customers find the ROI within 3 months. Would it help if we built out a quick business case together?";
+  }
+  if (o.includes('already have') || o.includes('current') || o.includes('use') || o.includes('competitor')) {
+    return "That makes sense — switching tools is a real investment. What I'd ask is: what's the one thing your current solution doesn't do that you wish it did? That gap is usually where we can add the most value.";
+  }
+  if (o.includes('timing') || o.includes('not now') || o.includes('bad time') || o.includes('quarter')) {
+    return "I hear you — timing matters. Can I ask what changes in Q2 that makes this a better time? I want to make sure we're working on your timeline, not ours.";
+  }
+  if (o.includes('think about') || o.includes('get back') || o.includes('consider')) {
+    return "Of course — this is a meaningful decision. What are the main things you're weighing? If I can answer those now, it might save you some back and forth.";
+  }
+  if (o.includes('decision') || o.includes('approve') || o.includes('stakeholder') || o.includes('board')) {
+    return "Totally makes sense. Who else needs to be part of the conversation? I'd love to help you put together a one-page summary that makes the case internally — would that be useful?";
+  }
+  if (o.includes('trust') || o.includes('proven') || o.includes('risk') || o.includes('too new')) {
+    return "That's a fair concern. Let me share a specific example — [Company similar to theirs] had the same concern, and here's how they de-risked it: they started with a 30-day pilot. Would that kind of approach work for you?";
+  }
+  return "That's worth exploring. Help me understand — is that a definite no, or more of a 'not yet unless the right conditions are met'? I want to make sure I'm respecting your time and your priorities.";
+}
+
+function getObjectionTip(objection: string, framework: string): string {
+  const o = objection.toLowerCase();
+  const f = framework.toUpperCase();
+  if (o.includes('price') || o.includes('expensive') || o.includes('cost')) {
+    return `${f} tip: Price objections are really ROI objections. Build your metrics case first — if you've quantified their pain (M in MEDDIC), the price conversation becomes a math problem, not a value debate.`;
+  }
+  if (o.includes('timing') || o.includes('not now')) {
+    return `${f} tip: "Not now" means the urgency isn't high enough yet. Use implication questions to raise the cost of waiting — "What happens to [their goal] if this isn't solved by [their deadline]?"`;
+  }
+  if (o.includes('already have') || o.includes('competitor')) {
+    return `${f} tip: Don't knock the competition — acknowledge it, then ask what they wish their current tool did differently. That gap is your wedge. Teach them something they don't know about what's possible.`;
+  }
+  return `Use the Acknowledge-Align-Pivot technique: (1) Acknowledge the concern genuinely, (2) Align with a shared goal, (3) Pivot to how you address it with specifics. Avoid defending; ask a clarifying question first.`;
+}
 
 export function FeedbackPage() {
   const { id } = useParams<{ id: string }>();
@@ -574,24 +696,31 @@ export function FeedbackPage() {
                                     </div>
                                   )}
 
-                                  {/* What to do next time */}
-                                  {!passed && (
-                                    <div className="mt-4 p-3 rounded-[10px] border" style={{ background: 'rgba(255,209,102,0.06)', borderColor: 'rgba(255,209,102,0.2)' }}>
-                                      <div className="flex items-center gap-1.5 mb-1.5">
-                                        <Lightbulb size={11} style={{ color: '#FFD166' }} />
-                                        <span className="text-[10.5px] font-bold uppercase tracking-wider" style={{ color: '#FFD166' }}>What to do next time</span>
-                                      </div>
-                                      <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text2)' }}>
-                                        {score.component === 'Champion'
-                                          ? 'Before ending the call, ask: "Would you be comfortable sponsoring this internally?" — then arm them with a 2-sentence pitch. A champion who can\'t articulate your value is not a champion.'
-                                          : score.component === 'Economic Buyer'
-                                          ? 'Ask directly: "Who ultimately signs off on decisions like this?" and "What metric would make this a clear yes for them?" — don\'t assume you know.'
-                                          : score.component === 'Decision Criteria'
-                                          ? 'Before demoing, ask: "What would a successful vendor look like to you?" — let them define the criteria, then map your product to each one.'
-                                          : 'Review the evidence above and prepare 2–3 specific phrases you can use to strengthen this area in your next call.'}
-                                      </p>
+                                  {/* What to do next time — rich coaching */}
+                                  <div className={clsx('mt-4 p-3.5 rounded-[10px] border', passed ? 'border-[rgba(6,214,160,0.2)]' : 'border-[rgba(255,209,102,0.2)]')}
+                                    style={{ background: passed ? 'rgba(6,214,160,0.04)' : 'rgba(255,209,102,0.05)' }}>
+                                    <div className="flex items-center gap-1.5 mb-2">
+                                      <Lightbulb size={11} style={{ color: passed ? '#06D6A0' : '#FFD166' }} />
+                                      <span className="text-[10.5px] font-bold uppercase tracking-wider" style={{ color: passed ? '#06D6A0' : '#FFD166' }}>
+                                        {passed ? 'How to make this even stronger' : 'Specific action for next call'}
+                                      </span>
                                     </div>
-                                  )}
+                                    <p className="text-[12.5px] leading-relaxed mb-3" style={{ color: 'var(--text2)' }}>
+                                      {getComponentCoaching(score.component, passed, session.framework)}
+                                    </p>
+                                    {/* Try this phrase */}
+                                    {!passed && (
+                                      <div className="flex items-start gap-2 px-3 py-2 rounded-[8px]" style={{ background: 'rgba(91,111,255,0.08)', border: '1px solid rgba(91,111,255,0.2)' }}>
+                                        <Zap size={10} className="flex-shrink-0 mt-0.5" style={{ color: 'var(--accent)' }} />
+                                        <div>
+                                          <div className="text-[9.5px] font-bold uppercase tracking-wide mb-1" style={{ color: 'var(--accent)' }}>Try this phrase</div>
+                                          <p className="text-[12px] italic" style={{ color: 'var(--text2)' }}>
+                                            "{getComponentPhrase(score.component, session.framework)}"
+                                          </p>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </motion.div>
                             )}
@@ -694,57 +823,85 @@ export function FeedbackPage() {
                   </div>
                 )}
 
-                {/* Strengths / Improvements / Pro Tip */}
+                {/* AI Coach debrief */}
                 {feedback && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-1">
-                    <div className="rounded-[12px] border p-4" style={{ background: 'var(--bg2)', borderColor: 'rgba(6,214,160,0.2)' }}>
-                      <div className="flex items-center gap-2 mb-3">
-                        <CheckCircle size={13} style={{ color: '#06D6A0' }} />
-                        <span className="font-display text-[13px] font-bold" style={{ color: 'var(--text)' }}>Strengths</span>
+                  <div className="flex flex-col gap-3 mt-1">
+                    {/* Overall narrative */}
+                    {feedback.overallFeedback && (
+                      <div className="rounded-[12px] border p-4" style={{ background: 'var(--bg2)', borderColor: 'rgba(91,111,255,0.2)' }}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(91,111,255,0.15)' }}>
+                            <Zap size={10} style={{ color: 'var(--accent)' }} />
+                          </div>
+                          <span className="font-display text-[13px] font-bold" style={{ color: 'var(--text)' }}>AI Coach Summary</span>
+                        </div>
+                        <p className="text-[12.5px] leading-relaxed" style={{ color: 'var(--text2)' }}>{feedback.overallFeedback}</p>
                       </div>
-                      <ul className="flex flex-col gap-2">
-                        {feedback.strengths.map((s, i) => (
-                          <li key={i} className="flex gap-2 text-[12px] leading-relaxed" style={{ color: 'var(--text2)' }}>
-                            <span style={{ color: '#06D6A0', flexShrink: 0 }}>✓</span> {s}
-                          </li>
-                        ))}
-                      </ul>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {/* Strengths */}
+                      <div className="rounded-[12px] border p-4" style={{ background: 'var(--bg2)', borderColor: 'rgba(6,214,160,0.2)' }}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <CheckCircle size={13} style={{ color: '#06D6A0' }} />
+                          <span className="font-display text-[13px] font-bold" style={{ color: 'var(--text)' }}>What You Did Well</span>
+                        </div>
+                        <ul className="flex flex-col gap-2.5">
+                          {feedback.strengths.map((s, i) => (
+                            <li key={i} className="flex gap-2.5 text-[12.5px] leading-relaxed" style={{ color: 'var(--text2)' }}>
+                              <span className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-[8px] font-bold" style={{ background: 'rgba(6,214,160,0.15)', color: '#06D6A0' }}>✓</span>
+                              {s}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {/* Improvements */}
+                      <div className="rounded-[12px] border p-4" style={{ background: 'var(--bg2)', borderColor: 'rgba(255,209,102,0.2)' }}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <AlertTriangle size={13} style={{ color: '#FFD166' }} />
+                          <span className="font-display text-[13px] font-bold" style={{ color: 'var(--text)' }}>Fix These Next Call</span>
+                        </div>
+                        <ul className="flex flex-col gap-2.5">
+                          {feedback.improvements.map((s, i) => (
+                            <li key={i} className="flex gap-2.5 text-[12.5px] leading-relaxed" style={{ color: 'var(--text2)' }}>
+                              <span className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-[8px] font-bold" style={{ background: 'rgba(255,209,102,0.15)', color: '#FFD166' }}>→</span>
+                              {s}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
-                    <div className="rounded-[12px] border p-4" style={{ background: 'var(--bg2)', borderColor: 'rgba(255,209,102,0.2)' }}>
-                      <div className="flex items-center gap-2 mb-3">
-                        <AlertTriangle size={13} style={{ color: '#FFD166' }} />
-                        <span className="font-display text-[13px] font-bold" style={{ color: 'var(--text)' }}>Improve Next Time</span>
+
+                    {/* Pro Tip */}
+                    <div className="rounded-[12px] border p-4 flex gap-3" style={{ background: 'rgba(91,111,255,0.06)', borderColor: 'rgba(91,111,255,0.2)' }}>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(91,111,255,0.15)' }}>
+                        <Lightbulb size={14} style={{ color: 'var(--accent)' }} />
                       </div>
-                      <ul className="flex flex-col gap-2">
-                        {feedback.improvements.map((s, i) => (
-                          <li key={i} className="flex gap-2 text-[12px] leading-relaxed" style={{ color: 'var(--text2)' }}>
-                            <span style={{ color: '#FFD166', flexShrink: 0 }}>→</span> {s}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div className="rounded-[12px] border p-4" style={{ background: 'var(--bg2)', borderColor: 'rgba(91,111,255,0.2)' }}>
-                      <div className="flex items-center gap-2 mb-3">
-                        <Lightbulb size={13} style={{ color: 'var(--accent)' }} />
-                        <span className="font-display text-[13px] font-bold" style={{ color: 'var(--text)' }}>Pro Tip</span>
+                      <div>
+                        <div className="text-[10.5px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--accent)' }}>Coach's Pro Tip</div>
+                        <p className="text-[12.5px] leading-relaxed" style={{ color: 'var(--text2)' }}>{feedback.proTip}</p>
                       </div>
-                      <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text2)' }}>{feedback.proTip}</p>
                     </div>
                   </div>
                 )}
 
-                {/* Objections panel */}
+                {/* Objections teaser — full tab available */}
                 {objections.length > 0 && (
-                  <div>
-                    <div className="text-[10.5px] font-semibold uppercase tracking-[1.2px] mb-3" style={{ color: 'var(--text3)' }}>Prospect Objections Loaded</div>
-                    <div className="flex flex-wrap gap-2">
-                      {objections.map((obj, i) => (
-                        <span key={i} className="px-3 py-1.5 rounded-full text-[12px] border" style={{ background: 'rgba(255,107,107,0.07)', color: 'var(--accent4)', borderColor: 'rgba(255,107,107,0.2)' }}>
-                          {obj}
-                        </span>
-                      ))}
+                  <button
+                    onClick={() => setActiveTab('objections')}
+                    className="flex items-center justify-between w-full p-3.5 rounded-[12px] border transition-all hover:border-[rgba(255,107,107,0.4)] hover:bg-[rgba(255,107,107,0.04)] group"
+                    style={{ background: 'rgba(255,107,107,0.04)', borderColor: 'rgba(255,107,107,0.2)' }}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Shield size={14} style={{ color: 'var(--accent4)' }} />
+                      <div className="text-left">
+                        <div className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>Objection Handling Review</div>
+                        <div className="text-[11px]" style={{ color: 'var(--text3)' }}>{objections.length} objection{objections.length !== 1 ? 's' : ''} loaded — see how you handled each one</div>
+                      </div>
                     </div>
-                  </div>
+                    <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform flex-shrink-0" style={{ color: 'var(--text3)' }} />
+                  </button>
                 )}
               </div>
             )}
@@ -874,9 +1031,21 @@ export function FeedbackPage() {
                       {(() => {
                         const r = getRating('talkRatio', analytics.talkRatioPct);
                         return (
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ color: r.color, background: `${r.color}18`, border: `1px solid ${r.color}35` }}>{r.label}</span>
-                            <span className="text-[11px]" style={{ color: 'var(--text3)' }}>Ideal range: 40–60% for active selling</span>
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ color: r.color, background: `${r.color}18`, border: `1px solid ${r.color}35` }}>{r.label}</span>
+                              <span className="text-[11px]" style={{ color: 'var(--text3)' }}>Ideal range: 40–60% for active selling</span>
+                            </div>
+                            {analytics.talkRatioPct > 70 && (
+                              <span className="text-[11px] flex items-center gap-1" style={{ color: '#FFD166' }}>
+                                <Lightbulb size={10} /> Ask more questions — stop selling, start listening
+                              </span>
+                            )}
+                            {analytics.talkRatioPct < 30 && (
+                              <span className="text-[11px] flex items-center gap-1" style={{ color: '#FFD166' }}>
+                                <Lightbulb size={10} /> You went quiet — guide the conversation more actively
+                              </span>
+                            )}
                           </div>
                         );
                       })()}
@@ -885,10 +1054,13 @@ export function FeedbackPage() {
                     {/* 3 metric cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       {[
-                        { icon: Gauge, label: 'Talk Speed', value: analytics.talkSpeedWpm, unit: 'wpm', ideal: '120–160 wpm', metric: 'talkSpeed' as const },
-                        { icon: Activity, label: 'Filler Words', value: analytics.fillerWpm, unit: `per min (${analytics.fillerCount} total)`, ideal: '<1 per minute', metric: 'fillerWpm' as const },
-                        { icon: Clock, label: 'Longest Monologue', value: fmtSecs(analytics.longestMonologueSecs), unit: 'uninterrupted', ideal: 'under 30 sec', metric: 'monologue' as const },
-                      ].map(({ icon: Icon, label, value, unit, ideal, metric }) => {
+                        { icon: Gauge, label: 'Talk Speed', value: analytics.talkSpeedWpm, unit: 'wpm', ideal: '120–160 wpm', metric: 'talkSpeed' as const,
+                          tip: analytics.talkSpeedWpm > 160 ? 'Slow down — prospects need time to absorb your pitch. Pause after key claims.' : analytics.talkSpeedWpm < 100 && analytics.talkSpeedWpm > 0 ? 'Speed up slightly — a too-slow pace can lose attention. Aim for 130–150 wpm.' : null },
+                        { icon: Activity, label: 'Filler Words', value: analytics.fillerWpm, unit: `per min (${analytics.fillerCount} total)`, ideal: '<1 per minute', metric: 'fillerWpm' as const,
+                          tip: analytics.fillerWpm > 2 ? 'Replace fillers with deliberate pauses — silence projects confidence and gives you time to think.' : null },
+                        { icon: Clock, label: 'Longest Monologue', value: fmtSecs(analytics.longestMonologueSecs), unit: 'uninterrupted', ideal: 'under 30 sec', metric: 'monologue' as const,
+                          tip: analytics.longestMonologueSecs > 45 ? 'Break up long stretches with a check-in question: "Does that resonate with what you\'re seeing?" — keeps the prospect engaged.' : null },
+                      ].map(({ icon: Icon, label, value, unit, ideal, metric, tip }) => {
                         const numValue = typeof value === 'number' ? value : analytics.longestMonologueSecs;
                         const r = getRating(metric, numValue);
                         return (
@@ -903,11 +1075,254 @@ export function FeedbackPage() {
                             <div className="text-[10.5px] mb-3" style={{ color: 'var(--text3)' }}>{unit}</div>
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ color: r.color, background: `${r.color}18`, border: `1px solid ${r.color}35` }}>{r.label}</span>
                             <div className="mt-1.5 text-[10px]" style={{ color: 'var(--text3)' }}>Target: {ideal}</div>
+                            {tip && (
+                              <div className="mt-2.5 flex items-start gap-1.5 text-[11px] leading-relaxed pt-2.5" style={{ color: '#FFD166', borderTop: '1px solid var(--border)' }}>
+                                <Lightbulb size={9} className="flex-shrink-0 mt-0.5" />
+                                {tip}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
                     </div>
+
+                    {/* Question quality analysis */}
+                    {(() => {
+                      const msgs = session?.messages || [];
+                      const repMsgs = msgs.filter(m => m.role === 'user');
+                      const questions = repMsgs.filter(m => m.content.includes('?'));
+                      const openEnded = questions.filter(m => /^(what|how|why|tell me|describe|walk me|can you explain|help me understand)/i.test(m.content.trim()));
+                      const closedYesNo = questions.filter(m => /^(do|did|does|is|are|was|were|have|has|can|could|would|will|should)/i.test(m.content.trim()));
+                      if (questions.length === 0) return null;
+                      return (
+                        <div className="rounded-[12px] border p-4" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
+                          <div className="flex items-center gap-2 mb-3">
+                            <Info size={12} style={{ color: 'var(--accent)' }} />
+                            <span className="font-display text-[14px] font-bold" style={{ color: 'var(--text)' }}>Question Quality</span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-3 mb-3">
+                            {[
+                              { label: 'Total questions', value: questions.length, color: 'var(--text)' },
+                              { label: 'Open-ended', value: openEnded.length, color: '#06D6A0', tip: 'Good — reveals pain' },
+                              { label: 'Yes/No (closed)', value: closedYesNo.length, color: closedYesNo.length > openEnded.length ? '#FF6B6B' : '#FFD166', tip: 'Use sparingly' },
+                            ].map(({ label, value, color, tip }) => (
+                              <div key={label} className="text-center p-3 rounded-[10px]" style={{ background: 'var(--bg3)' }}>
+                                <div className="font-display text-[22px] font-bold" style={{ color }}>{value}</div>
+                                <div className="text-[10.5px] mt-0.5" style={{ color: 'var(--text3)' }}>{label}</div>
+                                {tip && <div className="text-[9.5px] mt-0.5 font-medium" style={{ color }}>{tip}</div>}
+                              </div>
+                            ))}
+                          </div>
+                          {closedYesNo.length > openEnded.length && (
+                            <div className="flex items-start gap-2 p-3 rounded-[9px]" style={{ background: 'rgba(255,209,102,0.07)', border: '1px solid rgba(255,209,102,0.2)' }}>
+                              <Lightbulb size={11} className="flex-shrink-0 mt-0.5" style={{ color: '#FFD166' }} />
+                              <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text2)' }}>
+                                You asked more closed than open-ended questions. Flip the ratio — open-ended questions (What, How, Why) unlock deeper insights and give you more control. Try: <em>"What's driving this decision now?"</em> instead of <em>"Are you looking to solve this?"</em>
+                              </p>
+                            </div>
+                          )}
+                          {openEnded.length > 0 && openEnded.length >= closedYesNo.length && (
+                            <div className="flex items-start gap-2 p-3 rounded-[9px]" style={{ background: 'rgba(6,214,160,0.06)', border: '1px solid rgba(6,214,160,0.2)' }}>
+                              <CheckCircle size={11} className="flex-shrink-0 mt-0.5" style={{ color: '#06D6A0' }} />
+                              <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text2)' }}>
+                                Strong question ratio — your open-ended questions create space for the prospect to reveal priorities. Keep it up.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Conversation flow pattern */}
+                    {(() => {
+                      const msgs = session?.messages || [];
+                      if (msgs.length < 4) return null;
+                      const consecutive = msgs.reduce((max, m, i, arr) => {
+                        if (i === 0 || m.role !== arr[i-1].role || m.role !== 'user') return max;
+                        let count = 1;
+                        let j = i;
+                        while (j > 0 && arr[j].role === 'user') { count++; j--; }
+                        return Math.max(max, count);
+                      }, 0);
+                      if (consecutive < 2) return null;
+                      return (
+                        <div className="flex items-start gap-3 p-4 rounded-[12px] border" style={{ background: 'rgba(255,107,107,0.05)', borderColor: 'rgba(255,107,107,0.2)' }}>
+                          <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#FF6B6B' }} />
+                          <div>
+                            <div className="text-[13px] font-semibold mb-1" style={{ color: 'var(--text)' }}>Conversation flow: interruption pattern detected</div>
+                            <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text3)' }}>
+                              You sent {consecutive} messages in a row without waiting for the prospect to respond. In real sales conversations, this reads as pushing too hard. Let each message land — then wait for the response before continuing.
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </>
+                )}
+              </div>
+            )}
+
+            {/* ── OBJECTIONS TAB ─────────────────────────────────────────────── */}
+            {activeTab === 'objections' && (
+              <div className="flex flex-col gap-5">
+                {/* Header */}
+                <div className="flex items-center gap-3 p-4 rounded-[12px] border" style={{ background: 'rgba(255,107,107,0.05)', borderColor: 'rgba(255,107,107,0.2)' }}>
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,107,107,0.12)' }}>
+                    <Shield size={18} style={{ color: 'var(--accent4)' }} />
+                  </div>
+                  <div>
+                    <div className="text-[14px] font-bold" style={{ color: 'var(--text)' }}>Objection Handling Review</div>
+                    <div className="text-[12px] mt-0.5" style={{ color: 'var(--text3)' }}>
+                      {objections.length > 0
+                        ? `${objections.length} objection${objections.length !== 1 ? 's' : ''} were loaded for this scenario. See how you handled each one and what better responses look like.`
+                        : 'No objections were pre-loaded for this scenario. Objections raised during the call are shown below.'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pre-loaded objections */}
+                {objections.length > 0 && (
+                  <div className="flex flex-col gap-3">
+                    <div className="text-[10.5px] font-semibold uppercase tracking-[1.2px]" style={{ color: 'var(--text3)' }}>Pre-Loaded Objections</div>
+                    {objections.map((obj, i) => {
+                      // Try to find relevant timeline events that mention this objection topic
+                      const relatedEvents = sortedEvents.filter(ev =>
+                        ev.description.toLowerCase().includes(obj.toLowerCase().slice(0, 20)) ||
+                        (ev.transcriptRef || '').toLowerCase().includes(obj.toLowerCase().slice(0, 15))
+                      );
+                      const wasAddressed = relatedEvents.some(ev => ev.type === 'GOOD');
+                      const wasMissed    = relatedEvents.length === 0;
+
+                      return (
+                        <div
+                          key={i}
+                          className="rounded-[12px] border overflow-hidden"
+                          style={{ borderColor: wasAddressed ? 'rgba(6,214,160,0.25)' : wasMissed ? 'rgba(255,107,107,0.2)' : 'rgba(255,209,102,0.2)', background: 'var(--bg2)' }}
+                        >
+                          {/* Header row */}
+                          <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+                            <div className={clsx('w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0')}>
+                              {wasAddressed
+                                ? <CheckCircle size={15} style={{ color: '#06D6A0' }} />
+                                : wasMissed
+                                ? <X size={15} style={{ color: '#FF6B6B' }} />
+                                : <AlertTriangle size={15} style={{ color: '#FFD166' }} />
+                              }
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-[13px] font-semibold leading-snug" style={{ color: 'var(--text)' }}>{obj}</span>
+                            </div>
+                            <span
+                              className="text-[9.5px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+                              style={wasAddressed
+                                ? { background: 'rgba(6,214,160,0.12)', color: '#06D6A0', border: '1px solid rgba(6,214,160,0.25)' }
+                                : wasMissed
+                                ? { background: 'rgba(255,107,107,0.12)', color: '#FF6B6B', border: '1px solid rgba(255,107,107,0.25)' }
+                                : { background: 'rgba(255,209,102,0.12)', color: '#FFD166', border: '1px solid rgba(255,209,102,0.25)' }
+                              }
+                            >
+                              {wasAddressed ? 'Handled' : wasMissed ? 'Not addressed' : 'Partial'}
+                            </span>
+                          </div>
+
+                          <div className="px-4 py-3 flex flex-col gap-3">
+                            {/* Related timeline events */}
+                            {relatedEvents.length > 0 && (
+                              <div>
+                                <div className="text-[9.5px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text3)' }}>From your call</div>
+                                {relatedEvents.map(ev => (
+                                  <div key={ev.id} className="flex items-start gap-2 mb-1">
+                                    <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ background: ev.type === 'GOOD' ? '#06D6A0' : ev.type === 'ISSUE' ? '#FF6B6B' : '#FFD166' }} />
+                                    <p className="text-[12px] leading-relaxed flex-1" style={{ color: 'var(--text2)' }}>{ev.description}</p>
+                                    <button
+                                      onClick={() => { jumpToTimestamp(ev.timestampMs); setActiveTab('transcript'); }}
+                                      className="flex items-center gap-1 px-2 py-0.5 rounded-[6px] text-[10px] font-medium flex-shrink-0 transition-all hover:scale-105"
+                                      style={{ background: 'rgba(91,111,255,0.1)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.2)' }}
+                                    >
+                                      <Play size={7} fill="currentColor" /> {fmt(ev.timestampMs)}
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Best practice response */}
+                            <div className="p-3 rounded-[10px]" style={{ background: 'rgba(91,111,255,0.07)', border: '1px solid rgba(91,111,255,0.15)' }}>
+                              <div className="flex items-center gap-1.5 mb-2">
+                                <Zap size={10} style={{ color: 'var(--accent)' }} />
+                                <div className="text-[9.5px] font-bold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>Model response to this objection</div>
+                              </div>
+                              <p className="text-[12.5px] leading-relaxed italic" style={{ color: 'var(--text2)' }}>
+                                "{getObjectionModelResponse(obj)}"
+                              </p>
+                            </div>
+
+                            {/* Framework tip */}
+                            <div className="flex items-start gap-2">
+                              <Lightbulb size={11} className="flex-shrink-0 mt-0.5" style={{ color: '#FFD166' }} />
+                              <p className="text-[11.5px] leading-relaxed" style={{ color: 'var(--text3)' }}>
+                                {getObjectionTip(obj, session.framework)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Objection-related timeline events (issues/warnings from call) */}
+                {sortedEvents.filter(ev => ev.type === 'ISSUE' || ev.type === 'WARNING').length > 0 && (
+                  <div className="flex flex-col gap-3">
+                    <div className="text-[10.5px] font-semibold uppercase tracking-[1.2px]" style={{ color: 'var(--text3)' }}>Challenges From Your Call</div>
+                    {sortedEvents.filter(ev => ev.type === 'ISSUE' || ev.type === 'WARNING').map(ev => (
+                      <div key={ev.id} className="rounded-[12px] border p-4" style={{ borderColor: ev.type === 'ISSUE' ? 'rgba(255,107,107,0.2)' : 'rgba(255,209,102,0.2)', background: 'var(--bg2)' }}>
+                        <div className="flex items-center gap-2 mb-2">
+                          {ev.type === 'ISSUE'
+                            ? <X size={13} style={{ color: '#FF6B6B' }} />
+                            : <AlertTriangle size={13} style={{ color: '#FFD166' }} />
+                          }
+                          <span className="text-[13px] font-semibold flex-1" style={{ color: 'var(--text)' }}>{ev.title}</span>
+                          <button
+                            onClick={() => { jumpToTimestamp(ev.timestampMs); setActiveTab('transcript'); }}
+                            className="flex items-center gap-1 px-2 py-0.5 rounded-[6px] text-[10px] flex-shrink-0 transition-all hover:scale-105"
+                            style={{ background: 'rgba(91,111,255,0.1)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.15)' }}
+                          >
+                            <Play size={7} fill="currentColor" /> {fmt(ev.timestampMs)}
+                          </button>
+                        </div>
+                        <p className="text-[12.5px] leading-relaxed mb-2" style={{ color: 'var(--text3)' }}>{ev.description}</p>
+                        {ev.transcriptRef && (
+                          <div className="px-3 py-2 rounded-[8px] border-l-2 mb-2" style={{ background: 'var(--bg3)', borderLeftColor: 'var(--border2)' }}>
+                            <div className="text-[9.5px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text3)' }}>What was said</div>
+                            <p className="text-[12px] italic" style={{ color: 'var(--text2)' }}>"{ev.transcriptRef}"</p>
+                          </div>
+                        )}
+                        {ev.betterResponse && (
+                          <div className="px-3 py-2 rounded-[8px] border-l-2" style={{ background: 'rgba(6,214,160,0.05)', borderLeftColor: '#06D6A0' }}>
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <Zap size={9} style={{ color: '#06D6A0' }} />
+                              <div className="text-[9.5px] font-bold uppercase tracking-wide" style={{ color: '#06D6A0' }}>Stronger response</div>
+                            </div>
+                            <p className="text-[12px] italic" style={{ color: 'var(--text2)' }}>"{ev.betterResponse}"</p>
+                          </div>
+                        )}
+                        {!ev.betterResponse && ev.suggestion && (
+                          <div className="flex items-center gap-1.5 text-[11.5px] mt-1" style={{ color: 'var(--accent)' }}>
+                            <Lightbulb size={10} /> {ev.suggestion}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {objections.length === 0 && sortedEvents.filter(ev => ev.type === 'ISSUE' || ev.type === 'WARNING').length === 0 && (
+                  <div className="rounded-[12px] border p-10 text-center" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
+                    <Shield size={28} className="mx-auto mb-3" style={{ color: 'var(--text3)' }} />
+                    <p className="text-[14px] font-semibold mb-1" style={{ color: 'var(--text2)' }}>No objections recorded</p>
+                    <p className="text-[12px]" style={{ color: 'var(--text3)' }}>Try a scenario with pre-loaded objections to practise handling them systematically.</p>
+                  </div>
                 )}
               </div>
             )}
