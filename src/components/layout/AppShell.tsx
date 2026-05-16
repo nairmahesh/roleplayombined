@@ -256,8 +256,8 @@ function PageTitle({ path }: { path: string }) {
   const [title, sub] = titles[key] || ['PitchIQ', ''];
   return (
     <>
-      <h1 className="font-display text-[20px] font-bold tracking-tight leading-none" style={{ color: 'var(--text)' }}>{title}</h1>
-      <p className="text-[13px] mt-0.5" style={{ color: 'var(--text3)' }}>{sub}</p>
+      <h1 className="font-display text-[17px] sm:text-[20px] font-bold tracking-tight leading-none" style={{ color: 'var(--text)' }}>{title}</h1>
+      <p className="hidden sm:block text-[13px] mt-0.5" style={{ color: 'var(--text3)' }}>{sub}</p>
     </>
   );
 }

@@ -4,13 +4,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import {
-  RefreshCw, Share2, ChevronRight, CheckCircle, AlertTriangle,
-  Lightbulb, Play, Pause, Search, Copy, Download, MessageSquare,
-  Clock, Shield, BarChart3, Gauge, Activity, Mic, ChevronDown,
-  AlertCircle, X, Info, Trophy, RotateCcw, Zap, Target,
-  ChevronLeft,
-} from 'lucide-react';
+import { RefreshCw, Share2, ChevronRight, CircleCheck as CheckCircle, TriangleAlert as AlertTriangle, Lightbulb, Play, Pause, Search, Copy, Download, MessageSquare, Clock, Shield, BarChart3, Gauge, Activity, Mic, ChevronDown, CircleAlert as AlertCircle, X, Info, Trophy, RotateCcw, Zap, Target, ChevronLeft } from 'lucide-react';
 import { sessionsApi } from '@/lib/api';
 import { connectSocket } from '@/lib/socket';
 import { Session, ParsedFeedback, FRAMEWORK_INFO } from '@/types';
@@ -448,8 +442,8 @@ export function FeedbackPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="p-5 overflow-y-auto"
-            style={{ maxHeight: 'calc(100vh - 340px)', minHeight: 320 }}
+            className="p-4 sm:p-5 overflow-y-auto"
+            style={{ maxHeight: 'clamp(320px, calc(100vh - 280px), 800px)' }}
           >
 
             {/* ── SCORECARD TAB ──────────────────────────────────────────────── */}
@@ -950,10 +944,16 @@ export function FeedbackPage() {
                 {/* Leaderboard table */}
                 <div className="rounded-[12px] border overflow-hidden" style={{ borderColor: 'var(--border)' }}>
                   <div
-                    className="grid text-[10.5px] font-semibold uppercase tracking-wider px-4 py-2.5 border-b"
+                    className="hidden sm:grid text-[10.5px] font-semibold uppercase tracking-wider px-4 py-2.5 border-b"
                     style={{ gridTemplateColumns: '40px 1fr 80px 80px', color: 'var(--text3)', background: 'var(--bg2)', borderColor: 'var(--border)' }}
                   >
                     <div>#</div><div>Rep</div><div className="text-center">Score</div><div className="text-right">vs You</div>
+                  </div>
+                  <div
+                    className="sm:hidden text-[10.5px] font-semibold uppercase tracking-wider px-4 py-2.5 border-b flex justify-between"
+                    style={{ color: 'var(--text3)', background: 'var(--bg2)', borderColor: 'var(--border)' }}
+                  >
+                    <span>Rep</span><span>Score</span>
                   </div>
                   <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
                     {peerScores.map((p, i) => {
@@ -965,49 +965,68 @@ export function FeedbackPage() {
                           initial={{ opacity: 0, x: -8 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: i * 0.04 }}
-                          className="grid items-center px-4 py-3"
-                          style={{
-                            gridTemplateColumns: '40px 1fr 80px 80px',
-                            background: isMe ? 'rgba(91,111,255,0.06)' : 'transparent',
-                          }}
+                          style={{ background: isMe ? 'rgba(91,111,255,0.06)' : 'transparent' }}
                         >
-                          {/* Rank */}
-                          <div>
-                            {p.rank <= 3 ? (
-                              <Trophy size={14} style={{ color: p.rank === 1 ? '#FFD166' : p.rank === 2 ? '#aaa' : '#cd7f32' }} />
-                            ) : (
-                              <span className="text-[12px] font-mono" style={{ color: 'var(--text3)' }}>{p.rank}</span>
-                            )}
-                          </div>
-                          {/* Name */}
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div
-                              className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0"
-                              style={isMe
-                                ? { background: 'var(--accent)', color: '#fff' }
-                                : { background: 'var(--bg3)', color: 'var(--text2)' }
-                              }
-                            >
-                              {p.name.split(' ').map(n => n[0]).join('')}
+                          {/* Mobile row */}
+                          <div className="sm:hidden flex items-center justify-between px-4 py-3 gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="w-5 flex-shrink-0">
+                                {p.rank <= 3 ? (
+                                  <Trophy size={13} style={{ color: p.rank === 1 ? '#FFD166' : p.rank === 2 ? '#aaa' : '#cd7f32' }} />
+                                ) : (
+                                  <span className="text-[11px] font-mono" style={{ color: 'var(--text3)' }}>{p.rank}</span>
+                                )}
+                              </div>
+                              <div
+                                className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0"
+                                style={isMe ? { background: 'var(--accent)', color: '#fff' } : { background: 'var(--bg3)', color: 'var(--text2)' }}
+                              >
+                                {p.name.split(' ').map(n => n[0]).join('')}
+                              </div>
+                              <span className="text-[13px] truncate" style={{ color: isMe ? 'var(--accent)' : 'var(--text)', fontWeight: isMe ? 600 : 400 }}>
+                                {isMe ? 'You' : p.name}
+                              </span>
                             </div>
-                            <span className="text-[13px] truncate" style={{ color: isMe ? 'var(--accent)' : 'var(--text)', fontWeight: isMe ? 600 : 400 }}>
-                              {isMe ? 'You' : p.name}
-                            </span>
-                            {isMe && <span className="text-[9px] font-bold px-1 py-0.5 rounded" style={{ background: 'rgba(91,111,255,0.2)', color: 'var(--accent)' }}>You</span>}
-                          </div>
-                          {/* Score */}
-                          <div className="text-center">
-                            <span className="inline-flex items-center justify-center w-10 h-6 rounded-[7px] text-[12px] font-bold font-display" style={scoreBadgeStyle(p.score)}>
+                            <span className="inline-flex items-center justify-center w-10 h-6 rounded-[7px] text-[12px] font-bold font-display flex-shrink-0" style={scoreBadgeStyle(p.score)}>
                               {p.score}
                             </span>
                           </div>
-                          {/* Delta */}
-                          <div className="text-right text-[12px] font-mono">
-                            {isMe ? <span style={{ color: 'var(--text3)' }}>—</span> : delta != null ? (
-                              <span style={{ color: delta > 0 ? 'var(--accent4)' : delta < 0 ? 'var(--accent3)' : 'var(--text3)' }}>
-                                {delta > 0 ? '+' : ''}{delta}
+                          {/* Desktop row */}
+                          <div
+                            className="hidden sm:grid items-center px-4 py-3"
+                            style={{ gridTemplateColumns: '40px 1fr 80px 80px' }}
+                          >
+                            <div>
+                              {p.rank <= 3 ? (
+                                <Trophy size={14} style={{ color: p.rank === 1 ? '#FFD166' : p.rank === 2 ? '#aaa' : '#cd7f32' }} />
+                              ) : (
+                                <span className="text-[12px] font-mono" style={{ color: 'var(--text3)' }}>{p.rank}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div
+                                className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0"
+                                style={isMe ? { background: 'var(--accent)', color: '#fff' } : { background: 'var(--bg3)', color: 'var(--text2)' }}
+                              >
+                                {p.name.split(' ').map(n => n[0]).join('')}
+                              </div>
+                              <span className="text-[13px] truncate" style={{ color: isMe ? 'var(--accent)' : 'var(--text)', fontWeight: isMe ? 600 : 400 }}>
+                                {isMe ? 'You' : p.name}
                               </span>
-                            ) : '—'}
+                              {isMe && <span className="text-[9px] font-bold px-1 py-0.5 rounded" style={{ background: 'rgba(91,111,255,0.2)', color: 'var(--accent)' }}>You</span>}
+                            </div>
+                            <div className="text-center">
+                              <span className="inline-flex items-center justify-center w-10 h-6 rounded-[7px] text-[12px] font-bold font-display" style={scoreBadgeStyle(p.score)}>
+                                {p.score}
+                              </span>
+                            </div>
+                            <div className="text-right text-[12px] font-mono">
+                              {isMe ? <span style={{ color: 'var(--text3)' }}>—</span> : delta != null ? (
+                                <span style={{ color: delta > 0 ? 'var(--accent4)' : delta < 0 ? 'var(--accent3)' : 'var(--text3)' }}>
+                                  {delta > 0 ? '+' : ''}{delta}
+                                </span>
+                              ) : '—'}
+                            </div>
                           </div>
                         </motion.div>
                       );

@@ -258,7 +258,7 @@ export function VoicePicker({
             {loadingRegional ? (
               <div className="text-[10px] text-white/70 py-1 pl-0.5">Loading…</div>
             ) : regionalVoices.length > 0 ? (
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                 {regionalVoices.map(v => renderRegionalCard(v))}
               </div>
             ) : null}

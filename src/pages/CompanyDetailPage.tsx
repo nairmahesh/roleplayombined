@@ -289,8 +289,9 @@ export function CompanyDetailPage() {
           <h3 className="font-display text-[13px] font-bold">All Users ({users.length})</h3>
         </div>
 
+        {/* Desktop header */}
         <div
-          className="grid text-[11px] font-semibold text-white/55 uppercase tracking-wider px-5 py-2.5 border-b border-white/[0.04]"
+          className="hidden md:grid text-[11px] font-semibold text-white/55 uppercase tracking-wider px-5 py-2.5 border-b border-white/[0.04]"
           style={{ gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr' }}
         >
           <div>User</div>
@@ -318,39 +319,75 @@ export function CompanyDetailPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.03 }}
-                  className="grid items-center px-5 py-3 hover:bg-white/[0.02] transition-colors"
-                  style={{ gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr' }}
+                  className="hover:bg-white/[0.02] transition-colors"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-accent to-accent-2 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
-                      {u.firstName[0]}{u.lastName[0]}
+                  {/* Mobile card */}
+                  <div className="md:hidden flex items-center justify-between px-4 py-3 gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-accent-2 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
+                        {u.firstName[0]}{u.lastName[0]}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[13px] font-medium truncate">{u.firstName} {u.lastName}</div>
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          <span className={clsx('text-[10px] font-semibold px-1.5 py-0.5 rounded-full border', roleCfg.cls)}>{roleCfg.label}</span>
+                          <span className="text-[11px] text-white/55">{u.sessionCount ?? 0} sessions</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                      <span className={clsx('font-display text-[15px] font-bold', scoreColor)}>
+                        {score > 0 ? score.toFixed(1) : '—'}
+                      </span>
+                      <button
+                        onClick={() => toggleUserActive(u)}
+                        className={clsx(
+                          'text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all',
+                          u.isActive !== false
+                            ? 'bg-accent-3/10 text-accent-3 border-accent-3/20'
+                            : 'bg-white/[0.05] text-white/55 border-white/10'
+                        )}
+                      >
+                        {u.isActive !== false ? 'Active' : 'Inactive'}
+                      </button>
+                    </div>
+                  </div>
+                  {/* Desktop row */}
+                  <div
+                    className="hidden md:grid items-center px-5 py-3"
+                    style={{ gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr' }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-accent to-accent-2 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
+                        {u.firstName[0]}{u.lastName[0]}
+                      </div>
+                      <div>
+                        <div className="text-[13px] font-medium">{u.firstName} {u.lastName}</div>
+                        <div className="text-[11px] text-white/55">{u.email}</div>
+                      </div>
                     </div>
                     <div>
-                      <div className="text-[13px] font-medium">{u.firstName} {u.lastName}</div>
-                      <div className="text-[11px] text-white/55">{u.email}</div>
+                      <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full border', roleCfg.cls)}>
+                        {roleCfg.label}
+                      </span>
                     </div>
-                  </div>
-                  <div>
-                    <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full border', roleCfg.cls)}>
-                      {roleCfg.label}
-                    </span>
-                  </div>
-                  <div className="text-[13px] text-white/70">{u.sessionCount ?? 0}</div>
-                  <div className={clsx('font-display text-[14px] font-bold', scoreColor)}>
-                    {score > 0 ? score.toFixed(1) : '—'}
-                  </div>
-                  <div>
-                    <button
-                      onClick={() => toggleUserActive(u)}
-                      className={clsx(
-                        'text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all',
-                        u.isActive !== false
-                          ? 'bg-accent-3/10 text-accent-3 border-accent-3/20 hover:bg-accent-3/20'
-                          : 'bg-white/[0.05] text-white/55 border-white/10 hover:bg-white/10'
-                      )}
-                    >
-                      {u.isActive !== false ? 'Active' : 'Inactive'}
-                    </button>
+                    <div className="text-[13px] text-white/70">{u.sessionCount ?? 0}</div>
+                    <div className={clsx('font-display text-[14px] font-bold', scoreColor)}>
+                      {score > 0 ? score.toFixed(1) : '—'}
+                    </div>
+                    <div>
+                      <button
+                        onClick={() => toggleUserActive(u)}
+                        className={clsx(
+                          'text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all',
+                          u.isActive !== false
+                            ? 'bg-accent-3/10 text-accent-3 border-accent-3/20 hover:bg-accent-3/20'
+                            : 'bg-white/[0.05] text-white/55 border-white/10 hover:bg-white/10'
+                        )}
+                      >
+                        {u.isActive !== false ? 'Active' : 'Inactive'}
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               );

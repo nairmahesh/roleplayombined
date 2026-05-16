@@ -159,7 +159,7 @@ export function LoginPage() {
             <p className="text-[11px] text-white/55 text-center mb-3">
               Try a demo account — all use <span className="font-mono text-white/70">Demo1234!</span>
             </p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-2">
               {DEMO_ACCOUNTS.map(account => {
                 const Icon = account.icon;
                 const isActive = activeDemo === account.key;

@@ -921,7 +921,7 @@ export function PracticePage() {
             <div className="flex flex-col md:flex-row gap-4 items-start">
               {/* Left sidebar */}
               <div className="flex flex-col gap-3 w-full md:w-44 md:flex-shrink-0">
-                <div className="card p-2 flex flex-row md:flex-col gap-1 overflow-x-auto">
+                <div className="card p-2 flex flex-row md:flex-col gap-1">
                   {[
                     { n: 1, label: 'Context', sub: industry || 'Industry & type' },
                     { n: 2, label: 'Persona', sub: displayName !== 'Custom Persona' ? displayName : 'Avatar & context' },
@@ -934,7 +934,7 @@ export function PracticePage() {
                         key={n}
                         onClick={() => goToStep(n)}
                         className={clsx(
-                          'flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] transition-all text-left',
+                          'flex items-center gap-2 md:gap-2.5 flex-1 md:flex-none px-2.5 md:px-3 py-2 md:py-2.5 rounded-[8px] transition-all text-left',
                           active ? 'bg-accent/10 border border-accent/20' : 'hover:bg-white/[0.04]',
                           !done && !active && 'opacity-60'
                         )}
@@ -947,7 +947,7 @@ export function PracticePage() {
                         </div>
                         <div className="min-w-0">
                           <div className={clsx('text-[11.5px] font-semibold leading-tight', active ? 'text-white' : 'text-white/70')}>{label}</div>
-                          <div className="text-[9.5px] text-white/70 mt-0.5 truncate">{sub}</div>
+                          <div className="hidden md:block text-[9.5px] text-white/70 mt-0.5 truncate">{sub}</div>
                         </div>
                       </button>
                     );
@@ -980,7 +980,7 @@ export function PracticePage() {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: stepDirection.current * -20 }}
                       transition={{ duration: 0.18, ease: 'easeOut' }}
-                      className="card p-5 flex flex-col gap-4"
+                      className="card p-4 sm:p-5 flex flex-col gap-4"
                     >
                       <div>
                         <div className="flex items-center gap-2 mb-2.5">
@@ -1084,7 +1084,7 @@ export function PracticePage() {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: stepDirection.current * -20 }}
                       transition={{ duration: 0.18, ease: 'easeOut' }}
-                      className="card p-5 flex flex-col gap-4"
+                      className="card p-4 sm:p-5 flex flex-col gap-4"
                     >
                       {/* Avatar picker with ethnicity + gender filter */}
                       <div>
@@ -1284,7 +1284,7 @@ export function PracticePage() {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: stepDirection.current * -20 }}
                       transition={{ duration: 0.18, ease: 'easeOut' }}
-                      className="card p-5 flex flex-col gap-4"
+                      className="card p-4 sm:p-5 flex flex-col gap-4"
                     >
                       {/* Summary strip */}
                       <div className="flex items-center gap-3 p-3 rounded-[10px] bg-white/[0.03] border border-white/[0.07]">

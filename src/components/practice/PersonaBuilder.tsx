@@ -151,7 +151,7 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
                 {/* Icon picker */}
                 <div>
                   <label className="text-xs font-medium text-white/70 block mb-2">Persona Icon</label>
-                  <div className="grid grid-cols-6 gap-2">
+                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                     {PERSONA_ICONS.map(({ id, Icon, label }) => (
                       <button
                         key={id}
@@ -169,7 +169,7 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-medium text-white/70 block mb-1.5">Full Name *</label>
                     <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Sarah Chen" className="input-base" />
@@ -190,13 +190,13 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
 
                 <div>
                   <label className="text-xs font-medium text-white/70 block mb-2">Difficulty</label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {DIFFICULTIES.map(d => (
                       <button
                         key={d}
                         onClick={() => set('difficulty', d)}
                         className={clsx(
-                          'flex-1 py-2 rounded-[9px] text-[12px] font-semibold border transition-all capitalize',
+                          'flex-1 min-w-[70px] py-2 rounded-[9px] text-[12px] font-semibold border transition-all capitalize',
                           form.difficulty === d ? 'border-accent bg-accent/10 text-accent' : 'border-white/[0.08] text-white/80 hover:text-white'
                         )}
                       >
