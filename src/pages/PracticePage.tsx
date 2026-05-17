@@ -247,6 +247,12 @@ How to behave: Be engaged and ask detailed questions about localization, analyti
   },
 ];
 
+function inferCallMode(sc: ScenarioConfig): 'Call' | 'Online' {
+  if (sc.callMode) return sc.callMode;
+  const t = sc.roleplayType.toLowerCase();
+  return t.includes('cold call') ? 'Call' : 'Online';
+}
+
 function pickFramework(roleplayType: string): Framework {
   const t = roleplayType.toLowerCase();
   if (t.includes('cold call') || t.includes('discovery')) return 'SPIN';
@@ -480,7 +486,7 @@ export function PracticePage() {
     setShowQuestions(true);
     setIndustry(sc.industry);
     setRoleplayType(sc.roleplayType);
-    setSessionType(sc.callMode === 'Call' ? 'PHONE_CALL' : sc.callMode === 'Online' ? 'ONLINE_MEETING' : 'PHONE_CALL');
+    setSessionType(inferCallMode(sc) === 'Call' ? 'PHONE_CALL' : 'ONLINE_MEETING');
     setLanguage((sc as any).language || 'English');
     setObjections(sc.objections ?? []);
     setAiCanEnd(sc.aiCanEnd ?? true);
@@ -825,7 +831,7 @@ export function PracticePage() {
                         subtitle={tr.scenarioConfig.displayTitle}
                         industry={tr.scenarioConfig.industry}
                         type={tr.scenarioConfig.roleplayType}
-                        callMode={tr.scenarioConfig.callMode}
+                        callMode={inferCallMode(tr.scenarioConfig)}
                         difficulty={tr.scenarioConfig.difficulty}
                         timeLimitMins={tr.scenarioConfig.timeLimitMins ?? 3}
                         metaLabel={`by ${tr.createdBy.firstName} ${tr.createdBy.lastName}`}
