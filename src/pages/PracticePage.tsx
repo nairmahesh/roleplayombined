@@ -455,6 +455,7 @@ export function PracticePage() {
     setShowQuestions(true);
     setIndustry(t.industry);
     setRoleplayType(t.roleplayType);
+    setSessionType(t.callMode === 'Call' ? 'PHONE_CALL' : t.callMode === 'Online' ? 'ONLINE_MEETING' : 'PHONE_CALL');
     setLanguage('English');
     setObjections([]);
     setAiCanEnd(true);
@@ -479,6 +480,7 @@ export function PracticePage() {
     setShowQuestions(true);
     setIndustry(sc.industry);
     setRoleplayType(sc.roleplayType);
+    setSessionType(sc.callMode === 'Call' ? 'PHONE_CALL' : sc.callMode === 'Online' ? 'ONLINE_MEETING' : 'PHONE_CALL');
     setLanguage((sc as any).language || 'English');
     setObjections(sc.objections ?? []);
     setAiCanEnd(sc.aiCanEnd ?? true);
@@ -766,35 +768,34 @@ export function PracticePage() {
           </div>
 
           {/* Tab bar */}
-          <div className="flex gap-0 border-b border-white/[0.07]">
-            <button
-              onClick={() => setGalleryTab('assigned')}
-              className={clsx('flex items-center gap-2 px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors', galleryTab === 'assigned' ? 'border-accent text-white' : 'border-transparent text-white/55 hover:text-white/75')}
-            >
-              <Lock size={12} /> Assigned to Me
-              {!loadingTeamRoleplays && (
-                <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">{assignedRoleplays.length}</span>
-              )}
-            </button>
-            <button
-              onClick={() => setGalleryTab('mine')}
-              className={clsx('flex items-center gap-2 px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors', galleryTab === 'mine' ? 'border-accent text-white' : 'border-transparent text-white/55 hover:text-white/75')}
-            >
-              <User size={12} /> Created by Me
-              <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">{myRoleplays.length}</span>
-            </button>
-            <button
-              onClick={() => setGalleryTab('templates')}
-              className={clsx('flex items-center gap-2 px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors', galleryTab === 'templates' ? 'border-accent text-white' : 'border-transparent text-white/55 hover:text-white/75')}
-            >
-              <Layers size={12} /> Bot Library
-              <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">{TEMPLATES.length}</span>
-            </button>
+          <div className="flex gap-0 border-b border-white/[0.07] overflow-x-auto scrollbar-none">
+            {([
+              { id: 'assigned' as const,  icon: Lock,   label: 'Assigned to Me',  count: !loadingTeamRoleplays ? assignedRoleplays.length : null },
+              { id: 'mine' as const,      icon: User,   label: 'Created by Me',   count: myRoleplays.length },
+              { id: 'templates' as const, icon: Layers, label: 'Bot Library',     count: TEMPLATES.length },
+            ] as const).map(({ id, icon: Icon, label, count }) => (
+              <button
+                key={id}
+                onClick={() => setGalleryTab(id)}
+                className={clsx(
+                  'flex items-center gap-1.5 px-3 sm:px-5 py-3 text-[12px] sm:text-[13px] font-medium border-b-2 -mb-px transition-colors whitespace-nowrap flex-shrink-0',
+                  galleryTab === id ? 'border-accent text-white' : 'border-transparent text-white/55 hover:text-white/75'
+                )}
+              >
+                <Icon size={12} />
+                <span className="hidden xs:inline sm:inline">{label}</span>
+                <span className="xs:hidden sm:hidden">{label.split(' ')[0]}</span>
+                {count != null && (
+                  <span className="ml-0.5 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">{count}</span>
+                )}
+              </button>
+            ))}
           </div>
 
           {/* ── Assigned to Me ────────────────────────────────────────────── */}
           {galleryTab === 'assigned' && (
             <div className="flex flex-col gap-6">
+              {/* Team Roleplays */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <p className="text-[11px] font-semibold text-white/70 uppercase tracking-wider">Team Roleplays</p>
@@ -835,6 +836,31 @@ export function PracticePage() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Built-in Templates */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <p className="text-[11px] font-semibold text-white/70 uppercase tracking-wider">Bot Library</p>
+                  <span className="text-[10px] text-white/65">Practice scenarios included with PitchIQ</span>
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {TEMPLATES.map(t => (
+                    <GalleryCard
+                      key={t.id}
+                      avatarId={t.avatarId}
+                      name={t.label}
+                      subtitle={t.displayTitle}
+                      industry={t.industry}
+                      type={t.roleplayType}
+                      callMode={t.callMode}
+                      difficulty={t.difficulty}
+                      timeLimitMins={3}
+                      metaLabel="Built-in"
+                      onSelect={() => handleSelectTemplate(t)}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           )}

@@ -434,7 +434,7 @@ function SessionRow({
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
     >
       {/* Mobile */}
-      <div className="md:hidden flex items-center justify-between px-4 py-3 gap-3">
+      <div className="md:hidden flex items-center justify-between px-3 py-3 gap-2">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(91,111,255,0.12)' }}>
             <TypeIcon size={14} style={{ color: 'var(--accent)' }} />
