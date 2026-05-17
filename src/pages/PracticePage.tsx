@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Phone, Monitor, Sparkles, Loader as Loader2, ChevronDown, ChevronUp, RefreshCw, Play, Plus, X, Settings, Info, Pencil, Trash2, ArrowLeft, BookOpen, Lock, Check, User, Layers, Globe, Database, FileText } from 'lucide-react';
+import { Phone, Monitor, Sparkles, Loader as Loader2, ChevronDown, ChevronUp, RefreshCw, Play, Plus, X, Settings, Info, Pencil, Trash2, ArrowLeft, BookOpen, Lock, Check, User, Layers, Globe, Database, FileText, Users, UserPlus } from 'lucide-react';
 import { practiceApi, sessionsApi, personasApi, teamRoleplaysApi } from '@/lib/api';
 import type { AssignmentScope, AssignmentTarget } from '@/types';
 import { Framework, SessionType, FRAMEWORK_INFO, ScenarioConfig, Persona, TeamRoleplay, KnowledgeBaseEntry } from '@/types';
@@ -263,6 +263,13 @@ export function PracticePage() {
   // AI-generated staging: questions returned by AI before user picks them
   const [stagedQuestions, setStagedQuestions]     = useState<string[]>([]);
 
+  // ── Multi-persona mode ─────────────────────────────────────────────────────
+  const [multiPersonaMode, setMultiPersonaMode] = useState(false);
+  const [personaGroupName, setPersonaGroupName] = useState('');
+  const [additionalPersonas, setAdditionalPersonas] = useState<Array<{
+    id: string; avatarId: string; name: string; title: string; difficulty: string; voiceId?: string;
+  }>>([]);
+
   // ── Context fields ─────────────────────────────────────────────────────────
   const [industry, setIndustry]         = useState('');
   const [roleplayType, setRoleplayType] = useState('');
@@ -484,6 +491,9 @@ export function PracticePage() {
     setBotKnowledge([]);
     setUserBriefing([]);
     autoGenRef.current = '';
+    setMultiPersonaMode(false);
+    setPersonaGroupName('');
+    setAdditionalPersonas([]);
     openSetup('edit', 'New Roleplay', '', '');
   };
 
@@ -797,7 +807,7 @@ export function PracticePage() {
                     : 'Create a custom practice session for yourself.'}
                 </p>
                 <button onClick={handleCreateNew} className="btn-primary gap-2 text-[13px]">
-                  <Plus size={14} /> Create New
+                  <Plus size={14} /> Create Roleplay
                 </button>
               </div>
 
@@ -815,7 +825,7 @@ export function PracticePage() {
                     </p>
                   </div>
                   <button onClick={handleCreateNew} className="btn-primary gap-2 text-[13px] mt-1">
-                    <Plus size={14} /> Create your first roleplay
+                    <Plus size={14} /> Create your first Roleplay
                   </button>
                 </div>
               ) : (
@@ -1211,9 +1221,112 @@ export function PracticePage() {
                       transition={{ duration: 0.18, ease: 'easeOut' }}
                       className="card p-4 sm:p-5 flex flex-col gap-4"
                     >
+                      {/* Multi-persona mode toggle */}
+                      <div className="flex items-center justify-between p-3.5 rounded-[12px] border border-white/[0.08] bg-white/[0.02]">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-[9px] bg-accent/10 flex items-center justify-center flex-shrink-0">
+                            <Users size={15} className="text-accent/70" />
+                          </div>
+                          <div>
+                            <p className="text-[12.5px] font-semibold text-white leading-tight">Multi-Persona Mode</p>
+                            <p className="text-[10.5px] text-white/55 mt-0.5">Add multiple AI attendees to simulate a panel or committee</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setMultiPersonaMode(v => !v)}
+                          role="switch"
+                          aria-checked={multiPersonaMode}
+                          className={clsx('relative flex-shrink-0 w-10 h-[22px] rounded-full transition-colors', multiPersonaMode ? 'bg-accent' : 'bg-white/[0.18]')}
+                        >
+                          <span className={clsx('absolute top-0.5 left-0.5 w-[18px] h-[18px] rounded-full bg-white shadow-sm transition-transform', multiPersonaMode ? 'translate-x-[18px]' : 'translate-x-0')} />
+                        </button>
+                      </div>
+
+                      {/* Multi-persona group config */}
+                      <AnimatePresence>
+                        {multiPersonaMode && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.18 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="flex flex-col gap-3 p-3.5 rounded-[12px] border border-accent/20 bg-accent/[0.04]">
+                              <div>
+                                <label className="text-[10px] font-semibold text-white/70 uppercase tracking-wider block mb-1.5">Persona Group Name</label>
+                                <input
+                                  value={personaGroupName}
+                                  onChange={e => setPersonaGroupName(e.target.value)}
+                                  placeholder="e.g. Sales Team, Procurement Committee…"
+                                  className="input-base text-[12.5px] w-full"
+                                  maxLength={80}
+                                />
+                                <p className="text-[10px] text-white/40 mt-1">{personaGroupName.length}/80</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Attendees</p>
+                                <div className="flex flex-col gap-2">
+                                  {/* Primary persona always shown */}
+                                  <div className="flex items-center gap-2.5 p-2.5 rounded-[9px] bg-white/[0.04] border border-white/[0.07]">
+                                    <AvatarDisplay avatarId={avatarId} size={32} />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-[12px] font-semibold truncate">{displayName || 'Primary Persona'}</p>
+                                      {displayTitle && <p className="text-[10px] text-white/55 truncate">{displayTitle}</p>}
+                                    </div>
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-accent/10 border border-accent/20 text-accent flex-shrink-0">Host</span>
+                                  </div>
+                                  {/* Additional personas */}
+                                  {additionalPersonas.map((ap, idx) => (
+                                    <div key={ap.id} className="flex items-center gap-2.5 p-2.5 rounded-[9px] bg-white/[0.03] border border-white/[0.06]">
+                                      <AvatarDisplay avatarId={ap.avatarId} size={32} />
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-[12px] font-semibold truncate">{ap.name}</p>
+                                        {ap.title && <p className="text-[10px] text-white/55 truncate">{ap.title}</p>}
+                                      </div>
+                                      <span className={clsx('text-[9px] px-1.5 py-0.5 rounded border flex-shrink-0', DIFFICULTY_COLORS[ap.difficulty] || 'text-white/80 bg-white/5 border-white/10')}>{ap.difficulty}</span>
+                                      <button
+                                        onClick={() => setAdditionalPersonas(prev => prev.filter((_, i) => i !== idx))}
+                                        className="text-white/30 hover:text-accent-4 transition-colors flex-shrink-0"
+                                      >
+                                        <X size={13} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                  {/* Add persona button */}
+                                  {additionalPersonas.length < 4 && (
+                                    <button
+                                      onClick={() => {
+                                        const avatarOptions = ['james', 'sarah', 'robert', 'emma', 'priya', 'carlos', 'aisha', 'marcus', 'maria', 'ravi', 'jordan', 'yuki'];
+                                        const used = [avatarId, ...additionalPersonas.map(ap => ap.avatarId)];
+                                        const nextAvatar = avatarOptions.find(a => !used.includes(a)) || 'alex';
+                                        const av = AVATARS.find(a => a.id === nextAvatar);
+                                        setAdditionalPersonas(prev => [...prev, {
+                                          id: crypto.randomUUID(),
+                                          avatarId: nextAvatar,
+                                          name: av?.name || 'Attendee',
+                                          title: '',
+                                          difficulty: 'Medium',
+                                        }]);
+                                      }}
+                                      className="flex items-center justify-center gap-2 w-full py-2 rounded-[9px] border border-dashed border-accent/25 text-[11.5px] text-accent/60 hover:text-accent hover:border-accent/50 hover:bg-accent/[0.04] transition-all"
+                                    >
+                                      <UserPlus size={13} /> Add Persona
+                                    </button>
+                                  )}
+                                  {additionalPersonas.length >= 4 && (
+                                    <p className="text-[10.5px] text-white/35 text-center">Maximum 5 attendees (including host)</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
                       {/* Avatar picker with ethnicity + gender filter */}
                       <div>
-                        <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Avatar</p>
+                        <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">{multiPersonaMode ? 'Host Avatar' : 'Avatar'}</p>
                         <EthnicityAvatarPicker value={avatarId} onChange={id => {
                           setAvatarId(id);
                           const cfg = AVATAR_VOICE_CONFIG[id as AvatarId];
