@@ -36,15 +36,21 @@ router.get('/signed-url', async (req: AuthRequest, res: Response): Promise<void>
   let personaAgentId: string | undefined;
 
   if (personaId) {
-    const persona = await Persona.findById(personaId).select('agentId').lean();
+    const persona = await Persona.findById(personaId).select('agentId name').lean();
     personaAgentId = persona?.agentId ?? undefined;
+    console.log(`[voice/signed-url] personaId=${personaId} persona="${persona?.name}" agentId=${personaAgentId ?? '(none → global fallback)'}`);
+  } else {
+    console.log('[voice/signed-url] no personaId → using global default agent (overrides must be allowed on that agent)');
   }
 
   try {
     const signedUrl = await getSignedUrl(personaAgentId);
+    console.log('[voice/signed-url] ✅ signed URL issued agentId=%s url_prefix=%s',
+      personaAgentId ?? 'global', signedUrl.slice(0, 80));
     res.json({ signedUrl });
   } catch (err) {
     const status = (err as AxiosError)?.response?.status;
+    console.error('[voice/signed-url] ElevenLabs error status=%s', status, (err as Error).message);
     if (status === 401 || status === 403) {
       res.status(503).json({
         error: 'ElevenLabs Conversational AI is not accessible with your current API key. ' +

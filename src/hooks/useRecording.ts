@@ -34,23 +34,28 @@ export function useRecording({ sessionId, mode }: UseRecordingOptions) {
 
     recorder.onstop = async () => {
       const blob = new Blob(chunksRef.current, { type: mimeType });
-      if (blob.size < 1000) return; // Skip empty recordings
+      console.log(`[useRecording] onstop — blob size=${blob.size} type=${mimeType} chunks=${chunksRef.current.length}`);
+      if (blob.size < 1000) {
+        console.log('[useRecording] blob too small, skipping upload');
+        return;
+      }
 
       try {
-        // Upload through backend (avoids S3 CORS configuration)
         const form = new FormData();
         const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
         form.append('file', blob, `recording.${ext}`);
+        console.log(`[useRecording] uploading to /recordings/upload/${sessionId}`);
         const { data } = await api.post(`/recordings/upload/${sessionId}`, form, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         const key: string = data.key;
+        console.log('[useRecording] upload success, key=', key);
         await api.patch(`/sessions/${sessionId}`, { recordingUrl: key });
         setRecordingKey(key);
       } catch (err: any) {
         const status = err?.response?.status;
+        console.error('[useRecording] upload error status=%s', status, err);
         if (status !== 503) {
-          console.error('Recording upload failed:', err);
           toast.error('Recording upload failed — feedback still available');
         }
       }

@@ -21,4 +21,11 @@ export const config = {
     agentId: process.env.ELEVENLABS_AGENT_ID || '',
   },
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+  s3: {
+    bucket: process.env.S3_BUCKET || '',
+    region: process.env.S3_REGION || 'us-east-1',
+    accessKeyId: process.env.S3_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
+    endpoint: process.env.S3_ENDPOINT || '',   // for MinIO or custom S3-compatible
+  },
 };

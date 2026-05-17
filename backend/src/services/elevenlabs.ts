@@ -6,7 +6,9 @@
  * NOTE: Conversational AI endpoints (/v1/convai/) require the ElevenLabs
  * Creator plan or above. TTS endpoints (/v1/text-to-speech/) work on all plans.
  *
- * Agent create docs: https://elevenlabs.io/docs/api-reference/agents/create
+ * Client-side overrides (prompt, first_message, voice_id) must be enabled per-agent
+ * in the ElevenLabs dashboard → Agent settings → Security → Allowed overrides.
+ * Each persona should have its own dedicated agent with the system prompt baked in.
  */
 import axios, { AxiosError } from 'axios';
 import mongoose from 'mongoose';
@@ -22,7 +24,6 @@ const authHeader = () => ({ 'xi-api-key': config.elevenlabs.apiKey });
 
 function isValidAgentId(id: string): boolean {
   if (!id) return false;
-  // Reject obvious placeholder values from .env.example templates
   if (id.startsWith('your-') || id.includes('placeholder') || id.includes('example')) return false;
   return id.length > 4;
 }
@@ -69,11 +70,11 @@ export async function getOrCreateAgentId(): Promise<string> {
     name: 'PitchIQ Default Agent',
     conversation_config: {
       agent: {
-        first_message: 'Hello, how can I help you?',
+        first_message: 'Hello, how can I help you today?',
         language: 'en',
         prompt: {
-          prompt: 'You are a sales prospect in a roleplay. Stay in character.',
-          llm: 'gpt-4o-mini',
+          prompt: 'You are a sales prospect in a roleplay scenario. Stay in character as a realistic business decision-maker. Be slightly busy, raise reasonable objections, and ask clarifying questions. Keep responses concise.',
+          llm: 'gemini-2.0-flash',
           temperature: 0.7,
         },
       },
@@ -105,6 +106,7 @@ export async function getOrCreateAgentId(): Promise<string> {
 // agentId: persona-specific agent ID. Falls back to the global auto-created agent if omitted.
 export async function getSignedUrl(agentId?: string): Promise<string> {
   const id = (agentId && isValidAgentId(agentId)) ? agentId : await getOrCreateAgentId();
+  console.log(`[elevenlabs] getSignedUrl using agentId=${id}`);
   const res = await axios.get<{ signed_url: string }>(
     `${EL_BASE}/convai/conversation/get_signed_url?agent_id=${id}`,
     { headers: authHeader() }
@@ -196,8 +198,6 @@ export async function checkHealth(): Promise<ElevenLabsHealth> {
 
 // ── Agent management ──────────────────────────────────────────────────────────
 
-// Matches the ElevenLabs ConvAI agent create/update API body shape.
-// conversation_config is the correct top-level key (not "agent" or "conversational").
 export interface AgentConfig {
   name?: string;
   conversation_config?: {

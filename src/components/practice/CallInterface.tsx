@@ -85,6 +85,7 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
   const transcriptRef    = useRef<HTMLDivElement>(null);
   const handleEndRef     = useRef<(() => void) | null>(null);
   const isEndingRef      = useRef(false);
+  const sessionStartedRef = useRef(false); // true once startSession() has been called
 
   const socket = connectSocket();
   const recording = useRecording({ sessionId, mode: sessionType === 'ONLINE_MEETING' ? 'video' : 'audio' });
@@ -101,24 +102,6 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
     sessionsApi.addMessage(sessionId, { role, content, timestampMs: msg.timestampMs }).catch(() => {});
     scrollToBottom();
   }, [sessionId, scrollToBottom]);
-
-  const buildSystemPrompt = useCallback(() => {
-    return (
-      persona.systemPrompt ||
-      `You are ${persona.name}, ${persona.title}. Act naturally as this persona in a sales roleplay — be realistic, slightly busy, raise objections, ask clarifying questions. Never break character. Keep responses concise (1-3 sentences). Use the ${FRAMEWORK_INFO[framework].label} framework context.`
-    );
-  }, [persona, framework]);
-
-  const buildFirstMessage = useCallback(() => {
-    if (persona.firstMessage) return persona.firstMessage;
-    const greetings = [
-      `${persona.name.split(' ')[0]} speaking.`,
-      `This is ${persona.name.split(' ')[0]}, go ahead.`,
-      `Hello, ${persona.name.split(' ')[0]} here.`,
-      `${persona.name.split(' ')[0]}, hi — I've only got a few minutes.`,
-    ];
-    return greetings[Math.floor(Math.random() * greetings.length)];
-  }, [persona]);
 
   // ── Session lifecycle ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -152,9 +135,12 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
       // Pass personaId so the backend uses that persona's dedicated ElevenLabs agent.
       let signedUrl: string | null = null;
       try {
+        console.log('[CallInterface] Fetching signed URL for personaId:', persona.personaId);
         signedUrl = await voiceApi.getSignedUrl(persona.personaId);
+        console.log('[CallInterface] Got signed URL (first 60 chars):', signedUrl?.slice(0, 60));
       } catch (err: unknown) {
         const code = (err as { response?: { data?: { code?: string } } })?.response?.data?.code;
+        console.error('[CallInterface] Signed URL error:', err);
         if (code === 'CONVAI_UNAVAILABLE') {
           toast.error(
             'ElevenLabs Conversational AI requires a Creator plan or above. ' +
@@ -168,29 +154,46 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
         return;
       }
 
-      const overrides = {
-        agent: {
-          prompt: { prompt: buildSystemPrompt() },
-          firstMessage: buildFirstMessage(),
-        },
-        ...(persona.elevenlabsVoiceId ? { tts: { voiceId: persona.elevenlabsVoiceId } } : {}),
-      };
+      // No client-side prompt override — each agent has its system prompt baked in at creation.
+      // Voice override only if persona specifies a different ElevenLabs voice.
+      const overrides = persona.elevenlabsVoiceId
+        ? { tts: { voiceId: persona.elevenlabsVoiceId } }
+        : undefined;
+
+      console.log('[CallInterface] Persona info — name=%s personaId=%s voiceId=%s',
+        persona.name, persona.personaId, persona.elevenlabsVoiceId ?? 'default');
+      console.log('[CallInterface] Session overrides:', JSON.stringify(overrides ?? 'none'));
 
       if (!cancelled) {
+        sessionStartedRef.current = true;
+        console.log('[CallInterface] Calling startSession with signedUrl=%s', signedUrl?.slice(0, 80));
         startSession({
           signedUrl,
           overrides,
-          onConnect: () => { everConnectedRef.current = true; },
+          onConnect: () => {
+            everConnectedRef.current = true;
+            console.log('[CallInterface] ✅ EL onConnect — WebSocket open, session active');
+          },
           onMessage: ({ message, source }: { message: string; source: string }) => {
+            console.log('[CallInterface] 💬 EL onMessage source=%s msg=%s', source, message?.slice(0, 80));
             if (message?.trim()) addMsg(source === 'ai' ? 'assistant' : 'user', message.trim());
           },
           onError: (msg: string) => {
-            if (!cancelled) toast.error(`Voice error: ${msg}`);
+            console.error('[CallInterface] ❌ EL onError:', msg);
+            if (!cancelled) toast.error(`ElevenLabs error: ${msg}`, { duration: 8000 });
           },
-          onDisconnect: () => {
-            // Only auto-end if the call was actually connected — avoids ending on initial connection failures
-            if (!cancelled && !isEndingRef.current && everConnectedRef.current) {
-              handleEndRef.current?.();
+          onDisconnect: (details?: unknown) => {
+            const d = details as { reason?: string; message?: string; closeCode?: number; closeReason?: string } | undefined;
+            console.warn('[CallInterface] 🔌 EL onDisconnect — closeCode=%s reason=%s message=%s | cancelled=%s sessionStarted=%s everConnected=%s isEnding=%s',
+              d?.closeCode, d?.reason, d?.message,
+              cancelled, sessionStartedRef.current, everConnectedRef.current, isEndingRef.current);
+            console.warn('[CallInterface] Full disconnect details:', JSON.stringify(details));
+            if (!cancelled && sessionStartedRef.current && !isEndingRef.current) {
+              if (everConnectedRef.current) {
+                handleEndRef.current?.();
+              } else {
+                toast.error(`Session failed to connect — ${d?.message ?? JSON.stringify(details)}`, { duration: 10000 });
+              }
             }
           },
         });
@@ -198,7 +201,9 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
     })();
 
     return () => {
+      console.log('[CallInterface] useEffect cleanup — sessionStarted=%s', sessionStartedRef.current);
       cancelled = true;
+      sessionStartedRef.current = false;
       if (timerRef.current) clearInterval(timerRef.current);
       try { endSession(); } catch {}
       socket.emit('session:leave', { sessionId });

@@ -13,7 +13,7 @@ import { Persona } from './models/Persona';
 import { Session } from './models/Session';
 import { TeamRoleplay } from './models/TeamRoleplay';
 import { EvaluationPrompt } from './models/EvaluationPrompt';
-import { createAgent, checkHealth } from './services/elevenlabs';
+import { createAgent, checkHealth, getOrCreateAgentId } from './services/elevenlabs';
 
 async function seed() {
   await mongoose.connect(config.mongoUri);
@@ -208,6 +208,7 @@ async function seed() {
   } else {
     console.log('  ✓ TTS available');
     console.log('  ✓ Conversational AI available — creating per-persona agents...');
+
     for (const persona of personas) {
       try {
         const result = await createAgent({
@@ -218,7 +219,7 @@ async function seed() {
               language: 'en',
               prompt: {
                 prompt: persona.systemPrompt,
-                llm: 'gpt-4o-mini',
+                llm: 'gemini-2.0-flash',
                 temperature: 0.8,
               },
             },
@@ -233,6 +234,14 @@ async function seed() {
       } catch (err) {
         console.warn(`  ⚠ ${persona.name}: ${(err as Error).message}`);
       }
+    }
+
+    // Create/locate the global default agent.
+    try {
+      const globalAgentId = await getOrCreateAgentId();
+      console.log(`  ✓ Global default agent ready: ${globalAgentId}`);
+    } catch (err) {
+      console.warn(`  ⚠ Global default agent setup failed: ${(err as Error).message}`);
     }
   }
 

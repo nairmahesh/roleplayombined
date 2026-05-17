@@ -5,7 +5,7 @@ import { Company } from '../models/Company';
 import { User } from '../models/User';
 import { Session } from '../models/Session';
 import { Persona } from '../models/Persona';
-import { createAgent, checkHealth } from '../services/elevenlabs';
+import { createAgent, checkHealth, getOrCreateAgentId } from '../services/elevenlabs';
 
 const router = Router();
 router.use(authenticate, requireRole('SUPER_ADMIN'));
@@ -167,7 +167,7 @@ router.post('/sync-persona-agents', async (_req: AuthRequest, res: Response): Pr
             language: 'en',
             prompt: {
               prompt: persona.systemPrompt,
-              llm: 'gpt-4o-mini',
+              llm: 'gemini-2.0-flash',
               temperature: 0.8,
             },
           },
