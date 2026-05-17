@@ -86,6 +86,7 @@ function useConversationInput() {
 // ── end shim ─────────────────────────────────────────────────────────────────
 
 import { useRecording } from '@/hooks/useRecording';
+import { useVoice } from '@/hooks/useVoice';
 import { connectSocket } from '@/lib/socket';
 import { Framework, SessionType, FRAMEWORK_INFO } from '@/types';
 import { AvatarDisplay } from '@/components/practice/PersonaAvatars';
@@ -164,6 +165,7 @@ export function CallInterface(props: Props) {
 function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLimitMins, onEnd }: Props) {
   const { agentId: EL_AGENT_ID, apiKey: EL_API_KEY } = useElevenLabsStore();
   const isMeeting = sessionType === 'ONLINE_MEETING';
+  const useSocketVoice = !EL_AGENT_ID;
 
   const [phase, setPhase] = useState<'ringing' | 'active'>('ringing');
   const [ringDot, setRingDot] = useState(0);
@@ -202,15 +204,34 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
   const { startSession, endSession } = useConversationControls();
   const { status } = useConversationStatus();
   const { isSpeaking: isBotSpeaking } = useConversationMode();
-  const { isMuted, setMuted } = useConversationInput();
+  const { isMuted: elMuted, setMuted } = useConversationInput();
 
-  const isConnected = status === 'connected';
+  // Socket-based voice fallback (used when ElevenLabs is not configured)
+  const socketVoice = useVoice({
+    sessionId,
+    voiceId: persona.elevenlabsVoiceId ?? '',
+    onTranscript: (text, isFinal) => { if (isFinal) {} },
+    onAIResponse: (text, timestampMs) => {
+      const msg: Message = {
+        role: 'assistant', content: text, timestampMs,
+        speakerName: persona.name,
+      };
+      historyRef.current = [...historyRef.current, msg];
+      setMessages(prev => [...prev, msg]);
+      setActiveSpeaker('ai');
+    },
+    onError: (err) => toast.error(err),
+  });
+
+  const isMuted = useSocketVoice ? socketVoice.isMuted : elMuted;
+  const isBotSpeakingFinal = useSocketVoice ? socketVoice.isSpeaking : isBotSpeaking;
+  const isConnected = useSocketVoice ? phase === 'active' : status === 'connected';
 
   // Update active speaker indicator
   useEffect(() => {
-    if (isBotSpeaking) setActiveSpeaker('ai');
+    if (isBotSpeakingFinal) setActiveSpeaker('ai');
     else if (!isMuted) setActiveSpeaker('user');
-  }, [isBotSpeaking, isMuted]);
+  }, [isBotSpeakingFinal, isMuted]);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => { if (transcriptRef.current) transcriptRef.current.scrollTop = transcriptRef.current.scrollHeight; }, 50);
@@ -337,26 +358,17 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
     let cancelled = false;
 
     (async () => {
-      if (!EL_AGENT_ID) {
-        toast.error('ElevenLabs Agent ID not configured (VITE_ELEVENLABS_AGENT_ID)');
-        onEnd(sessionId);
-        return;
-      }
-
       let stream: MediaStream;
       try {
-        // For meetings, request audio+video together so the browser shows one unified permission prompt
         const constraints = isMeeting ? { audio: true, video: true } : { audio: true };
         stream = await navigator.mediaDevices.getUserMedia(constraints);
         if (isMeeting) {
-          // Attach video tracks to camera state
           const videoTracks = stream.getVideoTracks();
           if (videoTracks.length > 0) {
             const videoStream = new MediaStream(videoTracks);
             setCamStream(videoStream);
             if (userVideoRef.current) userVideoRef.current.srcObject = videoStream;
           }
-          // Keep only audio for the ElevenLabs stream
           const audioOnlyStream = new MediaStream(stream.getAudioTracks());
           stream = audioOnlyStream;
         }
@@ -378,7 +390,6 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
       try { await sessionsApi.start(sessionId); } catch {}
 
       if (isMeeting) {
-        // Meeting join animation — brief delay then go straight to active
         await playMeetingJoin();
         if (!cancelled) {
           setPhase('active');
@@ -388,7 +399,6 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
           socket.emit('session:join', { sessionId });
         }
       } else {
-        // Phone call — ring first
         for (let i = 0; i < 3; i++) {
           setTimeout(() => { if (!cancelled) setRingDot(i + 1); }, i * 2200);
         }
@@ -403,40 +413,44 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
 
       if (cancelled) return;
 
-      const signedUrl = await getSignedUrl();
-      const overrides = {
-        agent: {
-          prompt: { prompt: buildSystemPrompt() },
-          firstMessage: buildFirstMessage(),
-        },
-        ...(persona.elevenlabsVoiceId ? { tts: { voiceId: persona.elevenlabsVoiceId } } : {}),
-      };
-
-      try {
-        await startSession({
-          ...(signedUrl ? { signedUrl } : { agentId: EL_AGENT_ID }),
-          overrides,
-          onMessage: ({ message, source }: { message: string; source: string }) => {
-            if (message?.trim()) {
-              addMsg(source === 'ai' ? 'assistant' : 'user', message.trim());
-            }
+      if (useSocketVoice) {
+        // No ElevenLabs — use socket-based STT/AI/TTS pipeline
+        await socketVoice.startMicrophone();
+      } else {
+        const signedUrl = await getSignedUrl();
+        const overrides = {
+          agent: {
+            prompt: { prompt: buildSystemPrompt() },
+            firstMessage: buildFirstMessage(),
           },
-          onError: (msg: string) => {
-            if (!cancelled) toast.error(`Voice connection error: ${msg}`);
-          },
-          onDisconnect: () => {
-            if (!cancelled && !isEndingRef.current) handleEndRef.current?.();
-          },
-        } as any);
-      } catch (err: any) {
-        if (!cancelled) toast.error('Could not connect to ElevenLabs: ' + err.message);
+          ...(persona.elevenlabsVoiceId ? { tts: { voiceId: persona.elevenlabsVoiceId } } : {}),
+        };
+        try {
+          await startSession({
+            ...(signedUrl ? { signedUrl } : { agentId: EL_AGENT_ID }),
+            overrides,
+            onMessage: ({ message, source }: { message: string; source: string }) => {
+              if (message?.trim()) {
+                addMsg(source === 'ai' ? 'assistant' : 'user', message.trim());
+              }
+            },
+            onError: (msg: string) => {
+              if (!cancelled) toast.error(`Voice connection error: ${msg}`);
+            },
+            onDisconnect: () => {
+              if (!cancelled && !isEndingRef.current) handleEndRef.current?.();
+            },
+          } as any);
+        } catch (err: any) {
+          if (!cancelled) toast.error('Could not connect to ElevenLabs: ' + err.message);
+        }
       }
     })();
 
     return () => {
       cancelled = true;
       if (timerRef.current) clearInterval(timerRef.current);
-      try { endSession(); } catch {}
+      if (useSocketVoice) { socketVoice.stopMicrophone(); } else { try { endSession(); } catch {} }
       socket.emit('session:leave', { sessionId });
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -461,7 +475,7 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
     isEndingRef.current = true;
     setIsEnding(true);
 
-    try { endSession(); } catch {}
+    if (useSocketVoice) { socketVoice.stopMicrophone(); socketVoice.stopSpeaking(); } else { try { endSession(); } catch {} }
     if (timerRef.current) clearInterval(timerRef.current);
     recording.stopRecording?.();
     stopCamera();
@@ -501,10 +515,15 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
     }
   }, [elapsed, timeLimitMins, phase, isEnding, handleEnd]);
 
+  const toggleMicMute = () => {
+    if (useSocketVoice) { socketVoice.toggleMute(); }
+    else { setMuted(!isMuted); }
+  };
+
   const toggleHold = () => {
     setIsHeld(h => {
       const next = !h;
-      setMuted(next);
+      if (useSocketVoice) { socketVoice.toggleMute(); } else { setMuted(next); }
       return next;
     });
   };
@@ -619,7 +638,7 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {isBotSpeaking && (
+                {isBotSpeakingFinal && (
                   <div className="flex items-center gap-1 h-5">
                     {[0, 0.12, 0.24, 0.36, 0.48].map(d => (
                       <div key={d} className="w-[3px] bg-accent rounded-full" style={{ height: '3px', animation: `wv 0.85s ease-in-out ${d}s infinite` }} />
@@ -639,14 +658,14 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
               <div className="flex-shrink-0 bg-bg-3 border-b sm:border-b-0 sm:border-r border-white/[0.07] flex items-center justify-center sm:w-52 h-28 sm:h-auto">
                 <div className="flex flex-col items-center gap-3 p-4">
                   <div className="relative">
-                    {isBotSpeaking && (
+                    {isBotSpeakingFinal && (
                       <>
                         <div className="absolute inset-[-8px] rounded-full border-2 border-accent/40 z-10" style={{ animation: 'rp 1.2s ease-out infinite' }} />
                         <div className="absolute inset-[-16px] rounded-full border border-accent/20 z-10" style={{ animation: 'rp 1.2s ease-out 0.4s infinite' }} />
                       </>
                     )}
                     <div className="relative w-20 h-20 rounded-full overflow-hidden flex-shrink-0">
-                      <AvatarDisplay avatarId={persona.avatarId} size={80} speaking={isBotSpeaking} />
+                      <AvatarDisplay avatarId={persona.avatarId} size={80} speaking={isBotSpeakingFinal} />
                     </div>
                   </div>
                   <div className="text-center">
@@ -668,7 +687,7 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
               <div className="flex-1 flex flex-col bg-bg-3 min-w-0">
                 <div className="px-4 py-2.5 border-b border-white/[0.06] flex-shrink-0 flex items-center justify-between">
                   <span className="text-[10px] font-bold text-white/55 uppercase tracking-wider">Transcript</span>
-                  {isBotSpeaking && (
+                  {isBotSpeakingFinal && (
                     <div className="flex items-center gap-1 h-3.5">
                       {[0, 0.15, 0.3].map(d => (
                         <div key={d} className="w-0.5 bg-accent/60 rounded-full" style={{ height: '3px', animation: `wv 0.85s ease-in-out ${d}s infinite` }} />
@@ -703,7 +722,7 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
 
             {/* Controls */}
             <div className="flex items-center justify-center gap-2.5 px-6 py-4 border-t border-white/[0.07] bg-bg-2">
-              <CtrlBtn icon={isMuted ? MicOff : Mic} active={!isMuted} muted={isMuted} onClick={() => setMuted(!isMuted)} label={isMuted ? 'Unmute' : 'Mute'} />
+              <CtrlBtn icon={isMuted ? MicOff : Mic} active={!isMuted} muted={isMuted} onClick={toggleMicMute} label={isMuted ? 'Unmute' : 'Mute'} />
               <CtrlBtn icon={isHeld ? Play : Pause} active={isHeld} onClick={toggleHold} label={isHeld ? 'Resume' : 'Hold'} />
               <button
                 onClick={handleEnd}
@@ -782,24 +801,24 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
                   {/* AI Persona tile */}
                   <div className={clsx(
                     'relative rounded-[12px] overflow-hidden bg-[#0d0d1a] border flex items-center justify-center',
-                    activeSpeaker === 'ai' && isBotSpeaking
+                    activeSpeaker === 'ai' && isBotSpeakingFinal
                       ? 'border-accent/60 shadow-[0_0_0_2px_rgba(91,111,255,0.4)]'
                       : 'border-white/[0.07]'
                   )}>
                     <div className="flex flex-col items-center gap-3">
                       <div className="relative">
-                        {isBotSpeaking && (
+                        {isBotSpeakingFinal && (
                           <>
                             <div className="absolute inset-[-6px] rounded-full border-2 border-accent/50 z-10" style={{ animation: 'rp 1.1s ease-out infinite' }} />
                             <div className="absolute inset-[-14px] rounded-full border border-accent/25 z-10" style={{ animation: 'rp 1.1s ease-out 0.4s infinite' }} />
                           </>
                         )}
                         <div className="w-16 h-16 rounded-full overflow-hidden">
-                          <AvatarDisplay avatarId={persona.avatarId} size={64} speaking={isBotSpeaking} />
+                          <AvatarDisplay avatarId={persona.avatarId} size={64} speaking={isBotSpeakingFinal} />
                         </div>
                       </div>
                       {/* Speaker diarisation waveform */}
-                      {isBotSpeaking && (
+                      {isBotSpeakingFinal && (
                         <div className="flex items-end gap-[3px] h-5">
                           {[0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.35, 0.2].map((d, i) => (
                             <div key={i} className="w-[3px] bg-accent rounded-full" style={{ height: '4px', animation: `wv 0.7s ease-in-out ${d}s infinite` }} />
@@ -810,10 +829,10 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
                     {/* Name tag */}
                     <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded-[6px]">
                       <span className="text-[11px] font-medium text-white">{persona.name}</span>
-                      {isBotSpeaking && <span className="w-1.5 h-1.5 rounded-full bg-accent-3 animate-pulse flex-shrink-0" />}
+                      {isBotSpeakingFinal && <span className="w-1.5 h-1.5 rounded-full bg-accent-3 animate-pulse flex-shrink-0" />}
                     </div>
                     {/* Speaker label */}
-                    {activeSpeaker === 'ai' && isBotSpeaking && (
+                    {activeSpeaker === 'ai' && isBotSpeakingFinal && (
                       <div className="absolute top-2 right-2 text-[9px] px-1.5 py-0.5 rounded bg-accent/20 border border-accent/30 text-accent">Speaking</div>
                     )}
                   </div>
@@ -926,7 +945,7 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
                         </div>
                       </div>
                     ))}
-                    {isBotSpeaking && (
+                    {isBotSpeakingFinal && (
                       <div className="flex flex-col gap-0.5">
                         <span className="text-[9.5px] font-semibold uppercase tracking-wider text-accent/70">{persona.name}</span>
                         <div className="px-3 py-2 rounded-[10px] bg-white/[0.04] border border-white/[0.06] flex items-center gap-1.5">
@@ -968,7 +987,7 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
                   label={isMuted ? 'Unmute' : 'Mute'}
                   active={!isMuted}
                   danger={isMuted}
-                  onClick={() => setMuted(!isMuted)}
+                  onClick={toggleMicMute}
                 />
                 <MeetingCtrlBtn
                   icon={isCamOn ? Video : VideoOff}
