@@ -1,97 +1,16 @@
-// Live call overlay — ElevenLabs Conversational AI via @elevenlabs/react SDK
+// Live call interface — ElevenLabs Conversational AI (signed URL via backend) + @elevenlabs/react SDK
 
-import { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Mic, MicOff, Phone, Pause, Play, BarChart3 } from 'lucide-react';
-import { sessionsApi } from '@/lib/api';
-
-// ── ElevenLabs SDK shim (loaded dynamically so build succeeds without the package) ──
-type ELStatus = 'disconnected' | 'connecting' | 'connected';
-interface ELContext {
-  startSession: (opts: any) => Promise<void>;
-  endSession: () => void;
-  status: ELStatus;
-  isSpeaking: boolean;
-  isMuted: boolean;
-  setMuted: (v: boolean) => void;
-}
-const ELCtx = createContext<ELContext>({
-  startSession: async () => {},
-  endSession: () => {},
-  status: 'disconnected',
-  isSpeaking: false,
-  isMuted: false,
-  setMuted: () => {},
-});
-
-function ConversationProvider({ children }: { children: React.ReactNode }) {
-  const [status, setStatus]       = useState<ELStatus>('disconnected');
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isMuted, setMuted]       = useState(false);
-  const wsRef = useRef<any>(null);
-
-  const startSession = useCallback(async (opts: any) => {
-    setStatus('connecting');
-    try {
-      // Use Function constructor so Rollup cannot statically analyse the specifier
-      const mod = await (new Function('s', 'return import(s)'))('@elevenlabs/react').catch(() => null);
-      if (!mod) { toast.error('ElevenLabs SDK not available'); setStatus('disconnected'); return; }
-      // Use the raw Conversation class from the @elevenlabs/react package
-      const { Conversation } = mod as any;
-      const conv = await Conversation.startSession({
-        ...opts,
-        onMessage: opts.onMessage,
-        onError: opts.onError,
-        onModeChange: ({ mode }: any) => setIsSpeaking(mode?.mode === 'speaking'),
-        onStatusChange: ({ status: s }: any) => setStatus(s),
-        onDisconnect: opts.onDisconnect,
-      });
-      wsRef.current = conv;
-      setStatus('connected');
-    } catch (err: any) {
-      setStatus('disconnected');
-      opts.onError?.(err?.message ?? String(err));
-    }
-  }, []);
-
-  const endSession = useCallback(() => {
-    wsRef.current?.endSession?.().catch(() => {});
-    wsRef.current = null;
-    setStatus('disconnected');
-    setIsSpeaking(false);
-  }, []);
-
-  return (
-    <ELCtx.Provider value={{ startSession, endSession, status, isSpeaking, isMuted, setMuted }}>
-      {children}
-    </ELCtx.Provider>
-  );
-}
-
-function useConversationControls() {
-  const { startSession, endSession } = useContext(ELCtx);
-  return { startSession, endSession };
-}
-function useConversationStatus() {
-  const { status } = useContext(ELCtx);
-  return { status };
-}
-function useConversationMode() {
-  const { isSpeaking } = useContext(ELCtx);
-  return { isSpeaking };
-}
-function useConversationInput() {
-  const { isMuted, setMuted } = useContext(ELCtx);
-  return { isMuted, setMuted };
-}
-// ── end shim ─────────────────────────────────────────────────────────────────
+import { sessionsApi, voiceApi } from '@/lib/api';
+import { ConversationProvider, useConversation } from '@elevenlabs/react';
 
 import { useRecording } from '@/hooks/useRecording';
 import { connectSocket } from '@/lib/socket';
 import { Framework, SessionType, FRAMEWORK_INFO } from '@/types';
 import { AvatarDisplay } from '@/components/practice/PersonaAvatars';
-import { useElevenLabsStore } from '@/lib/store';
 import clsx from 'clsx';
 
 interface Message { role: 'user' | 'assistant'; content: string; timestampMs: number; }
@@ -104,6 +23,7 @@ export interface PersonaDisplay {
   elevenlabsVoiceId?: string;
   systemPrompt?: string;
   firstMessage?: string;
+  personaId?: string;
 }
 
 interface Props {
@@ -115,11 +35,11 @@ interface Props {
   onEnd: (sessionId: string) => void;
 }
 
-// ── Ring tone (3 rings via Web Audio) ────────────────────────────────────────
+// ── Ring tone (3 rings via Web Audio API) ─────────────────────────────────────
 function playRings(): Promise<void> {
   return new Promise(resolve => {
     try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       for (let i = 0; i < 3; i++) {
         const t = ctx.currentTime + i * 2.2;
         const o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), g = ctx.createGain();
@@ -146,14 +66,14 @@ export function CallInterface(props: Props) {
 }
 
 function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLimitMins, onEnd }: Props) {
-  const { agentId: EL_AGENT_ID, apiKey: EL_API_KEY } = useElevenLabsStore();
+  const { startSession, endSession, status, isSpeaking: isBotSpeaking, isMuted, setMuted } = useConversation();
 
-  const [phase, setPhase] = useState<'ringing' | 'active'>('ringing');
-  const [ringDot, setRingDot] = useState(0);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [elapsed, setElapsed] = useState(0);
-  const [isHeld, setIsHeld] = useState(false);
-  const [isEnding, setIsEnding] = useState(false);
+  const [phase, setPhase]                 = useState<'ringing' | 'active'>('ringing');
+  const [ringDot, setRingDot]             = useState(0);
+  const [messages, setMessages]           = useState<Message[]>([]);
+  const [elapsed, setElapsed]             = useState(0);
+  const [isHeld, setIsHeld]               = useState(false);
+  const [isEnding, setIsEnding]           = useState(false);
   const [showAnalysisPrompt, setShowAnalysisPrompt] = useState(false);
 
   const startTimeRef     = useRef(Date.now());
@@ -167,13 +87,6 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
 
   const socket = connectSocket();
   const recording = useRecording({ sessionId, mode: sessionType === 'ONLINE_MEETING' ? 'video' : 'audio' });
-
-  // ── SDK hooks ─────────────────────────────────────────────────────────────────
-  const { startSession, endSession } = useConversationControls();
-  const { status } = useConversationStatus();
-  const { isSpeaking: isBotSpeaking } = useConversationMode();
-  const { isMuted, setMuted } = useConversationInput();
-
   const isConnected = status === 'connected';
 
   const scrollToBottom = useCallback(() => {
@@ -189,14 +102,9 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
   }, [sessionId, scrollToBottom]);
 
   const buildSystemPrompt = useCallback(() => {
-    if (persona.systemPrompt) return persona.systemPrompt;
     return (
-      `You are ${persona.name}, ${persona.title}. ` +
-      `You are in a sales call roleplay. Act naturally as this persona — be realistic, slightly busy, ` +
-      `raise objections, ask clarifying questions, and respond to the salesperson's pitch. ` +
-      `Never break character. Keep responses concise and conversational (1-3 sentences). ` +
-      `If the salesperson makes a compelling case, show buying signals. ` +
-      `Use the ${FRAMEWORK_INFO[framework].label} sales framework context in your responses.`
+      persona.systemPrompt ||
+      `You are ${persona.name}, ${persona.title}. Act naturally as this persona in a sales roleplay — be realistic, slightly busy, raise objections, ask clarifying questions. Never break character. Keep responses concise (1-3 sentences). Use the ${FRAMEWORK_INFO[framework].label} framework context.`
     );
   }, [persona, framework]);
 
@@ -211,32 +119,11 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
     return greetings[Math.floor(Math.random() * greetings.length)];
   }, [persona]);
 
-  const getSignedUrl = useCallback(async (): Promise<string | null> => {
-    if (!EL_API_KEY || !EL_AGENT_ID) return null;
-    try {
-      const res = await fetch(
-        `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${EL_AGENT_ID}`,
-        { headers: { 'xi-api-key': EL_API_KEY } }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        return data.signed_url;
-      }
-    } catch { /* fall back to agentId */ }
-    return null;
-  }, [EL_AGENT_ID, EL_API_KEY]);
-
   // ── Session lifecycle ─────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
-      if (!EL_AGENT_ID) {
-        toast.error('ElevenLabs Agent ID not configured (VITE_ELEVENLABS_AGENT_ID)');
-        onEnd(sessionId);
-        return;
-      }
-
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -260,7 +147,26 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
       recording.startRecording(stream);
       socket.emit('session:join', { sessionId });
 
-      const signedUrl = await getSignedUrl();
+      // Get signed URL from backend (API key never leaves the server).
+      // Pass personaId so the backend uses that persona's dedicated ElevenLabs agent.
+      let signedUrl: string | null = null;
+      try {
+        signedUrl = await voiceApi.getSignedUrl(persona.personaId);
+      } catch (err: unknown) {
+        const code = (err as { response?: { data?: { code?: string } } })?.response?.data?.code;
+        if (code === 'CONVAI_UNAVAILABLE') {
+          toast.error(
+            'ElevenLabs Conversational AI requires a Creator plan or above. ' +
+            'Live call sessions are unavailable with your current plan.',
+            { duration: 8000 }
+          );
+        } else {
+          toast.error('Could not connect to ElevenLabs — check ELEVENLABS_API_KEY on the server');
+        }
+        onEnd(sessionId);
+        return;
+      }
+
       const overrides = {
         agent: {
           prompt: { prompt: buildSystemPrompt() },
@@ -269,24 +175,20 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
         ...(persona.elevenlabsVoiceId ? { tts: { voiceId: persona.elevenlabsVoiceId } } : {}),
       };
 
-      try {
-        await startSession({
-          ...(signedUrl ? { signedUrl } : { agentId: EL_AGENT_ID }),
+      if (!cancelled) {
+        startSession({
+          signedUrl,
           overrides,
           onMessage: ({ message, source }: { message: string; source: string }) => {
-            if (message?.trim()) {
-              addMsg(source === 'ai' ? 'assistant' : 'user', message.trim());
-            }
+            if (message?.trim()) addMsg(source === 'ai' ? 'assistant' : 'user', message.trim());
           },
           onError: (msg: string) => {
-            if (!cancelled) toast.error(`Voice connection error: ${msg}`);
+            if (!cancelled) toast.error(`Voice error: ${msg}`);
           },
           onDisconnect: () => {
             if (!cancelled && !isEndingRef.current) handleEndRef.current?.();
           },
-        } as any);
-      } catch (err: any) {
-        if (!cancelled) toast.error('Could not connect to ElevenLabs: ' + err.message);
+        });
       }
     })();
 
@@ -303,11 +205,9 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
     if (isEndingRef.current) return;
     isEndingRef.current = true;
     setIsEnding(true);
-
     try { endSession(); } catch {}
     if (timerRef.current) clearInterval(timerRef.current);
     recording.stopRecording?.();
-
     endDataRef.current = { durationSeconds: Math.round((Date.now() - startTimeRef.current) / 1000) };
     setShowAnalysisPrompt(true);
   }, [endSession, recording]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -321,8 +221,8 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
       await sessionsApi.end(sessionId, { durationSeconds, transcript: historyRef.current, skipAnalysis: !analyze });
       toast.success(analyze ? 'Session ended — AI is analysing…' : 'Session saved.');
       onEnd(sessionId);
-    } catch (err: any) {
-      toast.error('Could not end session: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Could not end session: ' + (err instanceof Error ? err.message : String(err)));
       isEndingRef.current = false;
       setIsEnding(false);
     }
@@ -344,9 +244,8 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
 
   const toggleHold = () => {
     setIsHeld(h => {
-      const next = !h;
-      setMuted(next);
-      return next;
+      setMuted(!h);
+      return !h;
     });
   };
 
@@ -363,10 +262,7 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-0 sm:p-4"
     >
-      <style>{`
-        @keyframes rp{0%{transform:scale(.9);opacity:.9}100%{transform:scale(1.08);opacity:0}}
-        @keyframes wv{0%,100%{height:3px;opacity:.3}50%{height:14px;opacity:1}}
-      `}</style>
+      <style>{`@keyframes rp{0%{transform:scale(.9);opacity:.9}100%{transform:scale(1.08);opacity:0}}`}</style>
 
       <motion.div
         initial={{ scale: 0.96, y: 20 }}
@@ -377,8 +273,8 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
         {phase === 'ringing' && (
           <div className="flex flex-col items-center justify-center py-16 gap-0">
             <div className="relative w-24 h-24 rounded-full overflow-hidden mb-5 flex-shrink-0">
-              <div className="absolute inset-[-10px] rounded-full border-2 border-accent/35 z-10" style={{ animation: 'rp 1.4s ease-out infinite' }} />
-              <div className="absolute inset-[-22px] rounded-full border-2 border-accent/18 z-10" style={{ animation: 'rp 1.4s ease-out 0.5s infinite' }} />
+              <div className="absolute inset-[-10px] rounded-full border-2 border-accent/35 z-10 animate-[rp_1.4s_ease-out_infinite]" />
+              <div className="absolute inset-[-22px] rounded-full border-2 border-accent/18 z-10 animate-[rp_1.4s_ease-out_0.5s_infinite]" />
               <AvatarDisplay avatarId={persona.avatarId} size={96} />
             </div>
             <div className="font-display font-bold text-xl mb-1.5">{persona.name}</div>
@@ -390,6 +286,7 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
             </div>
             <div className="text-[12px] text-white/70 mb-6">Ringing…</div>
             <button
+              type="button"
               onClick={() => onEnd(sessionId)}
               className="px-6 py-2.5 bg-accent-4/15 text-accent-4 border border-accent-4/25 rounded-[9px] text-[12.5px] font-semibold cursor-pointer hover:bg-accent-4/25 transition-colors"
             >
@@ -424,10 +321,8 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
               </div>
               <div className="flex items-center gap-2">
                 {isBotSpeaking && (
-                  <div className="flex items-center gap-1 h-5">
-                    {[0, 0.12, 0.24, 0.36, 0.48].map(d => (
-                      <div key={d} className="w-[3px] bg-accent rounded-full" style={{ height: '3px', animation: `wv 0.85s ease-in-out ${d}s infinite` }} />
-                    ))}
+                  <div className="wave-bars-5" aria-hidden="true">
+                    <span/><span/><span/><span/><span/>
                   </div>
                 )}
                 <span className="px-2.5 py-1 rounded-full bg-accent-3/10 border border-accent-3/20 text-[10px] text-accent-3 font-medium">● LIVE</span>
@@ -438,7 +333,7 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
             </div>
 
             {/* Body */}
-            <div className="flex flex-col sm:flex-row" style={{ height: 'clamp(320px, 55vh, 420px)' }}>
+            <div className="flex flex-col sm:flex-row h-[clamp(320px,55vh,420px)]">
               {/* Avatar panel */}
               <div className={clsx(
                 'flex-shrink-0 bg-bg-3 border-b sm:border-b-0 sm:border-r border-white/[0.07] flex items-center justify-center',
@@ -448,8 +343,8 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
                   <div className="relative">
                     {isBotSpeaking && (
                       <>
-                        <div className="absolute inset-[-8px] rounded-full border-2 border-accent/40 z-10" style={{ animation: 'rp 1.2s ease-out infinite' }} />
-                        <div className="absolute inset-[-16px] rounded-full border border-accent/20 z-10" style={{ animation: 'rp 1.2s ease-out 0.4s infinite' }} />
+                        <div className="absolute inset-[-8px] rounded-full border-2 border-accent/40 z-10 animate-[rp_1.2s_ease-out_infinite]" />
+                        <div className="absolute inset-[-16px] rounded-full border border-accent/20 z-10 animate-[rp_1.2s_ease-out_0.4s_infinite]" />
                       </>
                     )}
                     <div className="relative w-20 h-20 rounded-full overflow-hidden flex-shrink-0">
@@ -476,10 +371,8 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
                 <div className="px-4 py-2.5 border-b border-white/[0.06] flex-shrink-0 flex items-center justify-between">
                   <span className="text-[10px] font-bold text-white/55 uppercase tracking-wider">Transcript</span>
                   {isBotSpeaking && (
-                    <div className="flex items-center gap-1 h-3.5">
-                      {[0, 0.15, 0.3].map(d => (
-                        <div key={d} className="w-0.5 bg-accent/60 rounded-full" style={{ height: '3px', animation: `wv 0.85s ease-in-out ${d}s infinite` }} />
-                      ))}
+                    <div className="wave-bars-3" aria-hidden="true">
+                      <span/><span/><span/>
                     </div>
                   )}
                 </div>
@@ -510,20 +403,10 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
 
             {/* Controls */}
             <div className="flex items-center justify-center gap-2.5 px-6 py-4 border-t border-white/[0.07] bg-bg-2">
-              <CtrlBtn
-                icon={isMuted ? MicOff : Mic}
-                active={!isMuted}
-                muted={isMuted}
-                onClick={() => setMuted(!isMuted)}
-                label={isMuted ? 'Unmute' : 'Mute'}
-              />
-              <CtrlBtn
-                icon={isHeld ? Play : Pause}
-                active={isHeld}
-                onClick={toggleHold}
-                label={isHeld ? 'Resume' : 'Hold'}
-              />
+              <CtrlBtn icon={isMuted ? MicOff : Mic} active={!isMuted} muted={isMuted} onClick={() => setMuted(!isMuted)} label={isMuted ? 'Unmute' : 'Mute'} />
+              <CtrlBtn icon={isHeld ? Play : Pause} active={isHeld} onClick={toggleHold} label={isHeld ? 'Resume' : 'Hold'} />
               <button
+                type="button"
                 onClick={handleEnd}
                 disabled={isEnding}
                 className="ml-4 flex items-center gap-2 px-5 py-2.5 rounded-[11px] bg-accent-4 text-white text-[13px] font-bold hover:bg-red-500 transition-all shadow-[0_4px_20px_rgba(255,107,107,0.3)] disabled:opacity-50"
@@ -544,19 +427,23 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
             animate={{ scale: 1, opacity: 1 }}
             className="bg-bg-2 border border-white/10 rounded-[18px] p-7 w-[340px] flex flex-col items-center gap-5 shadow-[0_20px_60px_rgba(0,0,0,0.7)]"
           >
-            <div className="w-11 h-11 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center"><BarChart3 size={20} className="text-accent" /></div>
+            <div className="w-11 h-11 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center">
+              <BarChart3 size={20} className="text-accent" />
+            </div>
             <div className="text-center">
               <div className="font-display font-bold text-[16px] mb-1.5">Analyze this session?</div>
               <p className="text-[12.5px] text-white/70 leading-relaxed">Get AI feedback on your pitch, objection handling, and framework score.</p>
             </div>
             <div className="flex gap-3 w-full">
               <button
+                type="button"
                 onClick={() => confirmEnd(false)}
                 className="flex-1 py-2.5 rounded-[10px] bg-white/[0.05] border border-white/10 text-[13px] text-white/75 font-semibold hover:bg-white/[0.09] transition-colors"
               >
                 Skip
               </button>
               <button
+                type="button"
                 onClick={() => confirmEnd(true)}
                 className="flex-1 py-2.5 rounded-[10px] bg-accent text-white text-[13px] font-bold hover:bg-accent/80 transition-colors shadow-[0_4px_20px_rgba(91,111,255,0.35)]"
               >
@@ -570,12 +457,13 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
   );
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// ── CtrlBtn ───────────────────────────────────────────────────────────────────
 function CtrlBtn({ icon: Icon, active, muted, onClick, label }: {
   icon: React.ElementType; active: boolean; muted?: boolean; onClick: () => void; label: string;
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       title={label}
       className={clsx(

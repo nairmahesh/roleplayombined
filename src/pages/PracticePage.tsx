@@ -248,6 +248,7 @@ export function PracticePage() {
   const [selectedCreator, setSelectedCreator] = useState('');
 
   // ── Persona fields ─────────────────────────────────────────────────────────
+  const [selectedPersonaId, setSelectedPersonaId] = useState<string | undefined>(undefined);
   const [avatarId, setAvatarId]                   = useState('alex');
   const [selectedVoiceId, setSelectedVoiceId]     = useState<string | undefined>(undefined);
   const [voiceOpen, setVoiceOpen]                 = useState(false);
@@ -462,6 +463,7 @@ export function PracticePage() {
   };
 
   const handleCreateNew = () => {
+    setSelectedPersonaId(undefined);
     setAvatarId('alex');
     setSelectedVoiceId(AVATAR_VOICE_CONFIG['alex']?.elevenlabsId ?? undefined);
     setDisplayName('Custom Persona');
@@ -626,6 +628,7 @@ export function PracticePage() {
   };
 
   const applyDbPersona = (p: Persona) => {
+    setSelectedPersonaId(p.id);
     setPersonaContext(p.systemPrompt);
     setDisplayName(p.name);
     setDisplayTitle(p.title);
@@ -658,7 +661,7 @@ export function PracticePage() {
         language, botKnowledge, userBriefing,
       } as ScenarioConfig & { language: string };
       const session = await sessionsApi.create({ scenarioConfig: sc, type: sessionType, framework });
-      const pd: PersonaDisplay = { name: displayName, title: displayTitle, emoji: displayEmoji, avatarId, elevenlabsVoiceId: selectedVoiceId };
+      const pd: PersonaDisplay = { name: displayName, title: displayTitle, emoji: displayEmoji, avatarId, elevenlabsVoiceId: selectedVoiceId, personaId: selectedPersonaId };
       // Show pre-call briefing if user has content to review
       if (canPreCallBriefing && userBriefing.length > 0) {
         setPendingSession({ id: session.id, personaDisplay: pd });

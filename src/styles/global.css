@@ -192,6 +192,16 @@
   .progress-fill {
     @apply h-full rounded-full transition-all duration-500;
   }
+
+  .icon-btn {
+    @apply inline-flex items-center justify-center w-6 h-6 rounded-[6px]
+           transition-colors cursor-pointer;
+    color: var(--text3);
+  }
+  .icon-btn:hover {
+    color: var(--text);
+    background: rgba(128,128,128,0.10);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -276,6 +286,48 @@
   0%, 100% { height: 4px; opacity: 0.4; }
   50% { height: 18px; opacity: 1; }
 }
+
+/* wv — scaleY keeps animation on the compositor (no layout reflow) */
+@keyframes wv {
+  0%, 100% { transform: scaleY(0.22); }
+  50% { transform: scaleY(1); }
+}
+
+.wave-bars-5,
+.wave-bars-3 {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wave-bars-5 > span {
+  display: block;
+  width: 3px;
+  height: 18px;
+  background: var(--accent);
+  border-radius: 9999px;
+  transform-origin: center;
+  will-change: transform;
+  animation: wv 0.85s ease-in-out infinite;
+}
+.wave-bars-5 > span:nth-child(2) { animation-delay: 0.12s; }
+.wave-bars-5 > span:nth-child(3) { animation-delay: 0.24s; }
+.wave-bars-5 > span:nth-child(4) { animation-delay: 0.36s; }
+.wave-bars-5 > span:nth-child(5) { animation-delay: 0.48s; }
+
+.wave-bars-3 > span {
+  display: block;
+  width: 2px;
+  height: 14px;
+  background: var(--accent);
+  opacity: 0.6;
+  border-radius: 9999px;
+  transform-origin: center;
+  will-change: transform;
+  animation: wv 0.85s ease-in-out infinite;
+}
+.wave-bars-3 > span:nth-child(2) { animation-delay: 0.15s; }
+.wave-bars-3 > span:nth-child(3) { animation-delay: 0.3s; }
 
 @keyframes speak-ring {
   0%, 100% { transform: scale(1); opacity: 0.6; }

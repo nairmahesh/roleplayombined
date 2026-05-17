@@ -164,6 +164,7 @@ export interface Persona {
   frameworks: Framework[];
   isPreset: boolean;
   voiceId?: string;
+  agentId?: string;
 }
 
 export interface Message {

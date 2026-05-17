@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import {
   LayoutDashboard, Play, ClipboardList,
   Trophy, Users, Settings, LogOut, Target,
-  Building2, Globe, Menu, X, Sun, Moon, Zap,
+  Building2, Globe, Menu, X, Sun, Moon, Zap, Bot,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -24,6 +24,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { label: 'Companies',   to: '/superadmin/companies', icon: Building2,      section: 'Platform', roles: ['SUPER_ADMIN'] },
   { label: 'Platform',    to: '/superadmin/stats',     icon: Globe,          section: 'Platform', roles: ['SUPER_ADMIN'] },
+  { label: 'Agents',      to: '/superadmin/agents',    icon: Bot,            section: 'Platform', roles: ['SUPER_ADMIN'] },
   { label: 'Dashboard',   to: '/dashboard',  icon: LayoutDashboard, section: 'Overview', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
   { label: 'Practice',    to: '/practice',   icon: Play,            section: 'Overview', badge: 'New', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
   { label: 'Sessions',    to: '/sessions',   icon: ClipboardList,   section: 'Overview', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
@@ -253,6 +254,7 @@ function PageTitle({ path }: { path: string }) {
     '/settings':                ['Settings',          'Platform configuration'],
     '/superadmin/companies':    ['Companies',         'Platform-wide company management'],
     '/superadmin/stats':        ['Platform Overview', 'System-wide statistics'],
+    '/superadmin/agents':       ['Agents',            'ElevenLabs ConvAI agent management'],
   };
   const key = Object.keys(titles).find(k => path.startsWith(k)) || '/dashboard';
   const [title, sub] = titles[key] || ['PitchIQ', ''];

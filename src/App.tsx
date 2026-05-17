@@ -20,7 +20,8 @@ const EvaluationPromptsPage = lazy(() => import('@/pages/EvaluationPromptsPage')
 const CompaniesPage     = lazy(() => import('@/pages/CompaniesPage').then(m => ({ default: m.CompaniesPage })));
 const CompanyDetailPage = lazy(() => import('@/pages/CompanyDetailPage').then(m => ({ default: m.CompanyDetailPage })));
 const SuperAdminStatsPage = lazy(() => import('@/pages/SuperAdminStatsPage').then(m => ({ default: m.SuperAdminStatsPage })));
-const PlanSettingsPage    = lazy(() => import('@/pages/PlanSettingsPage').then(m => ({ default: m.PlanSettingsPage })));
+const PlanSettingsPage      = lazy(() => import('@/pages/PlanSettingsPage').then(m => ({ default: m.PlanSettingsPage })));
+const SuperAdminAgentsPage  = lazy(() => import('@/pages/SuperAdminAgentsPage').then(m => ({ default: m.SuperAdminAgentsPage })));
 
 function PageLoader() {
   return (
@@ -157,6 +158,14 @@ export default function App() {
                 element={
                   <RequireRole roles={['SUPER_ADMIN']}>
                     <ErrorBoundary><SuperAdminStatsPage /></ErrorBoundary>
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="superadmin/agents"
+                element={
+                  <RequireRole roles={['SUPER_ADMIN']}>
+                    <ErrorBoundary><SuperAdminAgentsPage /></ErrorBoundary>
                   </RequireRole>
                 }
               />

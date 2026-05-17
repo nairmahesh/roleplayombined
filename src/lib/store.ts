@@ -1,19 +1,6 @@
-// pitchiq/frontend/src/lib/store.ts
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User, PlanTier, PLAN_CONFIGS, PlanFeatures } from '@/types';
-
-const DEMO_USER: User = {
-  id: 'u1',
-  email: 'agent@demo.com',
-  firstName: 'Alex',
-  lastName: 'Rivera',
-  role: 'AGENT',
-  companyId: 'c1',
-  avgScore: 74,
-  sessionCount: 12,
-};
 
 interface AuthState {
   user: User | null;
@@ -28,10 +15,10 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      user: DEMO_USER,
-      accessToken: 'mock-token',
-      refreshToken: 'mock-refresh',
-      isAuthenticated: true,
+      user: null,
+      accessToken: null,
+      refreshToken: null,
+      isAuthenticated: false,
       setAuth: (user, accessToken, refreshToken) =>
         set({ user, accessToken, refreshToken, isAuthenticated: true }),
       clearAuth: () =>
@@ -84,30 +71,11 @@ export const useThemeStore = create<ThemeState>()(
   )
 );
 
-// ─── ElevenLabs Config ────────────────────────────────────────────────────────
-interface ElevenLabsConfigState {
-  agentId: string;
-  apiKey: string;
-  setAgentId: (id: string) => void;
-  setApiKey: (key: string) => void;
-}
-
-export const useElevenLabsStore = create<ElevenLabsConfigState>()(
-  persist(
-    (set) => ({
-      agentId: import.meta.env.VITE_ELEVENLABS_AGENT_ID || '',
-      apiKey:  import.meta.env.VITE_ELEVENLABS_API_KEY  || '',
-      setAgentId: (agentId) => set({ agentId }),
-      setApiKey:  (apiKey)  => set({ apiKey }),
-    }),
-    { name: 'pitchiq-elevenlabs' }
-  )
-);
+// ElevenLabs is TTS-only via the backend. No keys or IDs are stored in the frontend.
 
 // ─── Plan / Feature Store ─────────────────────────────────────────────────────
 interface PlanState {
   plan: PlanTier;
-  // per-module overrides (admin can toggle modules on/off)
   moduleOverrides: Partial<Record<keyof PlanFeatures, boolean>>;
   setPlan: (plan: PlanTier) => void;
   setModuleOverride: (key: keyof PlanFeatures, value: boolean) => void;
@@ -118,7 +86,7 @@ interface PlanState {
 export const usePlanStore = create<PlanState>()(
   persist(
     (set, get) => ({
-      plan: 'pro' as PlanTier, // demo defaults to pro so all features visible
+      plan: 'pro' as PlanTier,
       moduleOverrides: {},
       setPlan: (plan) => set({ plan }),
       setModuleOverride: (key, value) =>

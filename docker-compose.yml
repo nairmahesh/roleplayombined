@@ -1,23 +1,31 @@
 version: "3.9"
 
-# No db service — using existing native Postgres at 38.242.250.204:5432
-# No frontend nginx on port 80 — Apache on the host handles that
-
 services:
+  mongo:
+    image: mongo:7
+    container_name: pitchiq_mongo
+    restart: always
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: pitchiq
+
   backend:
     build:
-      context: ./NeoRoleplaybackend-main
+      context: ./backend
     container_name: pitchiq_backend
     restart: always
-    env_file: ./NeoRoleplaybackend-main/.env
-    # Expose port 3355 to the host so Apache can proxy to it
+    env_file: ./backend/.env
     ports:
-      - "127.0.0.1:3355:3355"
-    extra_hosts:
-      # Allows the container to reach the host's native Postgres
-      - "host.docker.internal:host-gateway"
+      - "127.0.0.1:4000:4000"
+    depends_on:
+      - mongo
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/pitchiq
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3355/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -25,15 +33,17 @@ services:
 
   frontend:
     build:
-      context: ./NeoRoleplay-main
+      context: .
       target: production
       args:
-        # With Apache proxying, /api goes to backend — use relative path
         VITE_API_URL: /api
+        VITE_ELEVENLABS_AGENT_ID: ${VITE_ELEVENLABS_AGENT_ID:-}
     container_name: pitchiq_frontend
     restart: always
-    # Expose on 8080 so Apache can proxy to it (port 80 is taken by Apache)
     ports:
       - "127.0.0.1:8081:80"
     depends_on:
       - backend
+
+volumes:
+  mongo_data:
