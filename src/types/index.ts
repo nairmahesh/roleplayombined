@@ -197,6 +197,7 @@ export interface TimelineEvent {
 export interface ScenarioConfig {
   industry: string;
   roleplayType: string;
+  callMode?: 'Call' | 'Online';
   personaContext: string;
   displayName: string;
   displayTitle: string;

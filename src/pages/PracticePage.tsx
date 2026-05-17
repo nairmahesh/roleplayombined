@@ -39,7 +39,7 @@ const LANGUAGES = [
 const TEMPLATES: Array<ScenarioConfig & { id: string; label: string; avatarId: string }> = [
   {
     id: 't1', label: 'Enterprise CRM Pitch', avatarId: 'alex',
-    industry: 'SaaS', roleplayType: 'Sales Pitch', displayEmoji: '',
+    industry: 'SaaS', roleplayType: 'Sales Pitch', callMode: 'Online', displayEmoji: '',
     displayName: 'Alex Chen', displayTitle: 'Head of Sales, Accenture',
     difficulty: 'Hard',
     suggestedQuestions: [
@@ -55,7 +55,7 @@ How to behave: Start by briefly welcoming the rep and asking them to walk you th
   },
   {
     id: 't2', label: 'SaaS Cold Call', avatarId: 'james',
-    industry: 'SaaS', roleplayType: 'Cold Call', displayEmoji: '',
+    industry: 'SaaS', roleplayType: 'Cold Call', callMode: 'Call', displayEmoji: '',
     displayName: "James O'Brien", displayTitle: 'VP of Engineering, TechCorp',
     difficulty: 'Hard',
     suggestedQuestions: [
@@ -71,7 +71,7 @@ How to behave: Be initially dismissive and short. Give the caller 60 seconds. If
   },
   {
     id: 't3', label: 'Healthcare Discovery Call', avatarId: 'sarah',
-    industry: 'Healthcare', roleplayType: 'Discovery Call', displayEmoji: '',
+    industry: 'Healthcare', roleplayType: 'Discovery Call', callMode: 'Call', displayEmoji: '',
     displayName: 'Sarah Mitchell', displayTitle: 'CMO, Regional Health System',
     difficulty: 'Medium',
     suggestedQuestions: [
@@ -87,7 +87,7 @@ How to behave: Probe deeply on compliance, integration, and implementation risk.
   },
   {
     id: 't4', label: 'Objection Handling — Price', avatarId: 'robert',
-    industry: 'Consulting', roleplayType: 'Objection Handling', displayEmoji: '',
+    industry: 'Consulting', roleplayType: 'Objection Handling', callMode: 'Online', displayEmoji: '',
     displayName: 'Robert Hayes', displayTitle: 'Procurement Director, Global Corp',
     difficulty: 'Expert',
     suggestedQuestions: [
@@ -104,7 +104,7 @@ How to behave: Lead with price objections immediately. Push hard on discounts, p
   },
   {
     id: 't5', label: 'Banking Negotiation', avatarId: 'emma',
-    industry: 'Banking', roleplayType: 'Negotiation', displayEmoji: '',
+    industry: 'Banking', roleplayType: 'Negotiation', callMode: 'Online', displayEmoji: '',
     displayName: 'Emma Wilson', displayTitle: 'Head of Treasury, First National Bank',
     difficulty: 'Hard',
     suggestedQuestions: [
@@ -118,7 +118,7 @@ How to behave: Clarify key terms you need addressed: SLAs, regulatory compliance
   },
   {
     id: 't6', label: 'Account Expansion', avatarId: 'priya',
-    industry: 'SaaS', roleplayType: 'Account Expansion', displayEmoji: '',
+    industry: 'SaaS', roleplayType: 'Account Expansion', callMode: 'Online', displayEmoji: '',
     displayName: 'Priya Kapoor', displayTitle: 'Head of Operations, ScaleUp Inc',
     difficulty: 'Medium',
     suggestedQuestions: [
@@ -135,7 +135,7 @@ How to behave: Be friendly — you have a good relationship. But be analytically
   },
   {
     id: 't7', label: 'Insurance Cold Call', avatarId: 'layla',
-    industry: 'Insurance', roleplayType: 'Cold Call', displayEmoji: '',
+    industry: 'Insurance', roleplayType: 'Cold Call', callMode: 'Call', displayEmoji: '',
     displayName: 'Layla Hassan', displayTitle: 'CFO, MidWest Logistics',
     difficulty: 'Hard',
     suggestedQuestions: [
@@ -154,7 +154,7 @@ How to behave: Be initially dismissive. If the rep leads with cost savings and r
   },
   {
     id: 't8', label: 'Real Estate Pitch', avatarId: 'carlos',
-    industry: 'Real Estate', roleplayType: 'Sales Pitch', displayEmoji: '',
+    industry: 'Real Estate', roleplayType: 'Sales Pitch', callMode: 'Online', displayEmoji: '',
     displayName: 'Carlos Rivera', displayTitle: 'Head of Acquisitions, Apex Properties',
     difficulty: 'Medium',
     suggestedQuestions: [
@@ -171,7 +171,7 @@ How to behave: Ask tough questions about valuation methodology, market comparabl
   },
   {
     id: 't9', label: 'HR / Talent Platform', avatarId: 'aisha',
-    industry: 'Consulting', roleplayType: 'Discovery Call', displayEmoji: '',
+    industry: 'Consulting', roleplayType: 'Discovery Call', callMode: 'Online', displayEmoji: '',
     displayName: 'Aisha Brown', displayTitle: 'Chief People Officer, GrowthCo',
     difficulty: 'Easy',
     suggestedQuestions: [
@@ -190,7 +190,7 @@ How to behave: Be warm and engaged. Ask practical questions about implementation
   },
   {
     id: 't10', label: 'Manufacturing Demo', avatarId: 'marcus',
-    industry: 'Manufacturing', roleplayType: 'Sales Pitch', displayEmoji: '',
+    industry: 'Manufacturing', roleplayType: 'Sales Pitch', callMode: 'Online', displayEmoji: '',
     displayName: 'Marcus Johnson', displayTitle: 'VP of Operations, PrecisionMfg',
     difficulty: 'Hard',
     suggestedQuestions: [
@@ -206,6 +206,44 @@ How to behave: Be warm and engaged. Ask practical questions about implementation
 Your current situation: Unplanned downtime is costing ~$180K/month. Your maintenance team is reactive, not predictive. You've been burned by a failed automation project 2 years ago and are cautious.
 
 How to behave: Be gruff and direct. Challenge every claim with real-world edge cases. Demand specifics on integration complexity and downtime risk. If the rep demonstrates genuine manufacturing knowledge and credible ROI data, warm up gradually and ask about a pilot program.`,
+  },
+  {
+    id: 't11', label: 'Fintech Cold Call', avatarId: 'ravi',
+    industry: 'Fintech', roleplayType: 'Cold Call', callMode: 'Call', displayEmoji: '',
+    displayName: 'Ravi Patel', displayTitle: 'Head of Finance, PayScale Ltd',
+    difficulty: 'Hard',
+    suggestedQuestions: [
+      'How did you get my number?',
+      "We already use Stripe and Brex — what gap are you filling?",
+      'Is this regulated? What jurisdictions are you licensed in?',
+      'What happens to our data if your startup folds?',
+      'Give me one number that proves you save companies like mine money.',
+      "I'm in back-to-back meetings — why should I give you 5 more minutes?",
+    ],
+    personaContext: `You are the Head of Finance at a 300-person fintech company. You just received an unexpected cold call from a payments infrastructure vendor. You are busy, skeptical of cold callers, and highly compliance-aware.
+
+Your current situation: Your current payment stack works but fees are creeping up and reconciliation is manual. You haven't actively looked for alternatives but you're quietly frustrated.
+
+How to behave: Be clipped and impatient at first. If the caller mentions compliance certifications and a specific number around cost reduction, give them 2 more minutes. Push hard on data security and regulatory standing. Only agree to a callback if they can cite a comparable fintech client.`,
+  },
+  {
+    id: 't12', label: 'EdTech Platform Demo', avatarId: 'yuki',
+    industry: 'Education', roleplayType: 'Sales Pitch', callMode: 'Online', displayEmoji: '',
+    displayName: 'Yuki Tanaka', displayTitle: 'VP of Learning & Development, GlobalEd',
+    difficulty: 'Medium',
+    suggestedQuestions: [
+      'How does this compare to what we already use with Coursera?',
+      'Can you white-label the platform with our branding?',
+      'How do you measure learning outcomes — not completion rates?',
+      'What does content migration look like from our existing LMS?',
+      'How customizable is the learning path engine?',
+      "We have 8,000 learners across 12 countries — how does pricing work at our scale?",
+    ],
+    personaContext: `You are the VP of Learning & Development at a global education company with 8,000 active learners across 12 countries. You are evaluating a new LMS platform in an online product demo.
+
+Your current situation: Your current LMS is clunky, learner NPS is low, and content management is a nightmare across regions. You have budget and executive buy-in — you just need the right platform.
+
+How to behave: Be engaged and ask detailed questions about localization, analytics depth, and content authoring. You've seen a lot of demos so you can tell when reps are winging it. If the rep customizes the demo to your specific use case and answers confidently on localization, show genuine enthusiasm and ask about implementation timelines.`,
   },
 ];
 
@@ -226,7 +264,7 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   Expert: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
 };
 
-type GalleryTab = 'assigned' | 'mine';
+type GalleryTab = 'assigned' | 'mine' | 'templates';
 type SetupMode = 'view' | 'edit';
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -729,36 +767,34 @@ export function PracticePage() {
 
           {/* Tab bar */}
           <div className="flex gap-0 border-b border-white/[0.07]">
-            {(['assigned', 'mine'] as const).map(tab => (
-              <button
-                key={tab}
-                onClick={() => setGalleryTab(tab)}
-                className={clsx(
-                  'flex items-center gap-2 px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors',
-                  galleryTab === tab
-                    ? 'border-accent text-white'
-                    : 'border-transparent text-white/75 hover:text-white/75'
-                )}
-              >
-                {tab === 'assigned' ? <><Lock size={12} /> Assigned to Me</> : <><User size={12} /> Created by Me</>}
-                {tab === 'assigned' && !loadingTeamRoleplays && (
-                  <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">
-                    {assignedRoleplays.length + TEMPLATES.length}
-                  </span>
-                )}
-                {tab === 'mine' && (
-                  <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">
-                    {myRoleplays.length}
-                  </span>
-                )}
-              </button>
-            ))}
+            <button
+              onClick={() => setGalleryTab('assigned')}
+              className={clsx('flex items-center gap-2 px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors', galleryTab === 'assigned' ? 'border-accent text-white' : 'border-transparent text-white/55 hover:text-white/75')}
+            >
+              <Lock size={12} /> Assigned to Me
+              {!loadingTeamRoleplays && (
+                <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">{assignedRoleplays.length}</span>
+              )}
+            </button>
+            <button
+              onClick={() => setGalleryTab('mine')}
+              className={clsx('flex items-center gap-2 px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors', galleryTab === 'mine' ? 'border-accent text-white' : 'border-transparent text-white/55 hover:text-white/75')}
+            >
+              <User size={12} /> Created by Me
+              <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">{myRoleplays.length}</span>
+            </button>
+            <button
+              onClick={() => setGalleryTab('templates')}
+              className={clsx('flex items-center gap-2 px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors', galleryTab === 'templates' ? 'border-accent text-white' : 'border-transparent text-white/55 hover:text-white/75')}
+            >
+              <Layers size={12} /> Bot Library
+              <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">{TEMPLATES.length}</span>
+            </button>
           </div>
 
           {/* ── Assigned to Me ────────────────────────────────────────────── */}
           {galleryTab === 'assigned' && (
             <div className="flex flex-col gap-6">
-              {/* Team Roleplays */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <p className="text-[11px] font-semibold text-white/70 uppercase tracking-wider">Team Roleplays</p>
@@ -788,6 +824,7 @@ export function PracticePage() {
                         subtitle={tr.scenarioConfig.displayTitle}
                         industry={tr.scenarioConfig.industry}
                         type={tr.scenarioConfig.roleplayType}
+                        callMode={tr.scenarioConfig.callMode}
                         difficulty={tr.scenarioConfig.difficulty}
                         timeLimitMins={tr.scenarioConfig.timeLimitMins ?? 3}
                         metaLabel={`by ${tr.createdBy.firstName} ${tr.createdBy.lastName}`}
@@ -799,29 +836,31 @@ export function PracticePage() {
                   </div>
                 )}
               </div>
+            </div>
+          )}
 
-              {/* Built-in Templates */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <p className="text-[11px] font-semibold text-white/70 uppercase tracking-wider">Built-in Templates</p>
-                  <span className="text-[10px] text-white/65">Practice scenarios included with PitchIQ</span>
-                </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {TEMPLATES.map(t => (
-                    <GalleryCard
-                      key={t.id}
-                      avatarId={t.avatarId}
-                      name={t.label}
-                      subtitle={t.displayTitle}
-                      industry={t.industry}
-                      type={t.roleplayType}
-                      difficulty={t.difficulty}
-                      timeLimitMins={3}
-                      metaLabel="Built-in"
-                      onSelect={() => handleSelectTemplate(t)}
-                    />
-                  ))}
-                </div>
+          {/* ── Bot Library ──────────────────────────────────────────────── */}
+          {galleryTab === 'templates' && (
+            <div className="flex flex-col gap-4">
+              <p className="text-[12px] text-white/55">
+                Ready-made practice scenarios included with PitchIQ. Jump straight in — no setup required.
+              </p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {TEMPLATES.map(t => (
+                  <GalleryCard
+                    key={t.id}
+                    avatarId={t.avatarId}
+                    name={t.label}
+                    subtitle={t.displayTitle}
+                    industry={t.industry}
+                    type={t.roleplayType}
+                    callMode={t.callMode}
+                    difficulty={t.difficulty}
+                    timeLimitMins={3}
+                    metaLabel="Built-in"
+                    onSelect={() => handleSelectTemplate(t)}
+                  />
+                ))}
               </div>
             </div>
           )}
@@ -867,6 +906,7 @@ export function PracticePage() {
                       subtitle={tr.scenarioConfig.displayTitle}
                       industry={tr.scenarioConfig.industry}
                       type={tr.scenarioConfig.roleplayType}
+                      callMode={tr.scenarioConfig.callMode}
                       difficulty={tr.scenarioConfig.difficulty}
                       timeLimitMins={tr.scenarioConfig.timeLimitMins ?? 3}
                       metaLabel={`by ${tr.createdBy.firstName} ${tr.createdBy.lastName}`}
@@ -2444,7 +2484,7 @@ export function PracticePage() {
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function GalleryCard({
-  avatarId, name, subtitle, industry, type, difficulty,
+  avatarId, name, subtitle, industry, type, callMode, difficulty,
   timeLimitMins, metaLabel, description, badge, canEdit,
   onSelect, onEdit, onDelete,
 }: {
@@ -2453,6 +2493,7 @@ function GalleryCard({
   subtitle?: string;
   industry: string;
   type: string;
+  callMode?: 'Call' | 'Online';
   difficulty: string;
   timeLimitMins?: number | null;
   metaLabel?: string;
@@ -2471,6 +2512,10 @@ function GalleryCard({
   } as Record<string, string>)[difficulty] ?? 'text-white/80 bg-white/5 border-white/10';
 
   const displayMins = timeLimitMins ?? 3;
+  const CallModeIcon = callMode === 'Online' ? Monitor : Phone;
+  const callModeStyle = callMode === 'Online'
+    ? 'text-sky-400 bg-sky-400/10 border-sky-400/25'
+    : 'text-emerald-400 bg-emerald-400/10 border-emerald-400/25';
 
   return (
     <div
@@ -2488,6 +2533,13 @@ function GalleryCard({
             {subtitle && <div className="text-[12px] text-white/70 mt-0.5 truncate">{subtitle}</div>}
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* Call mode icon badge */}
+            {callMode && (
+              <span className={clsx('flex items-center gap-1 text-[9.5px] px-1.5 py-0.5 rounded-full border font-medium flex-shrink-0', callModeStyle)}>
+                <CallModeIcon size={9} />
+                {callMode}
+              </span>
+            )}
             {/* Time limit badge */}
             <span className="flex items-center gap-0.5 text-[9.5px] px-1.5 py-0.5 rounded-full border border-white/[0.1] bg-white/[0.04] text-white/55 font-medium flex-shrink-0">
               {displayMins}m
