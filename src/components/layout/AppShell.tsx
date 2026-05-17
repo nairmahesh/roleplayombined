@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import {
   LayoutDashboard, Play, ClipboardList,
   Trophy, Users, Settings, LogOut, Target,
-  Building2, Globe, Menu, X, Sun, Moon, Zap,
+  Building2, Globe, Menu, X, Sun, Moon, Zap, Bot,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -29,6 +29,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Sessions',    to: '/sessions',   icon: ClipboardList,   section: 'Overview', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
   { label: 'Leaderboard', to: '/leaderboard',icon: Trophy,          section: 'Coaching', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
   { label: 'Team',        to: '/team',       icon: Users,           section: 'Admin', roles: ['COMPANY_ADMIN', 'MANAGER', 'SUPER_ADMIN'] },
+  { label: 'Personas',    to: '/personas',   icon: Bot,             section: 'Admin', roles: ['COMPANY_ADMIN', 'MANAGER'] },
   { label: 'Plan & Modules', to: '/settings/plan', icon: Zap,       section: 'Admin', roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'] },
   { label: 'Settings',    to: '/settings',   icon: Settings,        section: 'Admin', roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'] },
 ];
@@ -251,6 +252,7 @@ function PageTitle({ path }: { path: string }) {
     '/team':                    ['Team',              'Manage your agents'],
     '/settings/plan':           ['Plan & Modules',     'Manage your subscription and feature modules'],
     '/settings':                ['Settings',          'Platform configuration'],
+    '/personas':                ['Personas',          'Manage, edit, and track AI personas'],
     '/superadmin/companies':    ['Companies',         'Platform-wide company management'],
     '/superadmin/stats':        ['Platform Overview', 'System-wide statistics'],
   };

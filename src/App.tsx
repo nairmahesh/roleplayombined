@@ -21,6 +21,7 @@ const CompaniesPage     = lazy(() => import('@/pages/CompaniesPage').then(m => (
 const CompanyDetailPage = lazy(() => import('@/pages/CompanyDetailPage').then(m => ({ default: m.CompanyDetailPage })));
 const SuperAdminStatsPage = lazy(() => import('@/pages/SuperAdminStatsPage').then(m => ({ default: m.SuperAdminStatsPage })));
 const PlanSettingsPage    = lazy(() => import('@/pages/PlanSettingsPage').then(m => ({ default: m.PlanSettingsPage })));
+const PersonasPage        = lazy(() => import('@/pages/PersonasPage').then(m => ({ default: m.PersonasPage })));
 
 function PageLoader() {
   return (
@@ -131,6 +132,14 @@ export default function App() {
                 element={
                   <RequireRole roles={['COMPANY_ADMIN', 'SUPER_ADMIN']}>
                     <ErrorBoundary><EvaluationPromptsPage /></ErrorBoundary>
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="personas"
+                element={
+                  <RequireRole roles={['COMPANY_ADMIN', 'MANAGER']}>
+                    <ErrorBoundary><PersonasPage /></ErrorBoundary>
                   </RequireRole>
                 }
               />

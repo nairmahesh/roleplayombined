@@ -523,10 +523,28 @@ export const sessionsApi = {
 
 // ── Personas API ──────────────────────────────────────────────────────────────
 
+const MOCK_PERSONA_ANALYTICS: Record<string, { usageCount: number; avgScore: number; lastUsed: string | null; topUsers: Array<{ name: string; count: number }> }> = {
+  'p1': { usageCount: 47, avgScore: 72, lastUsed: new Date(Date.now() - 2 * 86_400_000).toISOString(), topUsers: [{ name: 'Jordan Lee', count: 12 }, { name: 'Taylor Morgan', count: 9 }, { name: 'Morgan Kim', count: 7 }] },
+  'p2': { usageCount: 31, avgScore: 65, lastUsed: new Date(Date.now() - 1 * 86_400_000).toISOString(), topUsers: [{ name: 'Taylor Morgan', count: 11 }, { name: 'Jordan Lee', count: 8 }] },
+  'p3': { usageCount: 24, avgScore: 78, lastUsed: new Date(Date.now() - 3 * 86_400_000).toISOString(), topUsers: [{ name: 'Morgan Kim', count: 9 }, { name: 'Sam Patel', count: 6 }] },
+  'p4': { usageCount: 18, avgScore: 61, lastUsed: new Date(Date.now() - 5 * 86_400_000).toISOString(), topUsers: [{ name: 'Casey Zhang', count: 7 }, { name: 'Jordan Lee', count: 5 }] },
+  'p5': { usageCount: 39, avgScore: 81, lastUsed: new Date(Date.now() - 1 * 86_400_000).toISOString(), topUsers: [{ name: 'Jordan Lee', count: 14 }, { name: 'Riley Johnson', count: 10 }] },
+  'p6': { usageCount: 12, avgScore: 74, lastUsed: new Date(Date.now() - 7 * 86_400_000).toISOString(), topUsers: [{ name: 'Sam Patel', count: 5 }] },
+};
+
 export const personasApi = {
   list: async () => { await delay(200); return MOCK_PERSONAS; },
   create: async (data: any) => { await delay(300); return { ...data, id: `p-${Date.now()}`, isPreset: false }; },
+  update: async (id: string, data: any) => { await delay(300); return { ...data, id, isPreset: false }; },
+  clone: async (persona: any) => {
+    await delay(300);
+    return { ...persona, id: `p-${Date.now()}`, name: `${persona.name} (Copy)`, isPreset: false };
+  },
   delete: async (_id: string) => { await delay(200); },
+  getAnalytics: async (id: string) => {
+    await delay(200);
+    return MOCK_PERSONA_ANALYTICS[id] ?? { usageCount: 0, avgScore: 0, lastUsed: null, topUsers: [] };
+  },
 };
 
 // ── Analytics API ─────────────────────────────────────────────────────────────
