@@ -252,7 +252,7 @@ export function PracticePage() {
   const [selectedVoiceId, setSelectedVoiceId]     = useState<string | undefined>(undefined);
   const [voiceOpen, setVoiceOpen]                 = useState(false);
   const [voiceModalOpen, setVoiceModalOpen]       = useState(false);
-  const [displayName, setDisplayName]             = useState('Custom Persona');
+  const [displayName, setDisplayName]             = useState('');
   const [displayTitle, setDisplayTitle]           = useState('');
   const [displayEmoji, setDisplayEmoji]           = useState('');
   const [personaContext, setPersonaContext]        = useState('');
@@ -474,10 +474,10 @@ export function PracticePage() {
 
   const handleCreateNew = () => {
     setAvatarId('alex');
-    setSelectedVoiceId(AVATAR_VOICE_CONFIG['alex']?.elevenlabsId ?? undefined);
-    setDisplayName('Custom Persona');
+    setSelectedVoiceId(undefined);
+    setDisplayName('');
     setDisplayTitle('');
-    setDisplayEmoji('🧑‍💼');
+    setDisplayEmoji('');
     setPersonaContext('');
     setDifficulty('Medium');
     setSuggestedQuestions([]);
@@ -688,15 +688,16 @@ export function PracticePage() {
     if (!personaContext.trim()) return toast.error('Add persona context (Persona step)');
     setStarting(true);
     try {
+      const resolvedName = displayName || AVATARS.find(a => a.id === avatarId)?.name || 'Persona';
       const sc: ScenarioConfig = {
-        industry, roleplayType, personaContext, displayName, displayTitle,
+        industry, roleplayType, personaContext, displayName: resolvedName, displayTitle,
         displayEmoji, difficulty, suggestedQuestions, objections,
         aiCanEnd, endCondition, timeLimitMins: timeLimitMins ? parseInt(timeLimitMins, 10) || null : null,
         avatarId, elevenlabsVoiceId: selectedVoiceId,
         language, botKnowledge, userBriefing,
       } as ScenarioConfig & { language: string };
       const session = await sessionsApi.create({ scenarioConfig: sc, type: sessionType, framework });
-      const pd: PersonaDisplay = { name: displayName, title: displayTitle, emoji: displayEmoji, avatarId, elevenlabsVoiceId: selectedVoiceId };
+      const pd: PersonaDisplay = { name: resolvedName, title: displayTitle, emoji: displayEmoji, avatarId, elevenlabsVoiceId: selectedVoiceId };
       // Show pre-call briefing if user has content to review
       if (canPreCallBriefing && userBriefing.length > 0) {
         setPendingSession({ id: session.id, personaDisplay: pd });
@@ -1094,7 +1095,7 @@ export function PracticePage() {
                 <div className="card p-2 flex flex-row md:flex-col gap-1">
                   {[
                     { n: 1, label: 'Context', sub: industry || 'Industry & type' },
-                    { n: 2, label: 'Persona', sub: displayName !== 'Custom Persona' ? displayName : 'Avatar & context' },
+                    { n: 2, label: 'Persona', sub: displayName || 'Avatar & context' },
                     { n: 3, label: 'Knowledge', sub: (botKnowledge.length + userBriefing.length) > 0 ? `${botKnowledge.length + userBriefing.length} items` : 'Docs & briefing' },
                     { n: 4, label: 'Launch', sub: roleplayType || 'Settings & start' },
                   ].map(({ n, label, sub }) => {
@@ -1129,7 +1130,7 @@ export function PracticePage() {
                     <AvatarDisplay avatarId={avatarId} size={44} />
                   </div>
                   <div className="min-w-0 w-full">
-                    {displayName && displayName !== 'Custom Persona' && (
+                    {displayName && (
                       <div className="text-[11.5px] font-semibold truncate">{displayName}</div>
                     )}
                     {displayTitle && <div className="text-[10px] text-white/75 mt-0.5 truncate">{displayTitle}</div>}
@@ -1998,13 +1999,16 @@ export function PracticePage() {
                   <button onClick={() => setShowPersonaPicker(false)} className="text-white/70 hover:text-white"><X size={16} /></button>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto">
+              <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
                 {dbPersonas.map(p => (
-                  <button key={p.id} onClick={() => applyDbPersona(p)} className="flex items-center gap-2.5 p-3 rounded-[10px] border border-white/[0.08] hover:border-white/20 hover:bg-white/[0.03] text-left transition-all">
-                    <span className="text-xl flex-shrink-0">{p.emoji}</span>
+                  <button key={p.id} onClick={() => applyDbPersona(p)} className="flex items-center gap-2.5 p-3 rounded-[10px] border border-white/[0.08] hover:border-white/20 hover:bg-white/[0.03] text-left transition-all group">
+                    <div className="w-9 h-9 rounded-full bg-white/[0.06] border border-white/[0.1] flex items-center justify-center flex-shrink-0 text-[18px] group-hover:border-accent/30 transition-colors">
+                      {p.emoji}
+                    </div>
                     <div className="min-w-0">
                       <div className="text-[12px] font-semibold truncate">{p.name}</div>
-                      <div className="text-[10.5px] text-white/75 truncate">{p.title}</div>
+                      <div className="text-[10.5px] text-white/55 truncate">{p.title}</div>
+                      <span className={clsx('text-[9px] px-1.5 py-0.5 rounded border mt-0.5 inline-block', DIFFICULTY_COLORS[p.difficulty] || 'text-white/80 bg-white/5 border-white/10')}>{p.difficulty}</span>
                     </div>
                   </button>
                 ))}
