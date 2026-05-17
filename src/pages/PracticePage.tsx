@@ -269,6 +269,10 @@ export function PracticePage() {
   const [additionalPersonas, setAdditionalPersonas] = useState<Array<{
     id: string; avatarId: string; name: string; title: string; difficulty: string; voiceId?: string;
   }>>([]);
+  // For adding personas to the multi-persona list
+  const [showMultiPersonaPicker, setShowMultiPersonaPicker] = useState(false);
+  const [showMultiPersonaBuilder, setShowMultiPersonaBuilder] = useState(false);
+  const [loadingMultiPersonas, setLoadingMultiPersonas] = useState(false);
 
   // ── Context fields ─────────────────────────────────────────────────────────
   const [industry, setIndustry]         = useState('');
@@ -652,6 +656,30 @@ export function PracticePage() {
       .then(p => { setDbPersonas(p); setShowPersonaPicker(true); })
       .catch(() => toast.error('Failed to load personas'))
       .finally(() => setLoadingPersonas(false));
+  };
+
+  const applyPersonaToAdditional = (p: Persona) => {
+    const used = [avatarId, ...additionalPersonas.map(ap => ap.avatarId)];
+    const avatarOptions = ['james', 'sarah', 'robert', 'emma', 'priya', 'carlos', 'aisha', 'marcus', 'maria', 'ravi', 'jordan', 'yuki', 'alex'];
+    const fallback = avatarOptions.find(a => !used.includes(a)) || 'alex';
+    setAdditionalPersonas(prev => [...prev, {
+      id: crypto.randomUUID(),
+      avatarId: fallback,
+      name: p.name,
+      title: p.title,
+      difficulty: p.difficulty,
+      voiceId: p.voiceId,
+    }]);
+    setShowMultiPersonaPicker(false);
+  };
+
+  const loadMultiPersonas = () => {
+    if (dbPersonas.length > 0) { setShowMultiPersonaPicker(true); return; }
+    setLoadingMultiPersonas(true);
+    personasApi.list()
+      .then(p => { setDbPersonas(p); setShowMultiPersonaPicker(true); })
+      .catch(() => toast.error('Failed to load personas'))
+      .finally(() => setLoadingMultiPersonas(false));
   };
 
   const handleStart = async () => {
@@ -1295,24 +1323,24 @@ export function PracticePage() {
                                   ))}
                                   {/* Add persona button */}
                                   {additionalPersonas.length < 4 && (
-                                    <button
-                                      onClick={() => {
-                                        const avatarOptions = ['james', 'sarah', 'robert', 'emma', 'priya', 'carlos', 'aisha', 'marcus', 'maria', 'ravi', 'jordan', 'yuki'];
-                                        const used = [avatarId, ...additionalPersonas.map(ap => ap.avatarId)];
-                                        const nextAvatar = avatarOptions.find(a => !used.includes(a)) || 'alex';
-                                        const av = AVATARS.find(a => a.id === nextAvatar);
-                                        setAdditionalPersonas(prev => [...prev, {
-                                          id: crypto.randomUUID(),
-                                          avatarId: nextAvatar,
-                                          name: av?.name || 'Attendee',
-                                          title: '',
-                                          difficulty: 'Medium',
-                                        }]);
-                                      }}
-                                      className="flex items-center justify-center gap-2 w-full py-2 rounded-[9px] border border-dashed border-accent/25 text-[11.5px] text-accent/60 hover:text-accent hover:border-accent/50 hover:bg-accent/[0.04] transition-all"
-                                    >
-                                      <UserPlus size={13} /> Add Persona
-                                    </button>
+                                    <div className="relative">
+                                      <div className="flex rounded-[9px] border border-dashed border-accent/25 overflow-hidden">
+                                        <button
+                                          onClick={() => loadMultiPersonas()}
+                                          disabled={loadingMultiPersonas}
+                                          className="flex items-center justify-center gap-1.5 flex-1 py-2 text-[11px] text-accent/60 hover:text-accent hover:bg-accent/[0.04] transition-all border-r border-dashed border-accent/25"
+                                        >
+                                          {loadingMultiPersonas ? <Loader2 size={11} className="animate-spin" /> : <BookOpen size={11} />}
+                                          From Library
+                                        </button>
+                                        <button
+                                          onClick={() => setShowMultiPersonaBuilder(true)}
+                                          className="flex items-center justify-center gap-1.5 flex-1 py-2 text-[11px] text-accent/60 hover:text-accent hover:bg-accent/[0.04] transition-all"
+                                        >
+                                          <UserPlus size={11} /> Create New
+                                        </button>
+                                      </div>
+                                    </div>
                                   )}
                                   {additionalPersonas.length >= 4 && (
                                     <p className="text-[10.5px] text-white/35 text-center">Maximum 5 attendees (including host)</p>
@@ -2046,6 +2074,77 @@ export function PracticePage() {
           <PersonaBuilder
             onCreated={p => { setDbPersonas(prev => [...prev, p]); applyDbPersona(p); setShowBuilder(false); }}
             onClose={() => setShowBuilder(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── Multi-persona: library picker ──────────────────────────────────────── */}
+      <AnimatePresence>
+        {showMultiPersonaPicker && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowMultiPersonaPicker(false)}>
+            <motion.div initial={{ scale: 0.95, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }} onClick={e => e.stopPropagation()} className="bg-bg-2 border border-white/10 rounded-[18px] p-6 w-full max-w-md shadow-[0_24px_80px_rgba(0,0,0,0.6)]">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-display font-bold text-[15px]">Add from Library</h3>
+                  <p className="text-[11px] text-white/50 mt-0.5">Pick a saved persona to add as an attendee</p>
+                </div>
+                <button onClick={() => setShowMultiPersonaPicker(false)} className="text-white/50 hover:text-white"><X size={16} /></button>
+              </div>
+              {dbPersonas.length === 0 ? (
+                <div className="flex flex-col items-center gap-3 py-10 text-center">
+                  <BookOpen size={28} className="text-white/20" />
+                  <p className="text-[12.5px] text-white/50">No saved personas yet.</p>
+                  <button
+                    onClick={() => { setShowMultiPersonaPicker(false); setShowMultiPersonaBuilder(true); }}
+                    className="flex items-center gap-1.5 text-[12px] text-accent hover:text-accent/80 font-medium"
+                  >
+                    <Plus size={12} /> Create your first persona
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto">
+                  {dbPersonas
+                    .filter(p => !additionalPersonas.some(ap => ap.name === p.name))
+                    .map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => applyPersonaToAdditional(p)}
+                        className="flex items-center gap-2.5 p-3 rounded-[10px] border border-white/[0.08] hover:border-white/20 hover:bg-white/[0.03] text-left transition-all"
+                      >
+                        <span className="text-xl flex-shrink-0">{p.emoji}</span>
+                        <div className="min-w-0">
+                          <p className="text-[12px] font-semibold truncate">{p.name}</p>
+                          <p className="text-[10px] text-white/55 truncate">{p.title}</p>
+                          <span className={clsx('text-[9px] px-1.5 py-0.5 rounded border mt-1 inline-block', DIFFICULTY_COLORS[p.difficulty] || 'text-white/80 bg-white/5 border-white/10')}>{p.difficulty}</span>
+                        </div>
+                      </button>
+                    ))}
+                </div>
+              )}
+              <div className="flex justify-between items-center mt-4 pt-3 border-t border-white/[0.07]">
+                <button
+                  onClick={() => { setShowMultiPersonaPicker(false); setShowMultiPersonaBuilder(true); }}
+                  className="flex items-center gap-1.5 text-[11.5px] text-accent hover:text-accent/80 font-medium"
+                >
+                  <Plus size={11} /> Create new instead
+                </button>
+                <button onClick={() => setShowMultiPersonaPicker(false)} className="text-[11.5px] text-white/50 hover:text-white/80">Cancel</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Multi-persona: builder ─────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showMultiPersonaBuilder && (
+          <PersonaBuilder
+            onCreated={p => {
+              setDbPersonas(prev => [...prev, p]);
+              applyPersonaToAdditional(p);
+              setShowMultiPersonaBuilder(false);
+            }}
+            onClose={() => setShowMultiPersonaBuilder(false)}
           />
         )}
       </AnimatePresence>
