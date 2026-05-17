@@ -75,6 +75,7 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
   const [isHeld, setIsHeld]               = useState(false);
   const [isEnding, setIsEnding]           = useState(false);
   const [showAnalysisPrompt, setShowAnalysisPrompt] = useState(false);
+  const everConnectedRef = useRef(false);
 
   const startTimeRef     = useRef(Date.now());
   const endDataRef       = useRef<{ durationSeconds: number } | null>(null);
@@ -179,6 +180,7 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
         startSession({
           signedUrl,
           overrides,
+          onConnect: () => { everConnectedRef.current = true; },
           onMessage: ({ message, source }: { message: string; source: string }) => {
             if (message?.trim()) addMsg(source === 'ai' ? 'assistant' : 'user', message.trim());
           },
@@ -186,7 +188,10 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
             if (!cancelled) toast.error(`Voice error: ${msg}`);
           },
           onDisconnect: () => {
-            if (!cancelled && !isEndingRef.current) handleEndRef.current?.();
+            // Only auto-end if the call was actually connected — avoids ending on initial connection failures
+            if (!cancelled && !isEndingRef.current && everConnectedRef.current) {
+              handleEndRef.current?.();
+            }
           },
         });
       }

@@ -230,6 +230,10 @@ export const superadminApi = {
     const { data } = await http.patch(`/superadmin/companies/${companyId}/users/${userId}`, payload);
     return data;
   },
+  syncPersonaAgents: async (): Promise<{ synced: number; results: { name: string; agentId: string | null; status: string }[] }> => {
+    const { data } = await http.post('/superadmin/sync-persona-agents');
+    return data;
+  },
 };
 
 // ── Voice API ─────────────────────────────────────────────────────────────────

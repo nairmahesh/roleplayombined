@@ -4,6 +4,8 @@ import { authenticate, requireRole, AuthRequest } from '../middleware/auth';
 import { Company } from '../models/Company';
 import { User } from '../models/User';
 import { Session } from '../models/Session';
+import { Persona } from '../models/Persona';
+import { createAgent, checkHealth } from '../services/elevenlabs';
 
 const router = Router();
 router.use(authenticate, requireRole('SUPER_ADMIN'));
@@ -133,6 +135,56 @@ router.patch('/companies/:id/users/:userId', async (req: AuthRequest, res: Respo
   const user = await User.findByIdAndUpdate(req.params.userId, update, { new: true });
   if (!user) { res.status(404).json({ error: 'User not found' }); return; }
   res.json({ id: user._id.toString(), ...update });
+});
+
+// POST /api/superadmin/sync-persona-agents
+// Creates ElevenLabs agents for preset personas that don't have one yet and saves the IDs to DB.
+router.post('/sync-persona-agents', async (_req: AuthRequest, res: Response): Promise<void> => {
+  const health = await checkHealth();
+  if (!health.convaiAvailable) {
+    res.status(503).json({
+      error: 'ElevenLabs Conversational AI is not accessible. Upgrade to Creator plan or above.',
+      code: 'CONVAI_UNAVAILABLE',
+    });
+    return;
+  }
+
+  const personas = await Persona.find({}).lean();
+  const results: { name: string; agentId: string | null; status: string }[] = [];
+
+  for (const persona of personas) {
+    if (persona.agentId) {
+      results.push({ name: persona.name, agentId: persona.agentId, status: 'already_set' });
+      continue;
+    }
+
+    try {
+      const result = await createAgent({
+        name: `${persona.name} — ${persona.title}`,
+        conversation_config: {
+          agent: {
+            first_message: `${persona.name.split(' ')[0]} speaking.`,
+            language: 'en',
+            prompt: {
+              prompt: persona.systemPrompt,
+              llm: 'gpt-4o-mini',
+              temperature: 0.8,
+            },
+          },
+          tts: {
+            voice_id: persona.voiceId || 'EXAVITQu4vr4xnSDxMaL',
+            model_id: 'eleven_turbo_v2',
+          },
+        },
+      });
+      await Persona.findByIdAndUpdate(persona._id, { agentId: result.agent_id });
+      results.push({ name: persona.name, agentId: result.agent_id, status: 'created' });
+    } catch (err) {
+      results.push({ name: persona.name, agentId: null, status: `error: ${(err as Error).message}` });
+    }
+  }
+
+  res.json({ synced: results.length, results });
 });
 
 export default router;

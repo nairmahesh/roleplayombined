@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Bot, Plus, Trash2, Edit2, X, Check, RefreshCw, Zap } from 'lucide-react';
-import { voiceApi, AgentSummary, AgentConfig } from '@/lib/api';
+import { Bot, Plus, Trash2, Edit2, X, Check, RefreshCw, Zap, Link2 } from 'lucide-react';
+import { voiceApi, superadminApi, AgentSummary, AgentConfig } from '@/lib/api';
 
 // ── Agent row ──────────────────────────────────────────────────────────────────
 
@@ -90,6 +90,7 @@ export function SuperAdminAgentsPage() {
   const [newName, setNewName]   = useState('');
   const [newPrompt, setNewPrompt] = useState('');
   const [saving, setSaving]     = useState(false);
+  const [syncing, setSyncing]   = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -146,6 +147,21 @@ export function SuperAdminAgentsPage() {
     }
   };
 
+  const handleSyncPersonas = async () => {
+    setSyncing(true);
+    try {
+      const result = await superadminApi.syncPersonaAgents();
+      const created = result.results.filter(r => r.status === 'created').length;
+      const skipped = result.results.filter(r => r.status === 'already_set').length;
+      toast.success(`Sync complete: ${created} agents created, ${skipped} already set`);
+      load(); // refresh agent list
+    } catch {
+      toast.error('Sync failed — check ElevenLabs ConvAI access');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const handleUpdate = async (agentId: string, name: string) => {
     try {
       await voiceApi.updateAgent(agentId, { name });
@@ -180,6 +196,16 @@ export function SuperAdminAgentsPage() {
           <div className="flex items-center gap-2">
             <button type="button" onClick={load} className="icon-btn" aria-label="Refresh agents">
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+            </button>
+            <button
+              type="button"
+              onClick={handleSyncPersonas}
+              disabled={syncing}
+              className="btn-ghost py-1.5 px-3 text-[12px] gap-1.5"
+              title="Create ElevenLabs agents for personas that don't have one yet"
+            >
+              <Link2 size={12} aria-hidden="true" />
+              {syncing ? 'Syncing…' : 'Sync Personas'}
             </button>
             <button
               type="button"

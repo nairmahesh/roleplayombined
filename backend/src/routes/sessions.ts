@@ -161,10 +161,17 @@ router.patch('/:id/end', async (req: AuthRequest, res: Response): Promise<void> 
   const session = await Session.findById(req.params.id);
   if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
 
+  const { skipAnalysis = false, durationSeconds: clientDuration } = req.body as {
+    skipAnalysis?: boolean;
+    durationSeconds?: number;
+    transcript?: unknown;
+  };
+
   const now = new Date();
-  const durationSeconds = session.startedAt
+  const serverDuration = session.startedAt
     ? Math.round((now.getTime() - session.startedAt.getTime()) / 1000)
     : 0;
+  const durationSeconds = clientDuration ?? serverDuration;
 
   session.status = 'COMPLETED';
   session.endedAt = now;
@@ -180,8 +187,8 @@ router.patch('/:id/end', async (req: AuthRequest, res: Response): Promise<void> 
     });
   }
 
-  // Build transcript for AI feedback
-  if (session.messages.length > 0) {
+  // Build transcript for AI feedback (unless client explicitly skipped analysis)
+  if (!skipAnalysis && session.messages.length > 0) {
     const transcript = session.messages
       .map((m) => `${m.role === 'user' ? 'Sales Rep' : 'Prospect'}: ${m.content}`)
       .join('\n');

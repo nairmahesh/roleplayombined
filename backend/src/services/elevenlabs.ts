@@ -12,6 +12,7 @@ import axios, { AxiosError } from 'axios';
 import mongoose from 'mongoose';
 import { config } from '../config';
 import { logTtsUsage } from './usage';
+import { SystemConfig } from '../models/SystemConfig';
 
 const EL_BASE = 'https://api.elevenlabs.io/v1';
 
@@ -32,6 +33,38 @@ let _agentId: string = isValidAgentId(config.elevenlabs.agentId) ? config.eleven
 export async function getOrCreateAgentId(): Promise<string> {
   if (_agentId) return _agentId;
 
+  // 1. Check MongoDB for a previously persisted agent ID
+  try {
+    const stored = await SystemConfig.findOne({ key: 'defaultAgentId' }).lean();
+    if (stored && isValidAgentId(stored.value)) {
+      _agentId = stored.value;
+      return _agentId;
+    }
+  } catch {
+    // DB may not be connected yet — continue
+  }
+
+  // 2. Check ElevenLabs for an existing default agent to avoid duplicate creation
+  try {
+    const existingRes = await axios.get<{ agents: AgentSummary[] }>(
+      `${EL_BASE}/convai/agents`,
+      { headers: authHeader() }
+    );
+    const existing = (existingRes.data.agents ?? []).find(a => a.name === 'PitchIQ Default Agent');
+    if (existing) {
+      _agentId = existing.agent_id;
+      await SystemConfig.findOneAndUpdate(
+        { key: 'defaultAgentId' },
+        { value: _agentId },
+        { upsert: true }
+      ).catch(() => {});
+      return _agentId;
+    }
+  } catch {
+    // If listing fails, fall through to creation
+  }
+
+  // 3. Create a new default agent and persist its ID to DB
   const body: AgentConfig = {
     name: 'PitchIQ Default Agent',
     conversation_config: {
@@ -45,7 +78,7 @@ export async function getOrCreateAgentId(): Promise<string> {
         },
       },
       tts: {
-        voice_id: 'EXAVITQu4vr4xnSDxMaL', // Rachel — overridden per-session
+        voice_id: 'EXAVITQu4vr4xnSDxMaL',
         model_id: 'eleven_turbo_v2',
       },
     },
@@ -58,8 +91,12 @@ export async function getOrCreateAgentId(): Promise<string> {
   );
 
   _agentId = res.data.agent_id;
-  console.log(`\n✓ ElevenLabs agent created: ${_agentId}`);
-  console.log(`  Persist it: add ELEVENLABS_AGENT_ID=${_agentId} to backend/.env\n`);
+  await SystemConfig.findOneAndUpdate(
+    { key: 'defaultAgentId' },
+    { value: _agentId },
+    { upsert: true }
+  ).catch(() => {});
+  console.log(`\n✓ ElevenLabs default agent created and saved to DB: ${_agentId}\n`);
   return _agentId;
 }
 
