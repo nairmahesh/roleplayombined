@@ -20,7 +20,7 @@ const MOCK_USER: User = {
   email: 'agent@demo.com',
   firstName: 'Alex',
   lastName: 'Rivera',
-  role: 'AGENT',
+  role: 'COMPANY_ADMIN',
   companyId: 'c1',
   avgScore: 74,
   sessionCount: 12,
