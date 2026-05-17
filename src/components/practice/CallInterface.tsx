@@ -286,7 +286,12 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
       if (userVideoRef.current) {
         userVideoRef.current.srcObject = stream;
       }
-    } catch { /* camera not available — ok */ }
+    } catch (err: any) {
+      if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
+        toast('Camera blocked — click the camera icon in your browser address bar to allow access', { duration: 6000 });
+      }
+      setIsCamOn(false);
+    }
   }, []);
 
   const stopCamera = useCallback(() => {
@@ -318,8 +323,12 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
       setIsScreenSharing(true);
       if (screenVideoRef.current) screenVideoRef.current.srcObject = stream;
       toast.success('Screen sharing started');
-    } catch {
-      toast.error('Screen sharing cancelled or not supported');
+    } catch (err: any) {
+      if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
+        toast.error('Screen sharing was denied. Please allow screen sharing in your browser when prompted.');
+      } else if (err?.name !== 'AbortError') {
+        toast('Screen sharing cancelled');
+      }
     }
   }, [isScreenSharing, screenStream]);
 
@@ -336,9 +345,32 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
 
       let stream: MediaStream;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      } catch {
-        toast.error('Microphone access required');
+        // For meetings, request audio+video together so the browser shows one unified permission prompt
+        const constraints = isMeeting ? { audio: true, video: true } : { audio: true };
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        if (isMeeting) {
+          // Attach video tracks to camera state
+          const videoTracks = stream.getVideoTracks();
+          if (videoTracks.length > 0) {
+            const videoStream = new MediaStream(videoTracks);
+            setCamStream(videoStream);
+            if (userVideoRef.current) userVideoRef.current.srcObject = videoStream;
+          }
+          // Keep only audio for the ElevenLabs stream
+          const audioOnlyStream = new MediaStream(stream.getAudioTracks());
+          stream = audioOnlyStream;
+        }
+      } catch (err: any) {
+        if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
+          toast.error(
+            'Microphone access denied. Click the microphone icon in your browser address bar and select "Allow", then try again.',
+            { duration: 8000 }
+          );
+        } else if (err?.name === 'NotFoundError') {
+          toast.error('No microphone found. Please connect a microphone and try again.');
+        } else {
+          toast.error('Could not access microphone. Please check your browser permissions.');
+        }
         onEnd(sessionId);
         return;
       }
@@ -353,7 +385,6 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
           startTimeRef.current = Date.now();
           timerRef.current = setInterval(() => setElapsed(Date.now() - startTimeRef.current), 1000);
           recording.startRecording(stream);
-          startCamera();
           socket.emit('session:join', { sessionId });
         }
       } else {
