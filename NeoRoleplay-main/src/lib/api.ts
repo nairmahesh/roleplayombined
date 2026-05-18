@@ -85,9 +85,12 @@ export const sessionsApi = {
 };
 
 export const personasApi = {
-  list:   ()           => api.get('/personas').then(r => r.data),
-  create: (data: any)  => api.post('/personas', data).then(r => r.data),
-  delete: (id: string) => api.delete(`/personas/${id}`),
+  list:         ()                       => api.get('/personas').then(r => r.data),
+  create:       (data: any)              => api.post('/personas', data).then(r => r.data),
+  update:       (id: string, data: any)  => api.put(`/personas/${id}`, data).then(r => r.data),
+  clone:        (persona: any)           => api.post(`/personas/${persona.id}/clone`).then(r => r.data),
+  delete:       (id: string)             => api.delete(`/personas/${id}`),
+  getAnalytics: (id: string)             => api.get(`/personas/${id}/analytics`).then(r => r.data),
 };
 
 export const analyticsApi = {
