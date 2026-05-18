@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd /tmp/cc-agent/66814225/project && BUILD_OUTPUT=$(npm run build 2>&1); BUILD_EXIT=$?; if [ $BUILD_EXIT -ne 0 ]; then echo \"{\\\"systemMessage\\\": \\\"Build FAILED. Fix the errors before finishing.\\\\n$(echo $BUILD_OUTPUT | tail -20 | sed 's/\\\"/\\\\\\\"/g')\\\"\"}; exit 2; fi",
+            "command": "cd /tmp/cc-agent/66883668/project && BUILD_OUTPUT=$(npm run build 2>&1); BUILD_EXIT=$?; if [ $BUILD_EXIT -ne 0 ]; then echo \"{\\\"systemMessage\\\": \\\"Build FAILED. Fix the errors before finishing.\\\\n$(echo $BUILD_OUTPUT | tail -20 | sed 's/\\\"/\\\\\\\"/g')\\\"\"}; exit 2; fi",
             "timeout": 120,
             "statusMessage": "Running npm run build...",
             "asyncRewake": true,
