@@ -59,7 +59,7 @@ router.get('/stats', async (_req: AuthRequest, res: Response): Promise<void> => 
 });
 
 router.get('/companies', async (_req: AuthRequest, res: Response): Promise<void> => {
-  const companies = await Company.find().lean();
+  const companies = await Company.find();
   const details = await Promise.all(companies.map(companyDetail));
   res.json(details);
 });
@@ -77,9 +77,10 @@ router.post('/companies', async (req: AuthRequest, res: Response): Promise<void>
     isActive: true,
   });
 
+  let tempPassword: string | undefined;
   if (adminEmail) {
-    const tempPw = Math.random().toString(36).slice(-8) + 'A1!';
-    const passwordHash = await bcrypt.hash(tempPw, 12);
+    tempPassword = Math.random().toString(36).slice(-8) + 'A1!';
+    const passwordHash = await bcrypt.hash(tempPassword, 12);
     await User.create({
       email: adminEmail.toLowerCase(),
       passwordHash,
@@ -91,7 +92,8 @@ router.post('/companies', async (req: AuthRequest, res: Response): Promise<void>
     });
   }
 
-  res.status(201).json(await companyDetail(company));
+  const detail = await companyDetail(company);
+  res.status(201).json(tempPassword ? { ...detail, tempPassword, adminEmail } : detail);
 });
 
 router.get('/companies/:id', async (req: AuthRequest, res: Response): Promise<void> => {

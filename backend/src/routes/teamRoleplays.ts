@@ -6,7 +6,7 @@ import { User } from '../models/User';
 const router = Router();
 router.use(authenticate);
 
-function serialize(tr: InstanceType<typeof TeamRoleplay>, createdBy: { firstName: string; lastName: string; _id: unknown }) {
+function serialize(tr: InstanceType<typeof TeamRoleplay>, createdBy: { firstName: string; lastName: string; _id: { toString(): string } }) {
   return {
     id: tr._id.toString(),
     name: tr.name,

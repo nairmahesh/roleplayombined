@@ -37,7 +37,7 @@ router.get('/dashboard', async (req: AuthRequest, res: Response): Promise<void> 
 
   const recentSessions = sessions.slice(0, 5).map((s) => {
     const u = s.userId as InstanceType<typeof User>;
-    const p = s.personaId as Record<string, unknown> | null;
+    const p = s.personaId as unknown as Record<string, unknown> | null;
     return {
       id: s._id.toString(),
       endedAt: s.endedAt,

@@ -51,7 +51,7 @@ export function logGeminiUsage(opts: {
   UsageLog.create({
     service: 'gemini' as UsageService,
     operation: opts.operation,
-    model: opts.model,
+    modelName: opts.model,
     sessionId: opts.sessionId,
     companyId: opts.companyId,
     userId: opts.userId,

@@ -61,7 +61,7 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
     UsageLog.find(filter)
       .sort({ createdAt: -1 })
       .limit(20)
-      .select('service operation model promptTokens completionTokens characters durationSeconds estimatedCostUsd createdAt')
+      .select('service operation modelName promptTokens completionTokens characters durationSeconds estimatedCostUsd createdAt')
       .lean(),
   ]);
 

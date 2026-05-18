@@ -12,7 +12,7 @@ const router = Router();
 router.use(authenticate);
 
 function serializeSession(s: InstanceType<typeof Session>, persona?: InstanceType<typeof Persona> | null) {
-  const obj = s.toObject() as Record<string, unknown>;
+  const obj = s.toObject() as unknown as Record<string, unknown>;
   return {
     ...obj,
     id: s._id.toString(),

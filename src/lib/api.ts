@@ -178,7 +178,7 @@ export const usersApi = {
     return data;
   },
   invite: async (payload: Partial<User> & { password?: string }) => {
-    const { data } = await http.post<User>('/users/invite', payload);
+    const { data } = await http.post<{ user: User; tempPassword: string }>('/users/invite', payload);
     return data;
   },
   update: async (id: string, payload: Partial<User>) => {
@@ -210,8 +210,8 @@ export const superadminApi = {
     const { data } = await http.get<CompanyDetail[]>('/superadmin/companies');
     return data;
   },
-  createCompany: async (payload: Partial<CompanyDetail> & { adminEmail?: string }) => {
-    const { data } = await http.post<CompanyDetail>('/superadmin/companies', payload);
+  createCompany: async (payload: Partial<CompanyDetail> & { adminEmail?: string; adminFirstName?: string; adminLastName?: string }) => {
+    const { data } = await http.post<CompanyDetail & { tempPassword?: string; adminEmail?: string }>('/superadmin/companies', payload);
     return data;
   },
   getCompany: async (id: string): Promise<CompanyDetail> => {
@@ -306,11 +306,11 @@ export const voiceApi = {
 // ── Practice API ──────────────────────────────────────────────────────────────
 
 export const practiceApi = {
-  generateScenario: async (payload: { industry: string; roleplayType: string; difficulty?: string }) => {
+  generateScenario: async (payload: { industry?: string; roleplayType: string; difficulty?: string; keywords?: string }) => {
     const { data } = await http.post('/practice/generate-scenario', payload);
     return data;
   },
-  generateQuestions: async (payload: { industry: string; roleplayType: string; framework?: string }) => {
+  generateQuestions: async (payload: { industry?: string; roleplayType: string; framework?: string; personaContext?: string }) => {
     const { data } = await http.post('/practice/generate-questions', payload);
     return data;
   },

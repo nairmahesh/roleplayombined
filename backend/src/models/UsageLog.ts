@@ -8,7 +8,7 @@ export interface IUsageLog extends Document {
   sessionId?: mongoose.Types.ObjectId;
   companyId?: mongoose.Types.ObjectId;
   userId?: mongoose.Types.ObjectId;
-  model?: string;
+  modelName?: string;
   // Gemini
   promptTokens?: number;
   completionTokens?: number;
@@ -27,7 +27,7 @@ const UsageLogSchema = new Schema<IUsageLog>(
     sessionId: { type: Schema.Types.ObjectId, ref: 'Session', index: true },
     companyId: { type: Schema.Types.ObjectId, ref: 'Company', index: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', index: true },
-    model: String,
+    modelName: String,
     promptTokens: Number,
     completionTokens: Number,
     characters: Number,

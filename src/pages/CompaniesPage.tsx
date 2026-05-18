@@ -64,7 +64,11 @@ export function CompaniesPage() {
     setCreating(true);
     try {
       const result = await superadminApi.createCompany({ ...form, maxAgents: Number(form.maxAgents) });
-      setCreatedResult(result);
+      setCreatedResult({
+        companyName: result.name,
+        adminEmail: result.adminEmail ?? form.adminEmail,
+        tempPassword: result.tempPassword ?? '',
+      });
       const updated = await superadminApi.listCompanies();
       const statsUpdated = await superadminApi.getStats();
       setCompanies(updated);
