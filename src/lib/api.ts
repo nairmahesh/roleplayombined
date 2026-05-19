@@ -1,6 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
 import { useAuthStore } from './store';
-import { supabase } from './supabase';
 import type {
   DashboardStats,
   LeaderboardEntry,
@@ -13,7 +12,7 @@ import type {
   PeerSession,
 } from '@/types';
 
-// ── Axios instance (for non-auth API calls) ───────────────────────────────────
+// ── Axios instance ────────────────────────────────────────────────────────────
 
 const http: AxiosInstance = axios.create({
   baseURL: '/api',
@@ -26,40 +25,83 @@ http.interceptors.request.use((cfg) => {
   return cfg;
 });
 
-// ── Auth API (Supabase-backed) ────────────────────────────────────────────────
+// ── Demo users (localStorage auth) ───────────────────────────────────────────
+
+const DEMO_COMPANY = {
+  id: '00000000-0000-0000-0000-000000000001',
+  name: 'Demo Company',
+  slug: 'demo',
+  defaultFramework: 'MEDDIC' as const,
+  passThreshold: 70,
+  industry: 'Technology',
+};
+
+const DEMO_USERS: Record<string, User & { password: string }> = {
+  'superadmin@demo.com': {
+    id: '10000000-0000-0000-0000-000000000001',
+    email: 'superadmin@demo.com',
+    firstName: 'Super',
+    lastName: 'Admin',
+    role: 'SUPER_ADMIN',
+    companyId: DEMO_COMPANY.id,
+    company: DEMO_COMPANY,
+    isActive: true,
+    password: 'Demo1234!',
+  },
+  'admin@demo.com': {
+    id: '10000000-0000-0000-0000-000000000002',
+    email: 'admin@demo.com',
+    firstName: 'Company',
+    lastName: 'Admin',
+    role: 'COMPANY_ADMIN',
+    companyId: DEMO_COMPANY.id,
+    company: DEMO_COMPANY,
+    isActive: true,
+    password: 'Demo1234!',
+  },
+  'manager@demo.com': {
+    id: '10000000-0000-0000-0000-000000000003',
+    email: 'manager@demo.com',
+    firstName: 'Demo',
+    lastName: 'Manager',
+    role: 'MANAGER',
+    companyId: DEMO_COMPANY.id,
+    company: DEMO_COMPANY,
+    isActive: true,
+    password: 'Demo1234!',
+  },
+  'agent@demo.com': {
+    id: '10000000-0000-0000-0000-000000000004',
+    email: 'agent@demo.com',
+    firstName: 'Demo',
+    lastName: 'Agent',
+    role: 'AGENT',
+    companyId: DEMO_COMPANY.id,
+    company: DEMO_COMPANY,
+    isActive: true,
+    password: 'Demo1234!',
+  },
+};
+
+const LS_KEY = 'pitchiq-session';
+
+function makeToken(userId: string) {
+  return btoa(JSON.stringify({ userId, exp: Date.now() + 86400_000 }));
+}
+
+// ── Auth API (localStorage-backed) ───────────────────────────────────────────
 
 export const authApi = {
   login: async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw { response: { data: { detail: error.message } } };
-
-    const session = data.session!;
-    const authUser = data.user!;
-
-    // Fetch profile row
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*, companies(*)')
-      .eq('id', authUser.id)
-      .maybeSingle();
-
-    const user: User = {
-      id: authUser.id,
-      email: authUser.email!,
-      firstName: profile?.first_name ?? '',
-      lastName: profile?.last_name ?? '',
-      role: (profile?.role ?? 'AGENT') as User['role'],
-      companyId: profile?.company_id ?? '',
-      avatarUrl: profile?.avatar_url ?? undefined,
-      isActive: profile?.is_active ?? true,
-      company: profile?.companies ?? undefined,
-    };
-
-    return {
-      user,
-      accessToken: session.access_token,
-      refreshToken: session.refresh_token,
-    };
+    const record = DEMO_USERS[email.toLowerCase()];
+    if (!record || record.password !== password) {
+      throw { response: { data: { detail: 'Invalid email or password' } } };
+    }
+    const { password: _pw, ...user } = record;
+    const accessToken = makeToken(user.id);
+    const refreshToken = makeToken(user.id + '-refresh');
+    localStorage.setItem(LS_KEY, JSON.stringify({ user, accessToken, refreshToken }));
+    return { user, accessToken, refreshToken };
   },
 
   register: async (payload: {
@@ -70,63 +112,35 @@ export const authApi = {
     companyName?: string;
     companySlug?: string;
   }) => {
-    const { data, error } = await supabase.auth.signUp({
-      email: payload.email,
-      password: payload.password,
-      options: {
-        data: {
-          first_name: payload.firstName,
-          last_name: payload.lastName,
-          role: 'AGENT',
-        },
-      },
-    });
-    if (error) throw { response: { data: { detail: error.message } } };
-
-    const session = data.session!;
-    const authUser = data.user!;
-
     const user: User = {
-      id: authUser.id,
-      email: authUser.email!,
+      id: crypto.randomUUID(),
+      email: payload.email,
       firstName: payload.firstName,
       lastName: payload.lastName,
       role: 'AGENT',
       companyId: '',
+      isActive: true,
     };
-
-    return {
-      user,
-      accessToken: session?.access_token ?? '',
-      refreshToken: session?.refresh_token ?? '',
-    };
+    const accessToken = makeToken(user.id);
+    const refreshToken = makeToken(user.id + '-refresh');
+    localStorage.setItem(LS_KEY, JSON.stringify({ user, accessToken, refreshToken }));
+    return { user, accessToken, refreshToken };
   },
 
   logout: async () => {
-    await supabase.auth.signOut();
+    localStorage.removeItem(LS_KEY);
   },
 
   me: async (): Promise<User> => {
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser) throw new Error('Not authenticated');
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) throw new Error('Not authenticated');
+    return JSON.parse(raw).user as User;
+  },
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*, companies(*)')
-      .eq('id', authUser.id)
-      .maybeSingle();
-
-    return {
-      id: authUser.id,
-      email: authUser.email!,
-      firstName: profile?.first_name ?? '',
-      lastName: profile?.last_name ?? '',
-      role: (profile?.role ?? 'AGENT') as User['role'],
-      companyId: profile?.company_id ?? '',
-      avatarUrl: profile?.avatar_url ?? undefined,
-      isActive: profile?.is_active ?? true,
-      company: profile?.companies ?? undefined,
-    };
+  restoreSession: (): { user: User; accessToken: string; refreshToken: string } | null => {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    try { return JSON.parse(raw); } catch { return null; }
   },
 };
 
