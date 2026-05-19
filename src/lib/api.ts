@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { useAuthStore } from './store';
+import { supabase } from './supabase';
 import type {
   DashboardStats,
   LeaderboardEntry,
@@ -12,62 +13,55 @@ import type {
   PeerSession,
 } from '@/types';
 
-// ── Axios instance ────────────────────────────────────────────────────────────
+// ── Axios instance (for non-auth API calls) ───────────────────────────────────
 
 const http: AxiosInstance = axios.create({
   baseURL: '/api',
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Attach Authorization header on every request
 http.interceptors.request.use((cfg) => {
   const token = useAuthStore.getState().accessToken;
   if (token) cfg.headers.Authorization = `Bearer ${token}`;
   return cfg;
 });
 
-// Handle 401 — attempt token refresh, then retry once
-let refreshing: Promise<void> | null = null;
-
-http.interceptors.response.use(
-  (r) => r,
-  async (err) => {
-    const original = err.config;
-    if (err.response?.status === 401 && !original._retry) {
-      original._retry = true;
-      if (!refreshing) {
-        refreshing = (async () => {
-          const { refreshToken, updateToken, clearAuth } = useAuthStore.getState();
-          if (!refreshToken) { clearAuth(); return; }
-          try {
-            const res = await axios.post<{ accessToken: string; refreshToken: string }>(
-              '/api/auth/refresh',
-              { refreshToken }
-            );
-            updateToken(res.data.accessToken, res.data.refreshToken);
-          } catch {
-            clearAuth();
-          }
-        })().finally(() => { refreshing = null; });
-      }
-      await refreshing;
-      original.headers.Authorization = `Bearer ${useAuthStore.getState().accessToken}`;
-      return http(original);
-    }
-    return Promise.reject(err);
-  }
-);
-
-// ── Auth API ──────────────────────────────────────────────────────────────────
+// ── Auth API (Supabase-backed) ────────────────────────────────────────────────
 
 export const authApi = {
   login: async (email: string, password: string) => {
-    const { data } = await http.post<{ user: User; accessToken: string; refreshToken: string }>(
-      '/auth/login',
-      { email, password }
-    );
-    return data;
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw { response: { data: { detail: error.message } } };
+
+    const session = data.session!;
+    const authUser = data.user!;
+
+    // Fetch profile row
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*, companies(*)')
+      .eq('id', authUser.id)
+      .maybeSingle();
+
+    const user: User = {
+      id: authUser.id,
+      email: authUser.email!,
+      firstName: profile?.first_name ?? '',
+      lastName: profile?.last_name ?? '',
+      role: (profile?.role ?? 'AGENT') as User['role'],
+      companyId: profile?.company_id ?? '',
+      avatarUrl: profile?.avatar_url ?? undefined,
+      isActive: profile?.is_active ?? true,
+      company: profile?.companies ?? undefined,
+    };
+
+    return {
+      user,
+      accessToken: session.access_token,
+      refreshToken: session.refresh_token,
+    };
   },
+
   register: async (payload: {
     email: string;
     password: string;
@@ -76,18 +70,63 @@ export const authApi = {
     companyName?: string;
     companySlug?: string;
   }) => {
-    const { data } = await http.post<{ user: User; accessToken: string; refreshToken: string }>(
-      '/auth/register',
-      payload
-    );
-    return data;
+    const { data, error } = await supabase.auth.signUp({
+      email: payload.email,
+      password: payload.password,
+      options: {
+        data: {
+          first_name: payload.firstName,
+          last_name: payload.lastName,
+          role: 'AGENT',
+        },
+      },
+    });
+    if (error) throw { response: { data: { detail: error.message } } };
+
+    const session = data.session!;
+    const authUser = data.user!;
+
+    const user: User = {
+      id: authUser.id,
+      email: authUser.email!,
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      role: 'AGENT',
+      companyId: '',
+    };
+
+    return {
+      user,
+      accessToken: session?.access_token ?? '',
+      refreshToken: session?.refresh_token ?? '',
+    };
   },
-  logout: async (refreshToken?: string) => {
-    await http.post('/auth/logout', { refreshToken });
+
+  logout: async () => {
+    await supabase.auth.signOut();
   },
+
   me: async (): Promise<User> => {
-    const { data } = await http.get<User>('/auth/me');
-    return data;
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) throw new Error('Not authenticated');
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*, companies(*)')
+      .eq('id', authUser.id)
+      .maybeSingle();
+
+    return {
+      id: authUser.id,
+      email: authUser.email!,
+      firstName: profile?.first_name ?? '',
+      lastName: profile?.last_name ?? '',
+      role: (profile?.role ?? 'AGENT') as User['role'],
+      companyId: profile?.company_id ?? '',
+      avatarUrl: profile?.avatar_url ?? undefined,
+      isActive: profile?.is_active ?? true,
+      company: profile?.companies ?? undefined,
+    };
   },
 };
 

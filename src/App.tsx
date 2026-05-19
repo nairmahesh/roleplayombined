@@ -2,6 +2,8 @@ import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore, useThemeStore } from '@/lib/store';
+import { supabase } from '@/lib/supabase';
+import { authApi } from '@/lib/api';
 import { AppShell } from '@/components/layout/AppShell';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AvatarPhotoProvider } from '@/components/practice/PersonaAvatars';
@@ -67,6 +69,29 @@ function ThemeInit() {
 export default function App() {
   const theme = useThemeStore(s => s.theme);
   const isLight = theme === 'light';
+  const { setAuth, clearAuth } = useAuthStore();
+
+  // Restore Supabase session on mount and listen for auth changes
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        authApi.me().then(user => {
+          setAuth(user, session.access_token, session.refresh_token);
+        }).catch(() => clearAuth());
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        clearAuth();
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        useAuthStore.getState().updateToken(session.access_token, session.refresh_token);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <ErrorBoundary>

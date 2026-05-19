@@ -38,10 +38,9 @@ export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, toggleTheme } = useThemeStore();
 
-  const { user, clearAuth, refreshToken } = useAuthStore(s => ({
+  const { user, clearAuth } = useAuthStore(s => ({
     user: s.user,
     clearAuth: s.clearAuth,
-    refreshToken: s.refreshToken,
   }));
   const navigate = useNavigate();
   const location = useLocation();
@@ -54,7 +53,7 @@ export function AppShell() {
 
   const handleLogout = async () => {
     try {
-      if (refreshToken) await authApi.logout(refreshToken);
+      await authApi.logout();
     } finally {
       resetSocket();
       clearAuth();
