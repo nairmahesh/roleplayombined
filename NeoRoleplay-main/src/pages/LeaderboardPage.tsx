@@ -1,4 +1,4 @@
-﻿// pitchiq/frontend/src/pages/LeaderboardPage.tsx
+// pitchiq/frontend/src/pages/LeaderboardPage.tsx
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';

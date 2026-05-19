@@ -1,4 +1,4 @@
-﻿// pitchiq/frontend/src/pages/SessionsPage.tsx
+// pitchiq/frontend/src/pages/SessionsPage.tsx
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';

@@ -1,4 +1,4 @@
-﻿// pitchiq/frontend/src/components/practice/PersonaBuilder.tsx
+// pitchiq/frontend/src/components/practice/PersonaBuilder.tsx
 // Allows managers/admins to create custom AI personas
 
 import { useState } from 'react';

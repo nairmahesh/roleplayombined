@@ -1,4 +1,4 @@
-﻿// pitchiq/frontend/src/components/dashboard/ScoreChart.tsx
+// pitchiq/frontend/src/components/dashboard/ScoreChart.tsx
 // Line chart showing score progression over time
 
 import {

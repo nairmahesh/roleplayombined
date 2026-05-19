@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import clsx from 'clsx';
 
 export type Ethnicity = 'east-asian' | 'south-asian' | 'black' | 'white' | 'hispanic' | 'middle-eastern';

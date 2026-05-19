@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Building2, Users, BarChart3, Activity, TrendingUp } from 'lucide-react';
 import { superadminApi } from '@/lib/api';

@@ -1,4 +1,4 @@
-﻿// pitchiq/frontend/src/pages/DashboardPage.tsx
+// pitchiq/frontend/src/pages/DashboardPage.tsx
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';

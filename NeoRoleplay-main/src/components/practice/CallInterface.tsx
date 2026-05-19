@@ -1,4 +1,4 @@
-﻿// pitchiq/frontend/src/components/practice/CallInterface.tsx
+// pitchiq/frontend/src/components/practice/CallInterface.tsx
 // Live call overlay — rings, bot picks up, continuous STT + TTS, interruption support
 
 import { useState, useEffect, useRef, useCallback } from 'react';

@@ -1,4 +1,4 @@
-﻿// pitchiq/frontend/src/pages/SettingsPage.tsx
+// pitchiq/frontend/src/pages/SettingsPage.tsx
 
 import { useState } from 'react';
 import toast from 'react-hot-toast';
