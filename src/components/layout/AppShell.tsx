@@ -101,7 +101,10 @@ export function AppShell() {
               Pitch<span className="text-accent">IQ</span>
             </span>
             {isSuperAdmin && (
-              <span className="text-[9px] font-bold bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded-full border border-purple-500/25 ml-auto">
+              <span
+                className="text-[9px] font-bold px-1.5 py-0.5 rounded-full border ml-auto"
+                style={{ background: 'rgba(91,111,255,0.15)', color: 'var(--accent)', borderColor: 'rgba(91,111,255,0.3)' }}
+              >
                 SUPER
               </span>
             )}

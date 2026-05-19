@@ -10,12 +10,14 @@ import { formatDistanceToNow, isWithinInterval, subDays, startOfDay } from 'date
 import {
   Phone, Monitor, Download, ClipboardList,
   Search, X, ChevronDown, MapPin, User as UserIcon,
-  SlidersHorizontal, Calendar,
+  SlidersHorizontal, Calendar, ArrowUpDown, ArrowUp, ArrowDown,
 } from 'lucide-react';
 import clsx from 'clsx';
 
 type ScoreRange = 'all' | 'pass' | 'fail' | 'high';
 type DateRange = 'all' | '7d' | '30d' | '90d';
+type SortKey = 'date' | 'score' | 'duration' | 'framework';
+type SortDir = 'asc' | 'desc';
 
 interface Filters {
   search: string;
@@ -61,6 +63,8 @@ export function SessionsPage() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [showFilters, setShowFilters] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>('date');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -124,6 +128,27 @@ export function SessionsPage() {
       return true;
     });
   }, [sessions, filters, userLocationMap]);
+
+  const sorted = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === 'date') {
+        cmp = (a.endedAt ? new Date(a.endedAt).getTime() : 0) - (b.endedAt ? new Date(b.endedAt).getTime() : 0);
+      } else if (sortKey === 'score') {
+        cmp = (a.totalScore ?? -1) - (b.totalScore ?? -1);
+      } else if (sortKey === 'duration') {
+        cmp = (a.durationSeconds ?? 0) - (b.durationSeconds ?? 0);
+      } else if (sortKey === 'framework') {
+        cmp = (a.framework ?? '').localeCompare(b.framework ?? '');
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [filtered, sortKey, sortDir]);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir('desc'); }
+  };
 
   const activeFilterCount = Object.entries(filters).filter(
     ([k, v]) => k !== 'search' && v !== 'all' && v !== ''
@@ -356,10 +381,10 @@ export function SessionsPage() {
         >
           <div>Session</div>
           {isAdmin && <div>Rep</div>}
-          <div>Framework</div>
-          <div>Duration</div>
-          <div>Date</div>
-          <div className="text-right">Score</div>
+          <SortHeader label="Framework" sortKey="framework" current={sortKey} dir={sortDir} onToggle={toggleSort} />
+          <SortHeader label="Duration" sortKey="duration" current={sortKey} dir={sortDir} onToggle={toggleSort} />
+          <SortHeader label="Date" sortKey="date" current={sortKey} dir={sortDir} onToggle={toggleSort} />
+          <SortHeader label="Score" sortKey="score" current={sortKey} dir={sortDir} onToggle={toggleSort} align="right" />
         </div>
 
         {loading ? (
@@ -368,7 +393,7 @@ export function SessionsPage() {
           <EmptyState hasData={sessions.length > 0} onClear={clearAllFilters} onNavigate={() => navigate('/practice')} />
         ) : (
           <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
-            {filtered.map((session, i) => (
+            {sorted.map((session, i) => (
               <SessionRow
                 key={session.id}
                 session={session}
@@ -594,6 +619,41 @@ function FilterSelect({
         ))}
       </select>
     </div>
+  );
+}
+
+// ── SortHeader ────────────────────────────────────────────────────────────────
+
+function SortHeader({
+  label,
+  sortKey,
+  current,
+  dir,
+  onToggle,
+  align,
+}: {
+  label: string;
+  sortKey: SortKey;
+  current: SortKey;
+  dir: SortDir;
+  onToggle: (k: SortKey) => void;
+  align?: 'right';
+}) {
+  const isActive = current === sortKey;
+  const Icon = isActive ? (dir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
+  return (
+    <button
+      onClick={() => onToggle(sortKey)}
+      className={clsx(
+        'flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider transition-colors',
+        align === 'right' && 'justify-end',
+        isActive ? '' : 'opacity-70 hover:opacity-100'
+      )}
+      style={{ color: isActive ? 'var(--accent)' : 'var(--text3)' }}
+    >
+      {label}
+      <Icon size={10} className="flex-shrink-0" />
+    </button>
   );
 }
 

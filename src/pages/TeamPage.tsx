@@ -7,9 +7,9 @@ import { User } from '@/types';
 import { useAuthStore } from '@/lib/store';
 import clsx from 'clsx';
 
-const ROLE_CONFIG: Record<string, { label: string; cls: string }> = {
-  SUPER_ADMIN:   { label: 'Super Admin', cls: 'bg-purple-500/15 text-purple-300 border-purple-500/25' },
-  COMPANY_ADMIN: { label: 'Admin',       cls: 'bg-accent/10 text-[#9BA8FF] border-accent/20' },
+const ROLE_CONFIG: Record<string, { label: string; cls: string; style?: React.CSSProperties }> = {
+  SUPER_ADMIN:   { label: 'Super Admin', cls: 'border', style: { background: 'rgba(91,111,255,0.12)', color: 'var(--accent)', borderColor: 'rgba(91,111,255,0.25)' } },
+  COMPANY_ADMIN: { label: 'Admin',       cls: 'bg-accent/10 text-accent border-accent/20' },
   MANAGER:       { label: 'Manager',     cls: 'bg-accent-3/10 text-accent-3 border-accent-3/20' },
   AGENT:         { label: 'Agent',       cls: 'bg-white/[0.06] text-white/70 border-white/10' },
 };
@@ -215,7 +215,7 @@ export function TeamPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 mt-2 ml-12">
-                      <span className={clsx('text-[10.5px] font-semibold px-2 py-0.5 rounded-full border', roleCfg.cls)}>{roleCfg.label}</span>
+                      <span className={clsx('text-[10.5px] font-semibold px-2 py-0.5 rounded-full border', roleCfg.cls)} style={roleCfg.style}>{roleCfg.label}</span>
                       <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full border', u.isActive !== false ? 'bg-accent-3/10 text-accent-3 border-accent-3/20' : 'bg-white/[0.05] text-white/55 border-white/10')}>
                         {u.isActive !== false ? 'Active' : 'Inactive'}
                       </span>
@@ -238,7 +238,7 @@ export function TeamPage() {
                         <div className="text-[11px] text-white/55">{u.email}</div>
                       </div>
                     </div>
-                    <div><span className={clsx('text-[10.5px] font-semibold px-2 py-1 rounded-full border', roleCfg.cls)}>{roleCfg.label}</span></div>
+                    <div><span className={clsx('text-[10.5px] font-semibold px-2 py-1 rounded-full border', roleCfg.cls)} style={roleCfg.style}>{roleCfg.label}</span></div>
                     <div className="text-[13px] text-white/70">{(u as any).sessionCount ?? 0}</div>
                     <div className={clsx('font-display text-[15px] font-bold', scoreColor)}>{score > 0 ? score.toFixed(1) : '—'}</div>
                     <div><span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full border', u.isActive !== false ? 'bg-accent-3/10 text-accent-3 border-accent-3/20' : 'bg-white/[0.05] text-white/55 border-white/10')}>{u.isActive !== false ? 'Active' : 'Inactive'}</span></div>

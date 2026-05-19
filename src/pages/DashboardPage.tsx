@@ -56,11 +56,11 @@ function StatCard({ label, value, icon: Icon, color, sub, delay = 0 }: StatCardP
     >
       <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: color }} />
       <div className="flex items-start justify-between mb-3">
-        <span className="text-[11px] font-semibold text-white/75 uppercase tracking-wider">{label}</span>
-        <Icon size={14} className="text-white/65 mt-0.5" />
+        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text3)' }}>{label}</span>
+        <Icon size={14} className="mt-0.5" style={{ color: 'var(--text3)' }} />
       </div>
-      <div className="font-display text-[28px] font-bold tracking-tight leading-none mb-1.5">{value}</div>
-      {sub && <div className="text-[11px] text-white/75">{sub}</div>}
+      <div className="font-display text-[28px] font-bold tracking-tight leading-none mb-1.5" style={{ color: 'var(--text)' }}>{value}</div>
+      {sub && <div className="text-[11px]" style={{ color: 'var(--text3)' }}>{sub}</div>}
     </motion.div>
   );
 }
