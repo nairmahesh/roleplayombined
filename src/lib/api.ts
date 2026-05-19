@@ -152,8 +152,29 @@ export const personasApi = {
     const { data } = await http.post<Persona>('/personas', payload);
     return data;
   },
+  update: async (id: string, payload: Partial<Persona>): Promise<Persona> => {
+    const { data } = await http.patch<Persona>(`/personas/${id}`, payload);
+    return data;
+  },
   delete: async (id: string): Promise<void> => {
     await http.delete(`/personas/${id}`);
+  },
+  clone: async (persona: Persona): Promise<Persona> => {
+    const { data } = await http.post<Persona>('/personas', {
+      ...persona,
+      id: undefined,
+      name: `${persona.name} (Copy)`,
+      isPreset: false,
+    });
+    return data;
+  },
+  getAnalytics: async (id: string): Promise<{ usageCount: number; avgScore: number; lastUsed: string | null; topUsers: Array<{ name: string; count: number }> }> => {
+    try {
+      const { data } = await http.get(`/personas/${id}/analytics`);
+      return data;
+    } catch {
+      return { usageCount: 0, avgScore: 0, lastUsed: null, topUsers: [] };
+    }
   },
 };
 
