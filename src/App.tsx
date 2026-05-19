@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore, useThemeStore } from '@/lib/store';
-import { authApi } from '@/lib/api';
 import { AppShell } from '@/components/layout/AppShell';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AvatarPhotoProvider } from '@/components/practice/PersonaAvatars';
@@ -21,8 +20,8 @@ const EvaluationPromptsPage = lazy(() => import('@/pages/EvaluationPromptsPage')
 const CompaniesPage     = lazy(() => import('@/pages/CompaniesPage').then(m => ({ default: m.CompaniesPage })));
 const CompanyDetailPage = lazy(() => import('@/pages/CompanyDetailPage').then(m => ({ default: m.CompanyDetailPage })));
 const SuperAdminStatsPage = lazy(() => import('@/pages/SuperAdminStatsPage').then(m => ({ default: m.SuperAdminStatsPage })));
-const PlanSettingsPage      = lazy(() => import('@/pages/PlanSettingsPage').then(m => ({ default: m.PlanSettingsPage })));
-const SuperAdminAgentsPage  = lazy(() => import('@/pages/SuperAdminAgentsPage').then(m => ({ default: m.SuperAdminAgentsPage })));
+const PlanSettingsPage    = lazy(() => import('@/pages/PlanSettingsPage').then(m => ({ default: m.PlanSettingsPage })));
+const PersonasPage        = lazy(() => import('@/pages/PersonasPage').then(m => ({ default: m.PersonasPage })));
 
 function PageLoader() {
   return (
@@ -68,16 +67,6 @@ function ThemeInit() {
 export default function App() {
   const theme = useThemeStore(s => s.theme);
   const isLight = theme === 'light';
-  const { setAuth, clearAuth } = useAuthStore();
-
-  // Restore session from localStorage on mount
-  useEffect(() => {
-    const saved = authApi.restoreSession();
-    if (saved) {
-      setAuth(saved.user, saved.accessToken, saved.refreshToken);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   return (
     <ErrorBoundary>
@@ -146,6 +135,14 @@ export default function App() {
                   </RequireRole>
                 }
               />
+              <Route
+                path="personas"
+                element={
+                  <RequireRole roles={['COMPANY_ADMIN', 'MANAGER']}>
+                    <ErrorBoundary><PersonasPage /></ErrorBoundary>
+                  </RequireRole>
+                }
+              />
 
               {/* ── Super Admin routes ───────────────────────────────────── */}
               <Route
@@ -169,14 +166,6 @@ export default function App() {
                 element={
                   <RequireRole roles={['SUPER_ADMIN']}>
                     <ErrorBoundary><SuperAdminStatsPage /></ErrorBoundary>
-                  </RequireRole>
-                }
-              />
-              <Route
-                path="superadmin/agents"
-                element={
-                  <RequireRole roles={['SUPER_ADMIN']}>
-                    <ErrorBoundary><SuperAdminAgentsPage /></ErrorBoundary>
                   </RequireRole>
                 }
               />
