@@ -529,7 +529,7 @@ export function FeedbackPage() {
           </div>
 
           {/* CTAs */}
-          <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+          <div className="flex flex-wrap items-center gap-2 sm:flex-shrink-0 w-full sm:w-auto">
             <button
               onClick={() => navigate('/practice')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-[9px] border text-[12.5px] font-medium transition-all hover:scale-105 active:scale-95"
