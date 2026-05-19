@@ -1,0 +1,500 @@
+// pitchiq/frontend/src/pages/EvaluationPromptsPage.tsx
+
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
+import { ChevronDown, ChevronRight, Plus, Trash2, Save, RotateCcw, Lightbulb, CircleCheck as CheckCircle, Info, Zap, FileText, CreditCard as Edit3, X, GripVertical } from 'lucide-react';
+import { evaluationPromptsApi } from '@/lib/api';
+import type { EvaluationPrompt, EvaluationGroupDef, EvaluationCriterionDef } from '@/types';
+import clsx from 'clsx';
+
+const ROLEPLAY_TYPE_LABELS: Record<string, string> = {
+  cold_call: 'Cold Call',
+  discovery_call: 'Discovery Call',
+  sales_pitch: 'Sales Pitch',
+  objection_handling: 'Objection Handling',
+  negotiation: 'Negotiation',
+  account_expansion: 'Account Expansion',
+  customer_support: 'Customer Support',
+};
+
+function countCriteria(groups: EvaluationGroupDef[]): number {
+  return groups.reduce((a, g) => a + g.criteria.length, 0);
+}
+
+interface CriterionEditorProps {
+  criterion: EvaluationCriterionDef;
+  onUpdate: (c: EvaluationCriterionDef) => void;
+  onRemove: () => void;
+  index: number;
+}
+
+function CriterionEditor({ criterion, onUpdate, onRemove, index }: CriterionEditorProps) {
+  return (
+    <div className="flex items-start gap-2.5 group/crit">
+      <div className="flex-shrink-0 mt-2.5">
+        <GripVertical size={12} style={{ color: 'var(--text3)' }} />
+      </div>
+      <div className="flex-1 flex flex-col gap-1.5">
+        <input
+          value={criterion.question}
+          onChange={e => onUpdate({ ...criterion, question: e.target.value })}
+          placeholder={`Criterion ${index + 1} question…`}
+          className="input-base text-[12.5px] py-2"
+          style={{ color: 'var(--text)' }}
+        />
+        <input
+          value={criterion.hint || ''}
+          onChange={e => onUpdate({ ...criterion, hint: e.target.value })}
+          placeholder="Hint for evaluator (optional)…"
+          className="input-base text-[11.5px] py-1.5"
+          style={{ color: 'var(--text2)', fontSize: '11.5px' }}
+        />
+      </div>
+      <button
+        onClick={onRemove}
+        className="flex-shrink-0 mt-2 p-1 rounded transition-all opacity-0 group-hover/crit:opacity-100 hover:bg-[rgba(255,107,107,0.12)]"
+        style={{ color: 'var(--accent4)' }}
+        title="Remove criterion"
+      >
+        <X size={12} />
+      </button>
+    </div>
+  );
+}
+
+interface GroupEditorProps {
+  group: EvaluationGroupDef;
+  onUpdate: (g: EvaluationGroupDef) => void;
+  onRemove: () => void;
+  defaultOpen?: boolean;
+}
+
+function GroupEditor({ group, onUpdate, onRemove, defaultOpen = false }: GroupEditorProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  const addCriterion = () => {
+    onUpdate({ ...group, criteria: [...group.criteria, { question: '', hint: '' }] });
+    setIsOpen(true);
+  };
+
+  const updateCriterion = (i: number, c: EvaluationCriterionDef) => {
+    const criteria = [...group.criteria];
+    criteria[i] = c;
+    onUpdate({ ...group, criteria });
+  };
+
+  const removeCriterion = (i: number) => {
+    onUpdate({ ...group, criteria: group.criteria.filter((_, idx) => idx !== i) });
+  };
+
+  return (
+    <div className="rounded-[12px] border overflow-hidden" style={{ borderColor: isOpen ? 'rgba(91,111,255,0.3)' : 'var(--border)', background: 'var(--bg2)' }}>
+      <div className="flex items-center gap-2 px-4 py-3">
+        <button
+          onClick={() => setIsOpen(o => !o)}
+          className="flex items-center gap-2 flex-1 text-left"
+        >
+          <ChevronDown size={13} className={clsx('flex-shrink-0 transition-transform', isOpen && 'rotate-180')} style={{ color: 'var(--text3)' }} />
+          <input
+            value={group.group}
+            onChange={e => { e.stopPropagation(); onUpdate({ ...group, group: e.target.value }); }}
+            onClick={e => e.stopPropagation()}
+            placeholder="Group name…"
+            className="bg-transparent border-none outline-none text-[13.5px] font-semibold flex-1"
+            style={{ color: 'var(--text)', minWidth: 0 }}
+          />
+        </button>
+        <span className="text-[10.5px] font-medium flex-shrink-0" style={{ color: 'var(--text3)' }}>
+          {group.criteria.length} {group.criteria.length === 1 ? 'criterion' : 'criteria'}
+        </span>
+        <button
+          onClick={onRemove}
+          className="p-1 rounded transition-all hover:bg-[rgba(255,107,107,0.12)] flex-shrink-0"
+          style={{ color: 'var(--accent4)' }}
+          title="Remove group"
+        >
+          <Trash2 size={12} />
+        </button>
+      </div>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 pt-1 border-t flex flex-col gap-2" style={{ borderColor: 'var(--border)' }}>
+              {group.criteria.map((c, i) => (
+                <CriterionEditor
+                  key={i}
+                  index={i}
+                  criterion={c}
+                  onUpdate={updated => updateCriterion(i, updated)}
+                  onRemove={() => removeCriterion(i)}
+                />
+              ))}
+              <button
+                onClick={addCriterion}
+                className="flex items-center gap-1.5 text-[11.5px] font-medium mt-1 px-2 py-1.5 rounded-[8px] self-start transition-all hover:scale-105"
+                style={{ color: 'var(--accent)', background: 'rgba(91,111,255,0.08)', border: '1px solid rgba(91,111,255,0.2)' }}
+              >
+                <Plus size={11} /> Add criterion
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+export function EvaluationPromptsPage() {
+  const [prompts, setPrompts]           = useState<EvaluationPrompt[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [activeId, setActiveId]         = useState<string | null>(null);
+  const [editing, setEditing]           = useState<EvaluationPrompt | null>(null);
+  const [saving, setSaving]             = useState(false);
+  const [activeSection, setActiveSection] = useState<'criteria' | 'prompt'>('criteria');
+  const [dirty, setDirty]               = useState(false);
+
+  useEffect(() => {
+    evaluationPromptsApi.list().then(data => {
+      setPrompts(data);
+      if (data.length > 0) {
+        setActiveId(data[0].id);
+        setEditing(JSON.parse(JSON.stringify(data[0])));
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  const selectPrompt = (p: EvaluationPrompt) => {
+    if (dirty) {
+      const ok = confirm('You have unsaved changes. Discard them?');
+      if (!ok) return;
+    }
+    setActiveId(p.id);
+    setEditing(JSON.parse(JSON.stringify(p)));
+    setDirty(false);
+    setActiveSection('criteria');
+  };
+
+  const updateEditing = (updated: EvaluationPrompt) => {
+    setEditing(updated);
+    setDirty(true);
+  };
+
+  const addGroup = () => {
+    if (!editing) return;
+    updateEditing({
+      ...editing,
+      scoringCriteria: [
+        ...editing.scoringCriteria,
+        { group: 'New Group', criteria: [{ question: '', hint: '' }] },
+      ],
+    });
+  };
+
+  const updateGroup = (i: number, g: EvaluationGroupDef) => {
+    if (!editing) return;
+    const sc = [...editing.scoringCriteria];
+    sc[i] = g;
+    updateEditing({ ...editing, scoringCriteria: sc });
+  };
+
+  const removeGroup = (i: number) => {
+    if (!editing) return;
+    updateEditing({ ...editing, scoringCriteria: editing.scoringCriteria.filter((_, idx) => idx !== i) });
+  };
+
+  const handleSave = async () => {
+    if (!editing) return;
+    setSaving(true);
+    try {
+      const saved = await evaluationPromptsApi.update(editing.id, editing);
+      setPrompts(prev => prev.map(p => p.id === saved.id ? saved : p));
+      setEditing(saved);
+      setDirty(false);
+      toast.success('Evaluation prompt saved');
+    } catch {
+      toast.error('Failed to save');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleReset = () => {
+    const original = prompts.find(p => p.id === activeId);
+    if (!original) return;
+    setEditing(JSON.parse(JSON.stringify(original)));
+    setDirty(false);
+    toast('Reset to last saved version');
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-4 animate-pulse">
+        <div className="h-10 rounded-xl w-1/3" style={{ background: 'var(--bg2)' }} />
+        <div className="h-64 rounded-xl" style={{ background: 'var(--bg2)' }} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-5 max-w-5xl">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h2 className="font-display text-[18px] font-bold" style={{ color: 'var(--text)' }}>Evaluation Prompts</h2>
+          <p className="text-[12.5px] mt-1" style={{ color: 'var(--text3)' }}>
+            Define the scoring rubric and AI prompt used to evaluate each roleplay type. Changes apply to new sessions.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {dirty && (
+            <button
+              onClick={handleReset}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[9px] border text-[12.5px] font-medium transition-all hover:scale-105"
+              style={{ borderColor: 'var(--border2)', color: 'var(--text2)' }}
+            >
+              <RotateCcw size={12} /> Reset
+            </button>
+          )}
+          <button
+            onClick={handleSave}
+            disabled={!dirty || saving}
+            className={clsx('flex items-center gap-1.5 px-4 py-1.5 rounded-[9px] text-[12.5px] font-semibold transition-all', dirty ? 'hover:scale-105' : 'opacity-50 cursor-not-allowed')}
+            style={{ background: 'var(--accent)', color: '#fff' }}
+          >
+            <Save size={12} /> {saving ? 'Saving…' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
+
+      <div className="flex gap-4 flex-col lg:flex-row">
+        {/* Sidebar — prompt list */}
+        <div className="lg:w-56 flex-shrink-0 flex flex-col gap-1.5">
+          <div className="text-[10px] font-semibold uppercase tracking-widest mb-1" style={{ color: 'var(--text3)' }}>Roleplay Types</div>
+          {prompts.map(p => (
+            <button
+              key={p.id}
+              onClick={() => selectPrompt(p)}
+              className={clsx(
+                'w-full text-left px-3 py-2.5 rounded-[10px] border transition-all group',
+                activeId === p.id
+                  ? 'border-[rgba(91,111,255,0.4)] bg-[rgba(91,111,255,0.08)]'
+                  : 'border-transparent hover:border-[var(--border)] hover:bg-[var(--bg2)]'
+              )}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[13px] font-medium" style={{ color: activeId === p.id ? 'var(--accent)' : 'var(--text)' }}>
+                  {p.displayName}
+                </span>
+                <ChevronRight size={11} style={{ color: 'var(--text3)' }} />
+              </div>
+              <div className="text-[10.5px] mt-0.5" style={{ color: 'var(--text3)' }}>
+                {countCriteria(p.scoringCriteria)} criteria · {p.scoringCriteria.length} groups
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Main editor */}
+        {editing && (
+          <div className="flex-1 min-w-0 flex flex-col gap-4">
+            {/* Section toggle */}
+            <div className="flex rounded-[10px] border overflow-hidden" style={{ borderColor: 'var(--border)', background: 'var(--bg2)' }}>
+              {([
+                { id: 'criteria' as const, label: 'Scoring Criteria', icon: CheckCircle },
+                { id: 'prompt'   as const, label: 'AI Prompt Template', icon: FileText  },
+              ]).map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => setActiveSection(id)}
+                  className={clsx(
+                    'flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-[12.5px] font-medium transition-colors',
+                    activeSection === id
+                      ? 'text-[var(--text)]'
+                      : 'text-[var(--text3)] hover:text-[var(--text2)]'
+                  )}
+                  style={{ background: activeSection === id ? 'rgba(91,111,255,0.1)' : 'transparent' }}
+                >
+                  <Icon size={13} />
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <AnimatePresence mode="wait">
+              {activeSection === 'criteria' && (
+                <motion.div
+                  key="criteria"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex flex-col gap-3"
+                >
+                  {/* Info banner */}
+                  <div className="flex items-start gap-2 p-3 rounded-[10px] border" style={{ background: 'rgba(91,111,255,0.06)', borderColor: 'rgba(91,111,255,0.2)' }}>
+                    <Info size={13} className="flex-shrink-0 mt-0.5" style={{ color: 'var(--accent)' }} />
+                    <p className="text-[11.5px] leading-relaxed" style={{ color: 'var(--text2)' }}>
+                      Each criterion is scored pass/fail by the AI. Group name, question, and hint are sent to the AI as context.
+                      The total points = number of criteria. Score % is shown on the Scorecard tab after each session.
+                    </p>
+                  </div>
+
+                  {/* Summary pills */}
+                  <div className="flex gap-2 flex-wrap">
+                    {editing.scoringCriteria.map(g => (
+                      <span key={g.group} className="px-2.5 py-1 rounded-full text-[11px] border" style={{ background: 'var(--bg2)', borderColor: 'var(--border)', color: 'var(--text2)' }}>
+                        {g.group}: {g.criteria.length}
+                      </span>
+                    ))}
+                    <span className="px-2.5 py-1 rounded-full text-[11px] border font-semibold" style={{ background: 'rgba(91,111,255,0.08)', borderColor: 'rgba(91,111,255,0.2)', color: 'var(--accent)' }}>
+                      Total: {countCriteria(editing.scoringCriteria)} pts
+                    </span>
+                  </div>
+
+                  {/* Group editors */}
+                  {editing.scoringCriteria.map((g, i) => (
+                    <GroupEditor
+                      key={i}
+                      group={g}
+                      defaultOpen={i === 0}
+                      onUpdate={updated => updateGroup(i, updated)}
+                      onRemove={() => removeGroup(i)}
+                    />
+                  ))}
+
+                  <button
+                    onClick={addGroup}
+                    className="flex items-center gap-2 p-3 rounded-[12px] border border-dashed text-[12.5px] font-medium transition-all hover:border-[rgba(91,111,255,0.4)] hover:bg-[rgba(91,111,255,0.04)]"
+                    style={{ borderColor: 'var(--border2)', color: 'var(--text3)' }}
+                  >
+                    <Plus size={13} /> Add criterion group
+                  </button>
+                </motion.div>
+              )}
+
+              {activeSection === 'prompt' && (
+                <motion.div
+                  key="prompt"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex flex-col gap-3"
+                >
+                  {/* Variable hints */}
+                  <div className="flex items-start gap-2 p-3 rounded-[10px] border" style={{ background: 'rgba(255,209,102,0.06)', borderColor: 'rgba(255,209,102,0.2)' }}>
+                    <Lightbulb size={13} className="flex-shrink-0 mt-0.5" style={{ color: '#FFD166' }} />
+                    <div>
+                      <div className="text-[11px] font-semibold mb-1" style={{ color: '#FFD166' }}>Available variables</div>
+                      <div className="flex gap-2 flex-wrap">
+                        {['{transcript}', '{framework}', '{persona_name}', '{roleplay_type}'].map(v => (
+                          <code key={v} className="text-[11px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,209,102,0.15)', color: '#FFD166' }}>{v}</code>
+                        ))}
+                      </div>
+                      <p className="text-[11px] mt-1.5" style={{ color: 'var(--text3)' }}>
+                        The scoring criteria from the Criteria tab are automatically appended — you don't need to duplicate them here.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Prompt display name */}
+                  <div>
+                    <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: 'var(--text3)' }}>Display Name</label>
+                    <input
+                      value={editing.displayName}
+                      onChange={e => updateEditing({ ...editing, displayName: e.target.value })}
+                      className="input-base text-[13px]"
+                      placeholder="e.g. Cold Call"
+                    />
+                  </div>
+
+                  {/* Prompt template */}
+                  <div>
+                    <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: 'var(--text3)' }}>AI Prompt Template</label>
+                    <textarea
+                      value={editing.promptTemplate}
+                      onChange={e => updateEditing({ ...editing, promptTemplate: e.target.value })}
+                      rows={18}
+                      className="input-base text-[12.5px] font-mono leading-relaxed resize-none"
+                      placeholder="Write your evaluation prompt here…"
+                      style={{ fontFamily: 'monospace', whiteSpace: 'pre' }}
+                    />
+                  </div>
+
+                  {/* Token estimate */}
+                  <div className="flex items-center gap-2 text-[11px]" style={{ color: 'var(--text3)' }}>
+                    <Zap size={10} style={{ color: 'var(--accent)' }} />
+                    <span>
+                      Estimated prompt tokens (template only): ~{Math.ceil(editing.promptTemplate.split(/\s+/).length * 1.3).toLocaleString()}
+                      {' '}— transcript adds ~500–2,000 tokens depending on session length
+                    </span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
+
+      {/* Cost & model info box */}
+      <div className="rounded-[12px] border p-4" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
+        <div className="flex items-center gap-2 mb-3">
+          <Zap size={13} style={{ color: 'var(--accent)' }} />
+          <span className="font-display text-[13px] font-bold" style={{ color: 'var(--text)' }}>LLM & Cost Settings</span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {[
+            {
+              label: 'Real-time Roleplay',
+              model: 'gpt-4o-mini',
+              tip: 'Used for every AI turn during practice. 80-token max output keeps cost low and latency under 1s.',
+              cost: '~$0.15 / 1M input tokens',
+              color: 'var(--accent3)',
+            },
+            {
+              label: 'Post-session Analysis',
+              model: 'gpt-4o-mini (or Batch API)',
+              tip: 'Runs after the call ends using this prompt. Switch to Batch API for 50% cost saving on analysis.',
+              cost: '~$0.075 / 1M tokens (batch)',
+              color: '#FFD166',
+            },
+            {
+              label: 'Scenario Generation',
+              model: 'gpt-4o',
+              tip: 'Used once when a new scenario is generated. Higher quality needed here — not a cost concern.',
+              cost: '~$2.50 / 1M input tokens',
+              color: 'var(--accent4)',
+            },
+          ].map(({ label, model, tip, cost, color }) => (
+            <div key={label} className="p-3 rounded-[10px]" style={{ background: 'var(--bg3)' }}>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
+                <span className="text-[11.5px] font-semibold" style={{ color: 'var(--text)' }}>{label}</span>
+              </div>
+              <code className="text-[10.5px] block mb-1" style={{ color }}>{model}</code>
+              <p className="text-[10.5px] leading-relaxed mb-1.5" style={{ color: 'var(--text3)' }}>{tip}</p>
+              <span className="text-[10px] font-mono" style={{ color: 'var(--text3)' }}>{cost}</span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 p-2.5 rounded-[9px] flex items-start gap-2" style={{ background: 'rgba(6,214,160,0.07)', border: '1px solid rgba(6,214,160,0.2)' }}>
+          <CheckCircle size={11} className="flex-shrink-0 mt-0.5" style={{ color: '#06D6A0' }} />
+          <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text2)' }}>
+            <strong>Prompt caching tip:</strong> OpenAI automatically caches prompt prefixes ≥1,024 tokens at 50% off.
+            Keep your system prompt static (persona context first, conversation history last) to maximise cache hits.
+            A 10-turn session saves ~40–50% on input tokens from turn 2 onward with no code changes.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
