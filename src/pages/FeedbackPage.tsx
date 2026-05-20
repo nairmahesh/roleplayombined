@@ -383,26 +383,34 @@ export function FeedbackPage() {
   }, []);
 
   const jumpToTimestamp = useCallback((timestampMs: number, switchToTranscript = false) => {
-    seekTo(timestampMs / 1000);
-    // Scroll audio bar into view and flash it
-    audioBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setAudioBarFlash(true);
-    if (audioFlashRef.current) clearTimeout(audioFlashRef.current);
-    audioFlashRef.current = setTimeout(() => setAudioBarFlash(false), 1200);
-    // Pulse the header timeline marker
-    setLastJumpMs(timestampMs);
-    if (jumpLabelRef.current) clearTimeout(jumpLabelRef.current);
-    jumpLabelRef.current = setTimeout(() => setLastJumpMs(null), 2800);
-    // Find nearest message for transcript highlighting
+    // Find nearest transcript message first (used for both audio and no-audio paths)
     const messages = session?.messages || [];
     let nearest = messages[0];
     for (const m of messages) {
       if (Math.abs(m.timestampMs - timestampMs) < Math.abs((nearest?.timestampMs ?? 0) - timestampMs)) nearest = m;
     }
+
+    if (audioRef.current) {
+      // Audio is loaded — seek and play
+      seekTo(timestampMs / 1000);
+      audioBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setAudioBarFlash(true);
+      if (audioFlashRef.current) clearTimeout(audioFlashRef.current);
+      audioFlashRef.current = setTimeout(() => setAudioBarFlash(false), 1200);
+    } else {
+      // No audio — navigate to transcript and highlight the nearest message
+      setActiveTab('transcript');
+      switchToTranscript = true;
+    }
+
+    // Pulse the header timeline marker
+    setLastJumpMs(timestampMs);
+    if (jumpLabelRef.current) clearTimeout(jumpLabelRef.current);
+    jumpLabelRef.current = setTimeout(() => setLastJumpMs(null), 2800);
+
     if (nearest) {
       setHighlightedMsgId(nearest.id);
       if (switchToTranscript) {
-        setActiveTab('transcript');
         setTimeout(() => {
           msgRefs.current[nearest.id]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 100);
@@ -675,8 +683,7 @@ export function FeedbackPage() {
                 {/* No recording indicator */}
                 {!playbackUrl && (
                   <div className="absolute inset-0 flex items-center px-2 gap-1.5">
-                    <span className="text-[9px]" style={{ color: 'var(--text3)' }}>No recording — click a timestamp</span>
-                    <span className="text-[8px] px-1 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text3)' }}>▶ to play</span>
+                    <span className="text-[9px]" style={{ color: 'var(--text3)' }}>No recording — click timestamps to jump to transcript</span>
                   </div>
                 )}
               </div>
