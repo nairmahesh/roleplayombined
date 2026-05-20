@@ -52,7 +52,7 @@ export function PreCallBriefing({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -16 }}
-      className="flex flex-col gap-5 max-w-2xl mx-auto"
+      className="flex flex-col gap-5 max-w-2xl mx-auto min-h-0"
     >
       {/* Who you're calling */}
       <div className="rounded-[16px] border relative overflow-hidden" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
@@ -210,9 +210,14 @@ export function PreCallBriefing({
                         </div>
                       ) : (
                         <div className="mt-3 flex flex-col gap-3">
-                          <p className="text-[13px] leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text2)' }}>
-                            {entry.content}
-                          </p>
+                          <div
+                            className="overflow-y-auto rounded-[8px] pr-1"
+                            style={{ maxHeight: '260px' }}
+                          >
+                            <p className="text-[13px] leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text2)' }}>
+                              {entry.content}
+                            </p>
+                          </div>
                           {!isRead && (
                             <button
                               onClick={e => { e.stopPropagation(); markRead(entry.id); }}

@@ -37,7 +37,7 @@ const LANGUAGES = [
 ];
 
 
-const TEMPLATES: Array<ScenarioConfig & { id: string; label: string; avatarId: string; sessionType?: SessionType }> = [
+const TEMPLATES: Array<ScenarioConfig & { id: string; label: string; avatarId: string; sessionType?: SessionType; userBriefing?: KnowledgeBaseEntry[]; botKnowledge?: KnowledgeBaseEntry[] }> = [
   {
     id: 't1', label: 'Enterprise CRM Pitch', avatarId: 'alex',
     industry: 'SaaS', roleplayType: 'Sales Pitch', displayEmoji: '',
@@ -207,6 +207,142 @@ How to behave: Be warm and engaged. Ask practical questions about implementation
 Your current situation: Unplanned downtime is costing ~$180K/month. Your maintenance team is reactive, not predictive. You've been burned by a failed automation project 2 years ago and are cautious.
 
 How to behave: Be gruff and direct. Challenge every claim with real-world edge cases. Demand specifics on integration complexity and downtime risk. If the rep demonstrates genuine manufacturing knowledge and credible ROI data, warm up gradually and ask about a pilot program.`,
+  },
+  {
+    id: 't_demo_kb', label: 'FinTech Partnership Negotiation (Demo)', avatarId: 'emma',
+    industry: 'Banking', roleplayType: 'Negotiation', displayEmoji: '',
+    displayName: 'Emma Wilson', displayTitle: 'Head of Treasury, First National Bank',
+    difficulty: 'Hard', sessionType: 'ONLINE_MEETING',
+    suggestedQuestions: [
+      "What's your uptime SLA and what's the compensation for breaches?",
+      'How do you handle regulatory audits and data residency requirements?',
+      'We need 99.99% availability — can you guarantee that contractually?',
+      "What's your exit clause and data portability policy?",
+      'Why should we choose you over an established banking software vendor?',
+      'What does the 24-month pricing look like after the introductory rate expires?',
+    ],
+    personaContext: `You are the Head of Treasury at First National Bank, a regional bank with $14B in assets. You are in a negotiation meeting with a FinTech vendor who wants to power your new real-time payments infrastructure.
+
+Your current situation: The bank's board has approved a digital transformation budget of $2.4M. You've shortlisted two vendors. This vendor has the better technology but is pushing for a 3-year contract with steep early-termination fees. Your legal team flagged concerns about data sovereignty and SLA enforcement.
+
+How to behave: Be methodical and risk-averse. Clarify every contractual term. Push back firmly on pricing and lock-in. Ask for references from comparable banks. If the rep handles regulatory and SLA questions confidently, begin to warm up and explore partnership terms.`,
+    userBriefing: [
+      {
+        id: 'kb-demo-1',
+        label: 'First National Bank — Account Overview',
+        type: 'text' as const,
+        forRole: 'user' as const,
+        createdAt: new Date().toISOString(),
+        content: `FIRST NATIONAL BANK — ACCOUNT BRIEF
+
+Assets Under Management: $14.2B
+Headquarters: Chicago, IL
+Employees: 2,400
+Core Banking Platform: Fiserv Premier (legacy, 12 years old)
+Annual IT Budget: $28M (18% allocated to transformation projects)
+
+Key Pain Points:
+• Real-time payment processing currently takes 4–6 hours (ACH batch)
+• Fraud detection is rule-based, generating ~1,200 false positives/day
+• Regulatory reporting takes 3 FTE-days per quarter to compile manually
+• Mobile app NPS score: 34 (industry average: 52)
+
+Decision Makers:
+• Emma Wilson — Head of Treasury (primary contact, final sign-off)
+• David Park — CTO (technical evaluation lead)
+• Janet Reyes — Chief Compliance Officer (veto power on data/regulatory issues)
+• Board approval required for contracts over $1.5M
+
+Budget Confirmed: $2.4M approved for Year 1. Multi-year deals require board re-approval annually.
+
+Competitor in Play: Temenos Payments Hub (shortlisted alongside us). Emma prefers our tech but Temenos has an existing relationship from a subsidiary project.`,
+      },
+      {
+        id: 'kb-demo-2',
+        label: 'Our Product — Key Capabilities & Differentiators',
+        type: 'text' as const,
+        forRole: 'user' as const,
+        createdAt: new Date().toISOString(),
+        content: `PITCHIQ PAYMENTS PLATFORM — PRODUCT BRIEF
+
+Core Product: Real-Time Payments Infrastructure (ISO 20022 compliant)
+
+Key Features:
+• Sub-second payment processing (avg 340ms, 99th percentile < 1.2s)
+• AI-powered fraud detection — reduces false positives by 73% vs rule-based systems
+• Regulatory reporting: automated DFAST, BSA/AML, and Reg E reports
+• Cloud-native: AWS GovCloud + Azure Government dual-deployment
+• Open API (REST + webhooks) — integrates with Fiserv, Jack Henry, FIS core systems
+• SOC 2 Type II certified, PCI DSS Level 1, FFIEC compliant
+
+Pricing (for this deal):
+• Year 1: $1.8M (implementation $400K + $1.4M platform license)
+• Year 2–3: $1.2M/year platform license (15% discount locked in)
+• Standard contract: 3-year term, 18-month early termination fee
+• NEGOTIATION ROOM: Can offer 2-year term, reduce ETF to 6 months, add 99.95% SLA with 10% monthly credit for breaches
+
+SLA: Standard 99.9% uptime. Can commit to 99.95% with credit provisions.
+Data Residency: US-only deployment, data never leaves AWS us-east-1 / us-west-2.
+References Available: Midwest Community Bank ($8B assets), Pacific Savings ($11B assets)`,
+      },
+      {
+        id: 'kb-demo-3',
+        label: 'Negotiation Strategy & Objection Handling Guide',
+        type: 'text' as const,
+        forRole: 'user' as const,
+        createdAt: new Date().toISOString(),
+        content: `NEGOTIATION BRIEF — FIRST NATIONAL BANK
+
+YOUR GOAL: Close a 2-year minimum deal at $2.85M total value.
+
+EMMA'S KNOWN CONCERNS (from discovery call notes):
+1. Contract lock-in risk — she's been burned by a 5-year Fiserv contract she can't exit
+2. SLA enforceability — wants financial penalties, not just "best efforts" language
+3. Data sovereignty — CCO Janet Reyes specifically flagged EU data residency. Address: we are US-only.
+4. Pricing post-Year-1 — fears "introductory rate" pricing that escalates
+5. Temenos relationship — don't mention them; let her bring it up if she chooses
+
+CONCESSIONS YOU CAN MAKE (in order — don't give these all at once):
+• Shorten contract from 3 years to 2 years (use as opener if pushed)
+• Reduce early termination fee from 18 months to 6 months of fees
+• Add 99.95% SLA with 10% monthly credit for each 0.01% below threshold
+• Include a 90-day pilot clause with a cap of $180K before full commitment
+• Provide Midwest Community Bank reference call within 5 business days
+
+DO NOT concede on:
+• Year 1 pricing below $1.8M (margin floor)
+• Implementation timeline under 6 months (realistic delivery risk)
+• Unlimited liability clauses
+
+KEY QUESTION TO ASK: "If we address the contract term and SLA concerns, what would the path to a decision look like on your end?"`,
+      },
+      {
+        id: 'kb-demo-4',
+        label: "Emma Wilson — LinkedIn & Background Research",
+        type: 'text' as const,
+        forRole: 'user' as const,
+        createdAt: new Date().toISOString(),
+        content: `EMMA WILSON — RESEARCH NOTES
+
+LinkedIn: linkedin.com/in/emmawilson-treasury
+Current Role: Head of Treasury, First National Bank (6 years)
+Previous: VP Treasury Operations, JPMorgan Chase (8 years); Senior Analyst, Deloitte Financial Advisory (4 years)
+Education: MBA, University of Chicago Booth School of Business; B.S. Finance, University of Michigan
+
+Publications / Talks:
+• Speaker at Bank Director Annual Conference 2023: "Real-Time Payments: Risk or Opportunity?"
+• Co-authored FNB internal white paper: "Digital Transformation Governance Framework" (2022)
+
+Personal Style (from discovery call):
+• Very analytical — will fact-check claims in real time
+• Values long-term partnerships over transactional deals
+• Responds well to peer references ("what are banks like us actually doing")
+• Dislikes high-pressure tactics; walked out of a vendor meeting last year for this reason
+• Has a sense of humor — opens up when rapport is established
+
+Tip: Reference her Bank Director talk early. She mentioned real-time payments being "the biggest risk and the biggest opportunity of the decade" — align your positioning to this framing.`,
+      },
+    ],
   },
 ];
 
@@ -672,8 +808,8 @@ export function PracticePage() {
       setSessionType((t as typeof TEMPLATES[number] & { sessionType?: SessionType }).sessionType!);
     }
     setActiveTeamRoleplayId(null);
-    setBotKnowledge([]);
-    setUserBriefing([]);
+    setBotKnowledge(t.botKnowledge ?? []);
+    setUserBriefing(t.userBriefing ?? []);
     autoGenRef.current = `${t.industry}::${t.roleplayType}`;
   };
 
@@ -2647,11 +2783,13 @@ export function PracticePage() {
                   </div>
                 </div>
 
-                {/* Scenario context — full, no truncation */}
+                {/* Scenario context — scrollable when long */}
                 {personaContext && (
                   <div className="bg-white/[0.03] border border-white/[0.07] rounded-[12px] p-4">
                     <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wider mb-2">Scenario Context</p>
-                    <p className="text-[12.5px] text-white/80 leading-relaxed whitespace-pre-wrap">{personaContext}</p>
+                    <div className="overflow-y-auto" style={{ maxHeight: '180px' }}>
+                      <p className="text-[12.5px] text-white/80 leading-relaxed whitespace-pre-wrap pr-1">{personaContext}</p>
+                    </div>
                   </div>
                 )}
 
