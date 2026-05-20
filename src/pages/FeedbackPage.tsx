@@ -670,8 +670,8 @@ export function FeedbackPage() {
 
       {/* ── Tab bar ───────────────────────────────────────────────────────────── */}
       <div
-        className="flex border-x border-b overflow-x-auto"
-        style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}
+        className="flex border-x border-b overflow-x-auto scrollbar-none"
+        style={{ background: 'var(--bg2)', borderColor: 'var(--border)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {TABS.map(tab => {
           const Icon = tab.icon;
@@ -680,11 +680,11 @@ export function FeedbackPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="flex items-center gap-1.5 px-4 py-3 text-[12.5px] font-medium transition-colors relative whitespace-nowrap"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-3 text-[11.5px] sm:text-[12.5px] font-medium transition-colors relative whitespace-nowrap flex-1 justify-center sm:flex-none sm:justify-start min-w-0"
               style={{ color: active ? 'var(--text)' : 'var(--text3)' }}
             >
-              <Icon size={13} />
-              {tab.label}
+              <Icon size={12} className="flex-shrink-0" />
+              <span className="hidden xs:inline sm:inline">{tab.label}</span>
               {active && (
                 <div className="absolute bottom-0 left-0 right-0 h-[2px] rounded-t-full" style={{ background: 'var(--accent)' }} />
               )}
@@ -754,13 +754,55 @@ export function FeedbackPage() {
                       );
                     })()}
 
+                    {/* ── Compact 2-column criteria grid (Hyperbound-style) ── */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0">
+                      {scorecardGroups.map((group, gi) => (
+                        <div key={gi} className="flex flex-col">
+                          <div className="flex items-center justify-between px-0 py-2 border-b" style={{ borderColor: 'var(--border)' }}>
+                            <span className="text-[11px] font-semibold" style={{ color: 'var(--text2)' }}>{group.group}</span>
+                            <span className="text-[10.5px] font-bold" style={{ color: group.earnedPoints === group.maxPoints ? '#06D6A0' : group.earnedPoints === 0 ? '#FF6B6B' : '#FFD166' }}>
+                              {group.earnedPoints} / {group.maxPoints}
+                            </span>
+                          </div>
+                          {group.criteria.map((criterion, ci) => (
+                            <button
+                              key={ci}
+                              onClick={() => {
+                                const groupId = `sg-${gi}`;
+                                setExpandedId(expandedId === groupId ? null : groupId);
+                                // Scroll to accordion section below
+                                setTimeout(() => {
+                                  const el = document.getElementById(`scorecard-group-${gi}`);
+                                  el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                }, 80);
+                              }}
+                              className="flex items-center gap-2 py-2 border-b text-left w-full group/crit hover:bg-white/[0.02] transition-colors"
+                              style={{ borderColor: 'var(--border)' }}
+                            >
+                              {criterion.passed
+                                ? <CheckCircle size={13} className="flex-shrink-0" style={{ color: '#06D6A0' }} />
+                                : <X size={13} className="flex-shrink-0" style={{ color: '#FF6B6B' }} />
+                              }
+                              <span className="text-[11.5px] leading-snug flex-1 min-w-0 truncate" style={{ color: 'var(--text2)' }}>
+                                {criterion.question}
+                              </span>
+                              <span className="text-[9px] flex-shrink-0 font-medium opacity-0 group-hover/crit:opacity-60 transition-opacity" style={{ color: 'var(--text3)' }}>
+                                {criterion.passed ? '1/1' : '0/1'}
+                              </span>
+                              <ChevronRight size={10} className="flex-shrink-0 opacity-0 group-hover/crit:opacity-40 transition-opacity" style={{ color: 'var(--text3)' }} />
+                            </button>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+
                     {/* Criterion groups accordion */}
                     {scorecardGroups.map((group, gi) => {
                       const groupId = `sg-${gi}`;
                       const isOpen = expandedId === groupId;
                       const groupColor = group.earnedPoints === group.maxPoints ? '#06D6A0' : group.earnedPoints === 0 ? '#FF6B6B' : '#FFD166';
                       return (
-                        <div key={gi} className="rounded-[12px] border overflow-hidden" style={{ borderColor: isOpen ? 'rgba(91,111,255,0.3)' : 'var(--border)', background: 'var(--bg2)' }}>
+                        <div key={gi} id={`scorecard-group-${gi}`} className="rounded-[12px] border overflow-hidden" style={{ borderColor: isOpen ? 'rgba(91,111,255,0.3)' : 'var(--border)', background: 'var(--bg2)' }}>
                           <button
                             onClick={() => setExpandedId(isOpen ? null : groupId)}
                             className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
@@ -1110,51 +1152,53 @@ export function FeedbackPage() {
                 {/* AI Coach debrief */}
                 {feedback && (
                   <div className="flex flex-col gap-3 mt-1">
-                    {/* Overall narrative */}
-                    {feedback.overallFeedback && (
-                      <div className="rounded-[12px] border p-4" style={{ background: 'var(--bg2)', borderColor: 'rgba(91,111,255,0.2)' }}>
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(91,111,255,0.15)' }}>
-                            <Zap size={10} style={{ color: 'var(--accent)' }} />
-                          </div>
-                          <span className="font-display text-[13px] font-bold" style={{ color: 'var(--text)' }}>AI Coach Summary</span>
-                        </div>
-                        <p className="text-[12.5px] leading-relaxed" style={{ color: 'var(--text2)' }}>{feedback.overallFeedback}</p>
-                      </div>
-                    )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {/* Strengths */}
-                      <div className="rounded-[12px] border p-4" style={{ background: 'var(--bg2)', borderColor: 'rgba(6,214,160,0.2)' }}>
-                        <div className="flex items-center gap-2 mb-3">
-                          <CheckCircle size={13} style={{ color: '#06D6A0' }} />
-                          <span className="font-display text-[13px] font-bold" style={{ color: 'var(--text)' }}>What You Did Well</span>
-                        </div>
-                        <ul className="flex flex-col gap-2.5">
-                          {feedback.strengths.map((s, i) => (
-                            <li key={i} className="flex gap-2.5 text-[12.5px] leading-relaxed" style={{ color: 'var(--text2)' }}>
-                              <span className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-[8px] font-bold" style={{ background: 'rgba(6,214,160,0.15)', color: '#06D6A0' }}>✓</span>
-                              {s}
-                            </li>
-                          ))}
-                        </ul>
+                    {/* ── Recommendations card (prominent, Hyperbound-style) ── */}
+                    <div className="rounded-[14px] border overflow-hidden" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
+                      {/* Card header */}
+                      <div className="flex items-center gap-2.5 px-4 py-3 border-b" style={{ borderColor: 'var(--border)', background: 'rgba(91,111,255,0.04)' }}>
+                        <Zap size={12} style={{ color: 'var(--accent)' }} />
+                        <span className="text-[11.5px] font-semibold" style={{ color: 'var(--accent)' }}>Recommendations from AI Coach</span>
                       </div>
 
-                      {/* Improvements */}
-                      <div className="rounded-[12px] border p-4" style={{ background: 'var(--bg2)', borderColor: 'rgba(255,209,102,0.2)' }}>
-                        <div className="flex items-center gap-2 mb-3">
-                          <AlertTriangle size={13} style={{ color: '#FFD166' }} />
-                          <span className="font-display text-[13px] font-bold" style={{ color: 'var(--text)' }}>Fix These Next Call</span>
+                      {/* Summary narrative */}
+                      {feedback.overallFeedback && (
+                        <div className="px-4 pt-4 pb-3 border-b" style={{ borderColor: 'var(--border)' }}>
+                          <p className="text-[12.5px] leading-relaxed" style={{ color: 'var(--text2)' }}>{feedback.overallFeedback}</p>
                         </div>
-                        <ul className="flex flex-col gap-2.5">
-                          {feedback.improvements.map((s, i) => (
-                            <li key={i} className="flex gap-2.5 text-[12.5px] leading-relaxed" style={{ color: 'var(--text2)' }}>
-                              <span className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-[8px] font-bold" style={{ background: 'rgba(255,209,102,0.15)', color: '#FFD166' }}>→</span>
-                              {s}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                      )}
+
+                      {/* What to improve — full width, prominent */}
+                      {feedback.improvements.length > 0 && (
+                        <div className="px-4 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
+                          <div className="text-[12px] font-semibold mb-3" style={{ color: 'var(--text)' }}>What to improve:</div>
+                          <ul className="flex flex-col gap-3">
+                            {feedback.improvements.map((s, i) => (
+                              <li key={i} className="flex gap-3">
+                                <span className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-[9px] font-bold" style={{ background: 'rgba(255,107,107,0.12)', color: '#FF6B6B', border: '1px solid rgba(255,107,107,0.2)' }}>
+                                  {i + 1}
+                                </span>
+                                <span className="text-[12.5px] leading-relaxed" style={{ color: 'var(--text2)' }}>{s}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* What went well */}
+                      {feedback.strengths.length > 0 && (
+                        <div className="px-4 py-4">
+                          <div className="text-[12px] font-semibold mb-3" style={{ color: 'var(--text)' }}>What went well:</div>
+                          <ul className="flex flex-col gap-2.5">
+                            {feedback.strengths.map((s, i) => (
+                              <li key={i} className="flex gap-3">
+                                <CheckCircle size={14} className="flex-shrink-0 mt-0.5" style={{ color: '#06D6A0' }} />
+                                <span className="text-[12.5px] leading-relaxed" style={{ color: 'var(--text2)' }}>{s}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
 
                     {/* Pro Tip */}
