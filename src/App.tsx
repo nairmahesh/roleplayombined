@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, startTransition } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore, useThemeStore } from '@/lib/store';
@@ -23,6 +23,17 @@ const SuperAdminStatsPage = lazy(() => import('@/pages/SuperAdminStatsPage').the
 const PlanSettingsPage    = lazy(() => import('@/pages/PlanSettingsPage').then(m => ({ default: m.PlanSettingsPage })));
 const PersonasPage        = lazy(() => import('@/pages/PersonasPage').then(m => ({ default: m.PersonasPage })));
 const AnalyticsPage       = lazy(() => import('@/pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
+
+// Eagerly preload all main nav pages so subsequent navigations are instant
+startTransition(() => {
+  import('@/pages/DashboardPage');
+  import('@/pages/PracticePage');
+  import('@/pages/SessionsPage');
+  import('@/pages/LeaderboardPage');
+  import('@/pages/AnalyticsPage');
+  import('@/pages/PersonasPage');
+  import('@/pages/TeamPage');
+});
 
 function PageLoader() {
   return (
