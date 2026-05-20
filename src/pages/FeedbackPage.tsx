@@ -4,19 +4,18 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { RefreshCw, Share2, ChevronRight, CircleCheck as CheckCircle, TriangleAlert as AlertTriangle, Lightbulb, Play, Pause, Search, Copy, Download, MessageSquare, Clock, Shield, BarChart3, Gauge, Activity, Mic, ChevronDown, CircleAlert as AlertCircle, X, Info, Trophy, RotateCcw, Zap, Target, ChevronLeft, Film } from 'lucide-react';
+import { RefreshCw, Share2, ChevronRight, CircleCheck as CheckCircle, TriangleAlert as AlertTriangle, Lightbulb, Play, Pause, Search, Copy, Download, MessageSquare, Clock, Shield, Mic, ChevronDown, CircleAlert as AlertCircle, X, Info, Trophy, RotateCcw, Zap, Target, ChevronLeft, Film } from 'lucide-react';
 import { sessionsApi, peerSessionsApi } from '@/lib/api';
 import { connectSocket } from '@/lib/socket';
 import { Session, ParsedFeedback, FRAMEWORK_INFO, ScorecardGroup, PeerSession } from '@/types';
 import { RECORDINGS_LS_KEY, type RecordingMeta } from '@/components/practice/OnlineMeetingRoom';
 import clsx from 'clsx';
 
-type Tab = 'scorecard' | 'transcript' | 'analytics' | 'objections' | 'leaderboard';
+type Tab = 'scorecard' | 'transcript' | 'objections' | 'leaderboard';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'scorecard',   label: 'Scorecard',   icon: Target       },
   { id: 'transcript',  label: 'Transcript',  icon: MessageSquare },
-  { id: 'analytics',  label: 'Analytics',   icon: BarChart3     },
   { id: 'objections',  label: 'Objections',  icon: Shield        },
   { id: 'leaderboard',label: 'Leaderboard', icon: Trophy        },
 ];
@@ -44,18 +43,6 @@ function scoreBadgeStyle(score?: number): React.CSSProperties {
   return { background: 'rgba(255,107,107,0.12)', color: 'var(--accent4)', border: '1px solid rgba(255,107,107,0.25)' };
 }
 
-function getRating(metric: 'talkRatio' | 'talkSpeed' | 'fillerWpm' | 'monologue', value: number) {
-  const specs = {
-    talkRatio: { good: [40, 60] as [number,number], avg: [30, 70] as [number,number], goodLabel: 'Balanced', badLabel: value > 70 ? 'Talking too much' : 'Not engaging enough' },
-    talkSpeed: { good: [120, 160] as [number,number], avg: [100, 180] as [number,number], goodLabel: 'Good pace', badLabel: value > 180 ? 'Too fast' : 'Too slow' },
-    fillerWpm:  { good: [0, 1] as [number,number],   avg: [1, 2] as [number,number],     goodLabel: 'Clean',    badLabel: 'Too many fillers' },
-    monologue:  { good: [0, 30] as [number,number],  avg: [30, 60] as [number,number],   goodLabel: 'Good',     badLabel: 'Too long' },
-  };
-  const { good, avg, goodLabel, badLabel } = specs[metric];
-  if (value >= good[0] && value <= good[1]) return { label: goodLabel, color: '#06D6A0' };
-  if (value >= avg[0] && value <= avg[1])   return { label: 'Average',   color: '#FFD166' };
-  return { label: badLabel, color: '#FF6B6B' };
-}
 
 function ScoreRing({ score, size = 80 }: { score: number; size?: number }) {
   const color = score >= 80 ? '#06D6A0' : score >= 65 ? '#FFD166' : '#FF6B6B';
@@ -415,36 +402,6 @@ export function FeedbackPage() {
     const rect = trackRef.current.getBoundingClientRect();
     seekTo(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * audioDuration);
   };
-
-  const analytics = useMemo(() => {
-    const messages = session?.messages || [];
-    const duration = session?.durationSeconds || 0;
-    if (!messages.length) return null;
-    const FILLERS = ['um','uh','like','you know','so','actually','basically','literally','right','hmm','i mean','well','kind of','sort of'];
-    const countWords = (t: string) => t.trim().split(/\s+/).filter(Boolean).length;
-    const repMsgs  = messages.filter(m => m.role === 'user');
-    const aiMsgs   = messages.filter(m => m.role === 'assistant');
-    const repWords = repMsgs.reduce((a, m) => a + countWords(m.content), 0);
-    const aiWords  = aiMsgs.reduce((a, m) => a + countWords(m.content), 0);
-    const total    = repWords + aiWords;
-    const talkRatioPct = total > 0 ? Math.round((repWords / total) * 100) : 50;
-    const repSpeakingMins = duration > 0 ? (duration * (talkRatioPct / 100)) / 60 : repWords / 130;
-    const talkSpeedWpm   = repSpeakingMins > 0 ? Math.round(repWords / repSpeakingMins) : 0;
-    const repText = repMsgs.map(m => m.content.toLowerCase()).join(' ');
-    let fillerCount = 0;
-    FILLERS.forEach(fw => { const rx = new RegExp(`\\b${fw.replace(/\s+/g, '\\s+')}\\b`, 'g'); fillerCount += (repText.match(rx) || []).length; });
-    const fillerWpm = repSpeakingMins > 0 ? parseFloat((fillerCount / repSpeakingMins).toFixed(2)) : 0;
-    let longestSecs = 0, curWords = 0, inRun = false;
-    messages.forEach(m => {
-      if (m.role === 'user') { curWords += countWords(m.content); inRun = true; }
-      else if (inRun) {
-        const s = talkSpeedWpm > 0 ? (curWords / talkSpeedWpm) * 60 : curWords * 0.4;
-        if (s > longestSecs) longestSecs = s;
-        curWords = 0; inRun = false;
-      }
-    });
-    return { talkRatioPct, listenRatioPct: 100 - talkRatioPct, talkSpeedWpm, fillerWpm, fillerCount, longestMonologueSecs: Math.round(longestSecs) };
-  }, [session]);
 
   const filteredMessages = useMemo(() => {
     const msgs = session?.messages || [];
@@ -1295,172 +1252,6 @@ export function FeedbackPage() {
                       );
                     })}
                   </div>
-                )}
-              </div>
-            )}
-
-            {/* ── ANALYTICS TAB ──────────────────────────────────────────────── */}
-            {activeTab === 'analytics' && (
-              <div className="flex flex-col gap-4">
-                {!analytics ? (
-                  <div className="rounded-[12px] border p-12 text-center" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
-                    <BarChart3 size={28} className="mx-auto mb-3" style={{ color: 'var(--text3)' }} />
-                    <p className="text-sm" style={{ color: 'var(--text3)' }}>No analytics — session transcript is empty</p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Talk ratio */}
-                    <div className="rounded-[12px] border p-5" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
-                      <div className="flex items-center gap-2 mb-4">
-                        <Mic size={13} style={{ color: 'var(--accent)' }} />
-                        <span className="font-display text-[14px] font-bold" style={{ color: 'var(--text)' }}>Talk / Listen Ratio</span>
-                      </div>
-                      <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 mb-4">
-                        {[
-                          { label: 'You spoke', pct: analytics.talkRatioPct, color: getRating('talkRatio', analytics.talkRatioPct).color },
-                          { label: 'Prospect spoke', pct: analytics.listenRatioPct, color: 'rgba(255,255,255,0.15)' },
-                        ].map(({ label, pct, color }) => (
-                          <div key={label} className="flex-1">
-                            <div className="flex justify-between mb-1.5">
-                              <span className="text-[12px]" style={{ color: 'var(--text2)' }}>{label}</span>
-                              <span className="font-display text-[18px] font-bold" style={{ color }}>{pct}%</span>
-                            </div>
-                            <div className="h-3 rounded-full overflow-hidden" style={{ background: 'var(--bg4)' }}>
-                              <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: color }} />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      {(() => {
-                        const r = getRating('talkRatio', analytics.talkRatioPct);
-                        return (
-                          <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ color: r.color, background: `${r.color}18`, border: `1px solid ${r.color}35` }}>{r.label}</span>
-                              <span className="text-[11px]" style={{ color: 'var(--text3)' }}>Ideal range: 40–60% for active selling</span>
-                            </div>
-                            {analytics.talkRatioPct > 70 && (
-                              <span className="text-[11px] flex items-center gap-1" style={{ color: '#FFD166' }}>
-                                <Lightbulb size={10} /> Ask more questions — stop selling, start listening
-                              </span>
-                            )}
-                            {analytics.talkRatioPct < 30 && (
-                              <span className="text-[11px] flex items-center gap-1" style={{ color: '#FFD166' }}>
-                                <Lightbulb size={10} /> You went quiet — guide the conversation more actively
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })()}
-                    </div>
-
-                    {/* 3 metric cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      {[
-                        { icon: Gauge, label: 'Talk Speed', value: analytics.talkSpeedWpm, unit: 'wpm', ideal: '120–160 wpm', metric: 'talkSpeed' as const,
-                          tip: analytics.talkSpeedWpm > 160 ? 'Slow down — prospects need time to absorb your pitch. Pause after key claims.' : analytics.talkSpeedWpm < 100 && analytics.talkSpeedWpm > 0 ? 'Speed up slightly — a too-slow pace can lose attention. Aim for 130–150 wpm.' : null },
-                        { icon: Activity, label: 'Filler Words', value: analytics.fillerWpm, unit: `per min (${analytics.fillerCount} total)`, ideal: '<1 per minute', metric: 'fillerWpm' as const,
-                          tip: analytics.fillerWpm > 2 ? 'Replace fillers with deliberate pauses — silence projects confidence and gives you time to think.' : null },
-                        { icon: Clock, label: 'Longest Monologue', value: fmtSecs(analytics.longestMonologueSecs), unit: 'uninterrupted', ideal: 'under 30 sec', metric: 'monologue' as const,
-                          tip: analytics.longestMonologueSecs > 45 ? 'Break up long stretches with a check-in question: "Does that resonate with what you\'re seeing?" — keeps the prospect engaged.' : null },
-                      ].map(({ icon: Icon, label, value, unit, ideal, metric, tip }) => {
-                        const numValue = typeof value === 'number' ? value : analytics.longestMonologueSecs;
-                        const r = getRating(metric, numValue);
-                        return (
-                          <div key={label} className="rounded-[12px] border p-4" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
-                            <div className="flex items-center gap-2 mb-3">
-                              <Icon size={12} style={{ color: 'var(--text3)' }} />
-                              <span className="text-[12px] font-semibold" style={{ color: 'var(--text2)' }}>{label}</span>
-                            </div>
-                            <div className="font-display text-[28px] font-bold leading-none mb-1" style={{ color: 'var(--text)' }}>
-                              {typeof value === 'number' ? value.toFixed(value < 10 ? 2 : 0) : value}
-                            </div>
-                            <div className="text-[10.5px] mb-3" style={{ color: 'var(--text3)' }}>{unit}</div>
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ color: r.color, background: `${r.color}18`, border: `1px solid ${r.color}35` }}>{r.label}</span>
-                            <div className="mt-1.5 text-[10px]" style={{ color: 'var(--text3)' }}>Target: {ideal}</div>
-                            {tip && (
-                              <div className="mt-2.5 flex items-start gap-1.5 text-[11px] leading-relaxed pt-2.5" style={{ color: '#FFD166', borderTop: '1px solid var(--border)' }}>
-                                <Lightbulb size={9} className="flex-shrink-0 mt-0.5" />
-                                {tip}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Question quality analysis */}
-                    {(() => {
-                      const msgs = session?.messages || [];
-                      const repMsgs = msgs.filter(m => m.role === 'user');
-                      const questions = repMsgs.filter(m => m.content.includes('?'));
-                      const openEnded = questions.filter(m => /^(what|how|why|tell me|describe|walk me|can you explain|help me understand)/i.test(m.content.trim()));
-                      const closedYesNo = questions.filter(m => /^(do|did|does|is|are|was|were|have|has|can|could|would|will|should)/i.test(m.content.trim()));
-                      if (questions.length === 0) return null;
-                      return (
-                        <div className="rounded-[12px] border p-4" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
-                          <div className="flex items-center gap-2 mb-3">
-                            <Info size={12} style={{ color: 'var(--accent)' }} />
-                            <span className="font-display text-[14px] font-bold" style={{ color: 'var(--text)' }}>Question Quality</span>
-                          </div>
-                          <div className="grid grid-cols-3 gap-3 mb-3">
-                            {[
-                              { label: 'Total questions', value: questions.length, color: 'var(--text)' },
-                              { label: 'Open-ended', value: openEnded.length, color: '#06D6A0', tip: 'Good — reveals pain' },
-                              { label: 'Yes/No (closed)', value: closedYesNo.length, color: closedYesNo.length > openEnded.length ? '#FF6B6B' : '#FFD166', tip: 'Use sparingly' },
-                            ].map(({ label, value, color, tip }) => (
-                              <div key={label} className="text-center p-3 rounded-[10px]" style={{ background: 'var(--bg3)' }}>
-                                <div className="font-display text-[22px] font-bold" style={{ color }}>{value}</div>
-                                <div className="text-[10.5px] mt-0.5" style={{ color: 'var(--text3)' }}>{label}</div>
-                                {tip && <div className="text-[9.5px] mt-0.5 font-medium" style={{ color }}>{tip}</div>}
-                              </div>
-                            ))}
-                          </div>
-                          {closedYesNo.length > openEnded.length && (
-                            <div className="flex items-start gap-2 p-3 rounded-[9px]" style={{ background: 'rgba(255,209,102,0.07)', border: '1px solid rgba(255,209,102,0.2)' }}>
-                              <Lightbulb size={11} className="flex-shrink-0 mt-0.5" style={{ color: '#FFD166' }} />
-                              <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text2)' }}>
-                                You asked more closed than open-ended questions. Flip the ratio — open-ended questions (What, How, Why) unlock deeper insights and give you more control. Try: <em>"What's driving this decision now?"</em> instead of <em>"Are you looking to solve this?"</em>
-                              </p>
-                            </div>
-                          )}
-                          {openEnded.length > 0 && openEnded.length >= closedYesNo.length && (
-                            <div className="flex items-start gap-2 p-3 rounded-[9px]" style={{ background: 'rgba(6,214,160,0.06)', border: '1px solid rgba(6,214,160,0.2)' }}>
-                              <CheckCircle size={11} className="flex-shrink-0 mt-0.5" style={{ color: '#06D6A0' }} />
-                              <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text2)' }}>
-                                Strong question ratio — your open-ended questions create space for the prospect to reveal priorities. Keep it up.
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
-
-                    {/* Conversation flow pattern */}
-                    {(() => {
-                      const msgs = session?.messages || [];
-                      if (msgs.length < 4) return null;
-                      const consecutive = msgs.reduce((max, m, i, arr) => {
-                        if (i === 0 || m.role !== arr[i-1].role || m.role !== 'user') return max;
-                        let count = 1;
-                        let j = i;
-                        while (j > 0 && arr[j].role === 'user') { count++; j--; }
-                        return Math.max(max, count);
-                      }, 0);
-                      if (consecutive < 2) return null;
-                      return (
-                        <div className="flex items-start gap-3 p-4 rounded-[12px] border" style={{ background: 'rgba(255,107,107,0.05)', borderColor: 'rgba(255,107,107,0.2)' }}>
-                          <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#FF6B6B' }} />
-                          <div>
-                            <div className="text-[13px] font-semibold mb-1" style={{ color: 'var(--text)' }}>Conversation flow: interruption pattern detected</div>
-                            <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text3)' }}>
-                              You sent {consecutive} messages in a row without waiting for the prospect to respond. In real sales conversations, this reads as pushing too hard. Let each message land — then wait for the response before continuing.
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </>
                 )}
               </div>
             )}
