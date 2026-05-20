@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { RefreshCw, Share2, ChevronRight, CircleCheck as CheckCircle, TriangleAlert as AlertTriangle, Lightbulb, Play, Pause, Search, Copy, Download, MessageSquare, Clock, Shield, BarChart3, Gauge, Activity, Mic, ChevronDown, CircleAlert as AlertCircle, X, Info, Trophy, RotateCcw, Zap, Target, ChevronLeft } from 'lucide-react';
+import { RefreshCw, Share2, ChevronRight, CircleCheck as CheckCircle, TriangleAlert as AlertTriangle, Lightbulb, Play, Pause, Search, Copy, Download, MessageSquare, Clock, Shield, BarChart3, Gauge, Activity, Mic, ChevronDown, CircleAlert as AlertCircle, X, Info, Trophy, RotateCcw, Zap, Target, ChevronLeft, Film } from 'lucide-react';
 import { sessionsApi, peerSessionsApi } from '@/lib/api';
 import { connectSocket } from '@/lib/socket';
 import { Session, ParsedFeedback, FRAMEWORK_INFO, ScorecardGroup, PeerSession } from '@/types';
@@ -261,6 +261,9 @@ export function FeedbackPage() {
   const [lastJumpMs, setLastJumpMs]       = useState<number | null>(null);
   const [audioBarFlash, setAudioBarFlash] = useState(false);
   const [localRecording, setLocalRecording] = useState<RecordingMeta | null>(null);
+  const [showRecordingModal, setShowRecordingModal] = useState(false);
+  const [recVideoPlaying, setRecVideoPlaying] = useState(false);
+  const recVideoRef = useRef<HTMLVideoElement | null>(null);
   const jumpLabelRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioFlashRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -541,6 +544,19 @@ export function FeedbackPage() {
 
           {/* CTAs */}
           <div className="flex flex-wrap items-center gap-2 sm:flex-shrink-0 w-full sm:w-auto">
+            {localRecording && (
+              <button
+                onClick={() => { setShowRecordingModal(true); setRecVideoPlaying(false); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-[9px] border text-[12.5px] font-semibold transition-all hover:scale-105 active:scale-95 relative"
+                style={{ borderColor: 'rgba(239,68,68,0.4)', color: '#f87171', background: 'rgba(239,68,68,0.1)' }}
+                title="View session recording"
+              >
+                <Film size={13} />
+                <span>Recording</span>
+                {/* Pulsing dot */}
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border-2 animate-pulse" style={{ borderColor: 'var(--bg2)' }} />
+              </button>
+            )}
             <button
               onClick={() => navigate('/practice')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-[9px] border text-[12.5px] font-medium transition-all hover:scale-105 active:scale-95"
@@ -667,13 +683,14 @@ export function FeedbackPage() {
                 {audioDuration ? fmt(audioDuration * 1000) : session.durationSeconds ? fmt(session.durationSeconds * 1000) : '--:--'}
               </span>
               {localRecording && (
-                <span
-                  className="flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded flex-shrink-0 font-medium"
-                  style={{ background: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)' }}
-                  title="Local recording from your browser"
+                <button
+                  onClick={() => { setShowRecordingModal(true); setRecVideoPlaying(false); }}
+                  className="flex items-center gap-1 flex-shrink-0 transition-all hover:scale-110 active:scale-95"
+                  style={{ color: '#f87171' }}
+                  title="View session recording"
                 >
-                  <Mic size={8} /> Local
-                </span>
+                  <Film size={13} />
+                </button>
               )}
               <button
                 onClick={() => { if (playbackUrl) { const a = document.createElement('a'); a.href = playbackUrl; a.download = localRecording ? `pitchiq-session-${id}.webm` : `session-${id}.mp3`; a.click(); } }}
@@ -1876,6 +1893,116 @@ export function FeedbackPage() {
           </motion.div>
         </AnimatePresence>
       </div>
+      {/* ── Recording playback modal ─────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showRecordingModal && localRecording && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)' }}
+            onClick={() => setShowRecordingModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.94, y: 16 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.94, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 340, damping: 28 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-2xl rounded-[22px] overflow-hidden flex flex-col shadow-[0_32px_80px_rgba(0,0,0,0.8)]"
+              style={{ background: '#1c1e21' }}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)' }}>
+                    <Film size={15} className="text-red-400" />
+                  </div>
+                  <div>
+                    <div className="text-[14px] font-bold text-white">Session Recording</div>
+                    <div className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                      {new Date(localRecording.recordedAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                      {' · '}
+                      {(localRecording.sizeBytes / (1024 * 1024)).toFixed(1)} MB
+                      {' · '}
+                      {Math.floor(localRecording.durationMs / 60000)}:{String(Math.floor((localRecording.durationMs % 60000) / 1000)).padStart(2, '0')} duration
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const a = document.createElement('a');
+                      a.href = localRecording.objectUrl;
+                      a.download = `pitchiq-session-${id}.webm`;
+                      a.click();
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border text-[12px] transition-colors"
+                    style={{ borderColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.6)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                  >
+                    <Download size={12} /> Download
+                  </button>
+                  <button
+                    onClick={() => setShowRecordingModal(false)}
+                    className="w-7 h-7 rounded-full flex items-center justify-center transition-colors"
+                    style={{ color: 'rgba(255,255,255,0.5)' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.08)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.5)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Video player */}
+              <div className="relative bg-black" style={{ aspectRatio: '16/9' }}>
+                <video
+                  key={localRecording.objectUrl}
+                  ref={recVideoRef}
+                  src={localRecording.objectUrl}
+                  className="w-full h-full object-contain"
+                  onPlay={() => setRecVideoPlaying(true)}
+                  onPause={() => setRecVideoPlaying(false)}
+                  onEnded={() => setRecVideoPlaying(false)}
+                  controls
+                />
+                {!recVideoPlaying && (
+                  <div
+                    className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                    onClick={() => recVideoRef.current?.play()}
+                  >
+                    <div
+                      className="w-16 h-16 rounded-full flex items-center justify-center transition-all hover:scale-110"
+                      style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)' }}
+                    >
+                      <Play size={26} className="text-white ml-1" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between px-5 py-3.5" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <p className="text-[11.5px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                  Stored in browser. Download to keep permanently.
+                </p>
+                <button
+                  onClick={() => setShowRecordingModal(false)}
+                  className="text-[12px] font-medium transition-colors flex-shrink-0"
+                  style={{ color: '#5b6fff' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#818cf8'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#5b6fff'; }}
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -472,7 +472,16 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
           {/* Screen share — takes primary position when active */}
           {screenOn && screenStream && (
             <div className="flex-1 min-h-0 relative rounded-[14px] overflow-hidden bg-black">
-              <video ref={screenVideoRef} autoPlay muted className="w-full h-full object-contain" />
+              <video
+                ref={el => {
+                  (screenVideoRef as React.MutableRefObject<HTMLVideoElement | null>).current = el;
+                  if (el && screenStream) el.srcObject = screenStream;
+                }}
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-contain"
+              />
               <div className="absolute top-2 left-3 text-[11px] text-white/60 bg-black/40 px-2 py-0.5 rounded">
                 Your screen
               </div>
@@ -526,7 +535,16 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
               style={{ background: '#3c4043', minHeight: screenOn ? 0 : 180 }}
             >
               {camOn && localStream ? (
-                <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
+                <video
+                  ref={el => {
+                    (localVideoRef as React.MutableRefObject<HTMLVideoElement | null>).current = el;
+                    if (el && localStream) el.srcObject = localStream;
+                  }}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <div className="flex flex-col items-center gap-2">
                   <div className={clsx(
