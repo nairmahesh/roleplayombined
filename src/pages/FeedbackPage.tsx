@@ -711,201 +711,153 @@ export function FeedbackPage() {
 
             {/* ── SCORECARD TAB ──────────────────────────────────────────────── */}
             {activeTab === 'scorecard' && (
-              <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-3">
 
                 {/* ── Rubric scorecard (criteria groups) ── */}
-                {scorecardGroups.length > 0 && (
-                  <div className="flex flex-col gap-3">
-                    {/* Total score bar */}
-                    {(() => {
-                      const total = scorecardGroups.reduce((a, g) => a + g.maxPoints, 0);
-                      const earned = scorecardGroups.reduce((a, g) => a + g.earnedPoints, 0);
-                      const pct = total > 0 ? Math.round((earned / total) * 100) : 0;
-                      const color = pct >= 70 ? '#06D6A0' : pct >= 50 ? '#FFD166' : '#FF6B6B';
-                      return (
-                        <div className="rounded-[12px] border p-4" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
-                          <div className="flex items-center justify-between mb-3">
-                            <div>
-                              <div className="font-display text-[14px] font-bold" style={{ color: 'var(--text)' }}>Roleplay Scorecard</div>
-                              <div className="text-[11.5px] mt-0.5" style={{ color: 'var(--text3)' }}>
-                                {scorecardGroups.reduce((a, g) => a + g.criteria.filter(c => c.passed).length, 0)} of {scorecardGroups.reduce((a, g) => a + g.criteria.length, 0)} criteria met
-                              </div>
-                            </div>
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="font-display text-[28px] font-bold" style={{ color }}>{earned}</span>
-                              <span className="text-[14px]" style={{ color: 'var(--text3)' }}>/ {total}</span>
-                            </div>
+                {scorecardGroups.length > 0 && (() => {
+                  const totalCriteria = scorecardGroups.reduce((a, g) => a + g.criteria.length, 0);
+                  const passedCriteria = scorecardGroups.reduce((a, g) => a + g.criteria.filter(c => c.passed).length, 0);
+                  const totalPts = scorecardGroups.reduce((a, g) => a + g.maxPoints, 0);
+                  const earnedPts = scorecardGroups.reduce((a, g) => a + g.earnedPoints, 0);
+                  const pct = totalPts > 0 ? Math.round((earnedPts / totalPts) * 100) : 0;
+                  const barColor = pct >= 70 ? '#06D6A0' : pct >= 50 ? '#FFD166' : '#FF6B6B';
+                  return (
+                    <>
+                      {/* ── Summary header card ── */}
+                      <div className="rounded-[12px] border px-4 py-3.5 flex items-center gap-4" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-2 mb-1">
+                            <span className="font-display text-[15px] font-bold" style={{ color: 'var(--text)' }}>Roleplay Scorecard</span>
+                            <span className="text-[11.5px]" style={{ color: 'var(--text3)' }}>{passedCriteria} of {totalCriteria} criteria met</span>
                           </div>
-                          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg4)' }}>
-                            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: color }} />
+                          {/* Progress bar */}
+                          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg4)' }}>
+                            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: barColor }} />
                           </div>
-                          <div className="flex gap-3 mt-2.5 flex-wrap">
+                          {/* Group pills */}
+                          <div className="flex gap-x-3 gap-y-1 mt-2 flex-wrap">
                             {scorecardGroups.map(g => {
                               const gc = g.earnedPoints === g.maxPoints ? '#06D6A0' : g.earnedPoints === 0 ? '#FF6B6B' : '#FFD166';
                               return (
-                                <div key={g.group} className="flex items-center gap-1.5">
-                                  <span className="text-[9.5px] font-bold" style={{ color: gc }}>{g.group}</span>
-                                  <span className="text-[9.5px]" style={{ color: 'var(--text3)' }}>{g.earnedPoints}/{g.maxPoints}</span>
-                                </div>
+                                <button
+                                  key={g.group}
+                                  onClick={() => { const gi = scorecardGroups.indexOf(g); const id = `sg-${gi}`; setExpandedId(expandedId === id ? null : id); setTimeout(() => document.getElementById(`scorecard-group-${gi}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80); }}
+                                  className="flex items-center gap-1 text-[10px] font-semibold transition-opacity hover:opacity-100"
+                                  style={{ color: gc, opacity: 0.85 }}
+                                >
+                                  {g.group} <span style={{ color: 'var(--text3)', fontWeight: 400 }}>{g.earnedPoints}/{g.maxPoints}</span>
+                                </button>
                               );
                             })}
                           </div>
                         </div>
-                      );
-                    })()}
+                        <div className="flex items-baseline gap-1 flex-shrink-0">
+                          <span className="font-display text-[32px] font-bold leading-none" style={{ color: barColor }}>{earnedPts}</span>
+                          <span className="text-[15px]" style={{ color: 'var(--text3)' }}>/ {totalPts}</span>
+                        </div>
+                      </div>
 
-                    {/* ── Compact 2-column criteria grid (Hyperbound-style) ── */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0">
-                      {scorecardGroups.map((group, gi) => (
-                        <div key={gi} className="flex flex-col">
-                          <div className="flex items-center justify-between px-0 py-2 border-b" style={{ borderColor: 'var(--border)' }}>
-                            <span className="text-[11px] font-semibold" style={{ color: 'var(--text2)' }}>{group.group}</span>
-                            <span className="text-[10.5px] font-bold" style={{ color: group.earnedPoints === group.maxPoints ? '#06D6A0' : group.earnedPoints === 0 ? '#FF6B6B' : '#FFD166' }}>
-                              {group.earnedPoints} / {group.maxPoints}
-                            </span>
-                          </div>
-                          {group.criteria.map((criterion, ci) => {
-                            const tsInReasoning = criterion.reasoning?.match(/\b(\d+):(\d{2})\b/);
-                            const criterionTsMs = tsInReasoning ? (parseInt(tsInReasoning[1]) * 60 + parseInt(tsInReasoning[2])) * 1000 : null;
-                            return (
-                            <div
-                              key={ci}
-                              className="flex items-center gap-2 py-2 border-b group/crit hover:bg-white/[0.02] transition-colors"
-                              style={{ borderColor: 'var(--border)' }}
-                            >
-                              {criterion.passed
-                                ? <CheckCircle size={13} className="flex-shrink-0" style={{ color: '#06D6A0' }} />
-                                : <X size={13} className="flex-shrink-0" style={{ color: '#FF6B6B' }} />
-                              }
+                      {/* ── Group accordions ── */}
+                      <div className="flex flex-col gap-2">
+                        {scorecardGroups.map((group, gi) => {
+                          const groupId = `sg-${gi}`;
+                          const isOpen = expandedId === groupId;
+                          const groupColor = group.earnedPoints === group.maxPoints ? '#06D6A0' : group.earnedPoints === 0 ? '#FF6B6B' : '#FFD166';
+                          return (
+                            <div key={gi} id={`scorecard-group-${gi}`} className="rounded-[12px] border overflow-hidden" style={{ borderColor: isOpen ? 'rgba(91,111,255,0.3)' : 'var(--border)', background: 'var(--bg2)' }}>
+                              {/* Group header */}
                               <button
-                                className="text-[11.5px] leading-snug flex-1 min-w-0 truncate text-left"
-                                style={{ color: 'var(--text2)' }}
-                                onClick={() => {
-                                  const groupId = `sg-${gi}`;
-                                  setExpandedId(expandedId === groupId ? null : groupId);
-                                  setTimeout(() => {
-                                    const el = document.getElementById(`scorecard-group-${gi}`);
-                                    el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                                  }, 80);
-                                }}
+                                onClick={() => setExpandedId(isOpen ? null : groupId)}
+                                className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors"
+                                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
+                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                               >
-                                {criterion.question}
-                              </button>
-                              {criterionTsMs !== null ? (
-                                <button
-                                  onClick={() => jumpToTimestamp(criterionTsMs)}
-                                  className="flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] text-[10px] font-medium flex-shrink-0 transition-all hover:scale-105"
-                                  style={{ background: 'rgba(91,111,255,0.1)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.2)' }}
-                                  title={`Seek to ${fmt(criterionTsMs)}`}
-                                >
-                                  <Play size={7} fill="currentColor" /> {fmt(criterionTsMs)}
-                                </button>
-                              ) : (
-                                <>
-                                  <span className="text-[9px] flex-shrink-0 font-medium opacity-0 group-hover/crit:opacity-60 transition-opacity" style={{ color: 'var(--text3)' }}>
-                                    {criterion.passed ? '1/1' : '0/1'}
-                                  </span>
-                                  <ChevronRight size={10} className="flex-shrink-0 opacity-0 group-hover/crit:opacity-40 transition-opacity cursor-pointer" style={{ color: 'var(--text3)' }} onClick={() => { const groupId = `sg-${gi}`; setExpandedId(expandedId === groupId ? null : groupId); setTimeout(() => { document.getElementById(`scorecard-group-${gi}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 80); }} />
-                                </>
-                              )}
-                            </div>
-                          );})}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Criterion groups accordion */}
-                    {scorecardGroups.map((group, gi) => {
-                      const groupId = `sg-${gi}`;
-                      const isOpen = expandedId === groupId;
-                      const groupColor = group.earnedPoints === group.maxPoints ? '#06D6A0' : group.earnedPoints === 0 ? '#FF6B6B' : '#FFD166';
-                      return (
-                        <div key={gi} id={`scorecard-group-${gi}`} className="rounded-[12px] border overflow-hidden" style={{ borderColor: isOpen ? 'rgba(91,111,255,0.3)' : 'var(--border)', background: 'var(--bg2)' }}>
-                          <button
-                            onClick={() => setExpandedId(isOpen ? null : groupId)}
-                            className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
-                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                          >
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold" style={{ background: `${groupColor}18`, color: groupColor, border: `1px solid ${groupColor}35` }}>
-                              {group.earnedPoints}/{group.maxPoints}
-                            </div>
-                            <span className="flex-1 text-[13.5px] font-semibold" style={{ color: 'var(--text)' }}>{group.group}</span>
-                            <div className="hidden sm:flex gap-1 mr-2">
-                              {group.criteria.map((c, ci) => (
-                                <div key={ci} className="w-2 h-2 rounded-full" style={{ background: c.passed ? '#06D6A0' : '#FF6B6B' }} />
-                              ))}
-                            </div>
-                            <ChevronDown size={14} className={clsx('flex-shrink-0 transition-transform', isOpen && 'rotate-180')} style={{ color: 'var(--text3)' }} />
-                          </button>
-
-                          <AnimatePresence>
-                            {isOpen && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="overflow-hidden"
-                              >
-                                <div className="border-t" style={{ borderColor: 'var(--border)' }}>
-                                  {group.criteria.map((criterion, ci) => {
-                                    // Extract any timestamp from reasoning text e.g. "at 0:28" or "2:45"
-                                    const tsInReasoning = criterion.reasoning?.match(/\b(\d+):(\d{2})\b/);
-                                    const criterionTsMs = tsInReasoning ? (parseInt(tsInReasoning[1]) * 60 + parseInt(tsInReasoning[2])) * 1000 : null;
-                                    return (
-                                    <div
-                                      key={ci}
-                                      className={clsx('px-4 py-3.5 flex gap-3', ci > 0 && 'border-t')}
-                                      style={{ borderColor: 'var(--border)', background: criterion.passed ? 'rgba(6,214,160,0.02)' : 'rgba(255,107,107,0.02)' }}
-                                    >
-                                      <div className="flex-shrink-0 mt-0.5">
-                                        {criterion.passed
-                                          ? <CheckCircle size={15} style={{ color: '#06D6A0' }} />
-                                          : <X size={15} style={{ color: '#FF6B6B' }} />
-                                        }
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                                          <span className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>{criterion.question}</span>
-                                          {criterionTsMs !== null && (
-                                            <button
-                                              onClick={() => jumpToTimestamp(criterionTsMs)}
-                                              className="flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] text-[10px] font-medium flex-shrink-0 transition-all hover:scale-105"
-                                              style={{ background: 'rgba(91,111,255,0.1)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.2)' }}
-                                              title={`Seek audio to ${fmt(criterionTsMs)}`}
-                                            >
-                                              <Play size={7} fill="currentColor" /> {fmt(criterionTsMs)}
-                                            </button>
-                                          )}
-                                        </div>
-                                        <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text3)' }}>{criterion.reasoning}</p>
-                                        {!criterion.passed && (
-                                          <div className="mt-2 flex items-start gap-1.5 text-[11.5px] leading-relaxed" style={{ color: '#FFD166' }}>
-                                            <Lightbulb size={10} className="flex-shrink-0 mt-0.5" />
-                                            {getQuickCoachingTip(criterion.question)}
-                                          </div>
-                                        )}
-                                      </div>
-                                      <div className="flex-shrink-0">
-                                        <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full" style={criterion.passed
-                                          ? { background: 'rgba(6,214,160,0.12)', color: '#06D6A0', border: '1px solid rgba(6,214,160,0.25)' }
-                                          : { background: 'rgba(255,107,107,0.12)', color: '#FF6B6B', border: '1px solid rgba(255,107,107,0.25)' }
-                                        }>
-                                          {criterion.passed ? 'Pass' : 'Fail'}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  ); })}
+                                <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold" style={{ background: `${groupColor}18`, color: groupColor, border: `1px solid ${groupColor}35` }}>
+                                  {group.earnedPoints}/{group.maxPoints}
                                 </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                                <span className="flex-1 text-[13.5px] font-semibold" style={{ color: 'var(--text)' }}>{group.group}</span>
+                                {/* Dot indicators */}
+                                <div className="flex gap-1 mr-1">
+                                  {group.criteria.map((c, ci) => (
+                                    <div key={ci} className="w-2 h-2 rounded-full" style={{ background: c.passed ? '#06D6A0' : '#FF6B6B' }} />
+                                  ))}
+                                </div>
+                                <ChevronDown size={14} className={clsx('flex-shrink-0 transition-transform', isOpen && 'rotate-180')} style={{ color: 'var(--text3)' }} />
+                              </button>
+
+                              {/* Criteria rows (expanded) */}
+                              <AnimatePresence>
+                                {isOpen && (
+                                  <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.18 }}
+                                    className="overflow-hidden"
+                                  >
+                                    <div className="border-t" style={{ borderColor: 'var(--border)' }}>
+                                      {group.criteria.map((criterion, ci) => {
+                                        const tsMatch = criterion.reasoning?.match(/\b(\d+):(\d{2})\b/);
+                                        const criterionTsMs = tsMatch ? (parseInt(tsMatch[1]) * 60 + parseInt(tsMatch[2])) * 1000 : null;
+                                        return (
+                                          <div
+                                            key={ci}
+                                            className={clsx('px-4 py-3.5 flex gap-3', ci > 0 && 'border-t')}
+                                            style={{ borderColor: 'var(--border)', background: criterion.passed ? 'rgba(6,214,160,0.02)' : 'rgba(255,107,107,0.02)' }}
+                                          >
+                                            <div className="flex-shrink-0 mt-0.5">
+                                              {criterion.passed
+                                                ? <CheckCircle size={15} style={{ color: '#06D6A0' }} />
+                                                : <X size={15} style={{ color: '#FF6B6B' }} />
+                                              }
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              {/* Question + timestamp */}
+                                              <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                                                <span className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>{criterion.question}</span>
+                                                {criterionTsMs !== null && (
+                                                  <button
+                                                    onClick={() => jumpToTimestamp(criterionTsMs)}
+                                                    className="flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] text-[10px] font-medium flex-shrink-0 transition-all hover:scale-105"
+                                                    style={{ background: 'rgba(91,111,255,0.1)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.2)' }}
+                                                    title={`Seek audio to ${fmt(criterionTsMs)}`}
+                                                  >
+                                                    <Play size={7} fill="currentColor" /> {fmt(criterionTsMs)}
+                                                  </button>
+                                                )}
+                                              </div>
+                                              {/* Reasoning */}
+                                              <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text3)' }}>{criterion.reasoning}</p>
+                                              {/* Coaching tip for failed criteria */}
+                                              {!criterion.passed && (
+                                                <div className="mt-2 flex items-start gap-1.5 text-[11.5px] leading-relaxed" style={{ color: '#FFD166' }}>
+                                                  <Lightbulb size={10} className="flex-shrink-0 mt-0.5" />
+                                                  {getQuickCoachingTip(criterion.question)}
+                                                </div>
+                                              )}
+                                            </div>
+                                            <div className="flex-shrink-0">
+                                              <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full" style={criterion.passed
+                                                ? { background: 'rgba(6,214,160,0.12)', color: '#06D6A0', border: '1px solid rgba(6,214,160,0.25)' }
+                                                : { background: 'rgba(255,107,107,0.12)', color: '#FF6B6B', border: '1px solid rgba(255,107,107,0.25)' }
+                                              }>
+                                                {criterion.passed ? 'Pass' : 'Fail'}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  );
+                })()}
 
                 {/* Divider between rubric and framework scores */}
                 {scorecardGroups.length > 0 && scores.length > 0 && (
@@ -916,42 +868,9 @@ export function FeedbackPage() {
                   </div>
                 )}
 
-                {/* Quick summary pills */}
-                <div className={clsx('grid gap-3', scorecardGroups.length > 0 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-4')}>
-                  {scores.map(s => (
-                    <button
-                      key={s.id}
-                      onClick={() => { setExpandedId(s.id); }}
-                      className="rounded-[12px] border p-3 text-left transition-all hover:border-[var(--accent)] group"
-                      style={{
-                        background: 'var(--bg2)',
-                        borderColor: expandedId === s.id ? 'var(--accent)' : 'var(--border)',
-                      }}
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        {s.score >= 70
-                          ? <CheckCircle size={13} style={{ color: 'var(--accent3)' }} />
-                          : <X size={13} style={{ color: 'var(--accent4)' }} />
-                        }
-                        <span className="font-display text-[16px] font-bold" style={scoreStyle(s.score)}>{s.score}</span>
-                      </div>
-                      <div className="text-[11.5px] font-semibold truncate" style={{ color: 'var(--text2)' }}>{s.component}</div>
-                      <div className="h-1 mt-2 rounded-full overflow-hidden" style={{ background: 'var(--bg4)' }}>
-                        <div
-                          className="h-full rounded-full transition-all duration-700"
-                          style={{ width: `${s.score}%`, background: s.score >= 80 ? '#06D6A0' : s.score >= 65 ? '#FFD166' : '#FF6B6B' }}
-                        />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Detailed criteria accordion */}
+                {/* Framework scores — accordion list */}
                 {scores.length > 0 && (
                   <div className="flex flex-col gap-2">
-                    <div className="text-[10.5px] font-semibold uppercase tracking-[1.2px] mb-1" style={{ color: 'var(--text3)' }}>
-                      Detailed Criteria Breakdown
-                    </div>
                     {scores.map(score => {
                       const isOpen = expandedId === score.id;
                       const color  = score.score >= 80 ? '#06D6A0' : score.score >= 65 ? '#FFD166' : '#FF6B6B';
@@ -959,33 +878,29 @@ export function FeedbackPage() {
                       return (
                         <div
                           key={score.id}
-                          className="rounded-[12px] border overflow-hidden transition-colors"
+                          className="rounded-[12px] border overflow-hidden"
                           style={{ borderColor: isOpen ? 'rgba(91,111,255,0.3)' : 'var(--border)', background: 'var(--bg2)' }}
                         >
                           <button
                             onClick={() => setExpandedId(isOpen ? null : score.id)}
                             className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors"
-                            style={{ ['--hover' as string]: 'rgba(255,255,255,0.02)' }}
                             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                           >
-                            {passed
-                              ? <CheckCircle size={16} style={{ color: '#06D6A0', flexShrink: 0 }} />
-                              : <X size={16} style={{ color: '#FF6B6B', flexShrink: 0 }} />
-                            }
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-[10.5px] font-bold" style={{ background: `${color}18`, color, border: `1px solid ${color}35` }}>
+                              {score.score}
+                            </div>
                             <span className="flex-1 text-[13.5px] font-semibold" style={{ color: 'var(--text)' }}>{score.component}</span>
-                            {/* Mini bar */}
-                            <div className="hidden sm:flex items-center gap-2">
-                              <div className="w-20 h-1.5 rounded-full" style={{ background: 'var(--bg4)' }}>
+                            <div className="hidden sm:flex items-center gap-2 mr-1">
+                              <div className="w-20 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg4)' }}>
                                 <div className="h-full rounded-full" style={{ width: `${score.score}%`, background: color }} />
                               </div>
                             </div>
-                            <span className="font-display text-[16px] font-bold w-8 text-right flex-shrink-0 ml-2" style={{ color }}>{score.score}</span>
-                            <ChevronDown
-                              size={14}
-                              className={clsx('flex-shrink-0 ml-1 transition-transform', isOpen && 'rotate-180')}
-                              style={{ color: 'var(--text3)' }}
-                            />
+                            {passed
+                              ? <CheckCircle size={14} style={{ color: '#06D6A0', flexShrink: 0 }} />
+                              : <X size={14} style={{ color: '#FF6B6B', flexShrink: 0 }} />
+                            }
+                            <ChevronDown size={14} className={clsx('flex-shrink-0 ml-1 transition-transform', isOpen && 'rotate-180')} style={{ color: 'var(--text3)' }} />
                           </button>
 
                           <AnimatePresence>
@@ -994,29 +909,19 @@ export function FeedbackPage() {
                                 initial={{ height: 0, opacity: 0 }}
                                 animate={{ height: 'auto', opacity: 1 }}
                                 exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.2 }}
+                                transition={{ duration: 0.18 }}
                                 className="overflow-hidden"
                               >
-                                <div className="px-5 pb-5 pt-1 border-t" style={{ borderColor: 'var(--border)', background: 'rgba(255,255,255,0.01)' }}>
+                                <div className="px-5 pb-5 pt-3 border-t flex flex-col gap-3" style={{ borderColor: 'var(--border)', background: 'rgba(255,255,255,0.01)' }}>
+                                  {/* Feedback */}
+                                  <p className="text-[12.5px] leading-relaxed" style={{ color: 'var(--text2)' }}>{score.feedback}</p>
 
-                                  {/* Why scored this way */}
-                                  <div className="mb-3 mt-3">
-                                    <div className="flex items-center gap-1.5 mb-2">
-                                      <Info size={11} style={{ color: 'var(--text3)' }} />
-                                      <span className="text-[10.5px] font-bold uppercase tracking-wider" style={{ color: 'var(--text3)' }}>Why you were scored this way</span>
-                                    </div>
-                                    <p className="text-[12.5px] leading-relaxed" style={{ color: 'var(--text2)' }}>{score.feedback}</p>
-                                  </div>
-
-                                  {/* Evidence bullets — clickable timestamps */}
+                                  {/* Evidence */}
                                   {score.evidence?.length > 0 && (
-                                    <div className="mt-3">
-                                      <div className="text-[10.5px] font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text3)' }}>
-                                        Evidence from your call
-                                      </div>
+                                    <div>
+                                      <div className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text3)' }}>Evidence from your call</div>
                                       <div className="flex flex-col gap-2">
                                         {score.evidence.map((ev, i) => {
-                                          // Try to extract a timestamp from the evidence string like "at 0:28"
                                           const tsMatch = ev.match(/(\d+):(\d+)/);
                                           const tsMs = tsMatch ? (parseInt(tsMatch[1]) * 60 + parseInt(tsMatch[2])) * 1000 : null;
                                           return (
@@ -1029,8 +934,7 @@ export function FeedbackPage() {
                                                   className="flex items-center gap-1 px-2 py-0.5 rounded-[6px] text-[10.5px] font-medium flex-shrink-0 opacity-70 group-hover/ev:opacity-100 transition-all hover:scale-105"
                                                   style={{ background: 'rgba(91,111,255,0.12)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.2)' }}
                                                 >
-                                                  <Play size={8} fill="currentColor" />
-                                                  {fmt(tsMs)}
+                                                  <Play size={8} fill="currentColor" />{fmt(tsMs)}
                                                 </button>
                                               )}
                                             </div>
@@ -1040,27 +944,24 @@ export function FeedbackPage() {
                                     </div>
                                   )}
 
-                                  {/* What to do next time — rich coaching */}
-                                  <div className={clsx('mt-4 p-3.5 rounded-[10px] border', passed ? 'border-[rgba(6,214,160,0.2)]' : 'border-[rgba(255,209,102,0.2)]')}
+                                  {/* Coaching */}
+                                  <div className={clsx('p-3.5 rounded-[10px] border', passed ? 'border-[rgba(6,214,160,0.2)]' : 'border-[rgba(255,209,102,0.2)]')}
                                     style={{ background: passed ? 'rgba(6,214,160,0.04)' : 'rgba(255,209,102,0.05)' }}>
                                     <div className="flex items-center gap-1.5 mb-2">
                                       <Lightbulb size={11} style={{ color: passed ? '#06D6A0' : '#FFD166' }} />
-                                      <span className="text-[10.5px] font-bold uppercase tracking-wider" style={{ color: passed ? '#06D6A0' : '#FFD166' }}>
+                                      <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: passed ? '#06D6A0' : '#FFD166' }}>
                                         {passed ? 'How to make this even stronger' : 'Specific action for next call'}
                                       </span>
                                     </div>
-                                    <p className="text-[12.5px] leading-relaxed mb-3" style={{ color: 'var(--text2)' }}>
+                                    <p className="text-[12.5px] leading-relaxed" style={{ color: 'var(--text2)' }}>
                                       {getComponentCoaching(score.component, passed, session.framework)}
                                     </p>
-                                    {/* Try this phrase */}
                                     {!passed && (
-                                      <div className="flex items-start gap-2 px-3 py-2 rounded-[8px]" style={{ background: 'rgba(91,111,255,0.08)', border: '1px solid rgba(91,111,255,0.2)' }}>
+                                      <div className="flex items-start gap-2 px-3 py-2 rounded-[8px] mt-2.5" style={{ background: 'rgba(91,111,255,0.08)', border: '1px solid rgba(91,111,255,0.2)' }}>
                                         <Zap size={10} className="flex-shrink-0 mt-0.5" style={{ color: 'var(--accent)' }} />
                                         <div>
                                           <div className="text-[9.5px] font-bold uppercase tracking-wide mb-1" style={{ color: 'var(--accent)' }}>Try this phrase</div>
-                                          <p className="text-[12px] italic" style={{ color: 'var(--text2)' }}>
-                                            "{getComponentPhrase(score.component, session.framework)}"
-                                          </p>
+                                          <p className="text-[12px] italic" style={{ color: 'var(--text2)' }}>"{getComponentPhrase(score.component, session.framework)}"</p>
                                         </div>
                                       </div>
                                     )}
