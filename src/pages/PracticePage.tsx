@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Phone, Monitor, Sparkles, Loader as Loader2, ChevronDown, ChevronUp, RefreshCw, Play, Plus, X, Settings, Info, Pencil, Trash2, ArrowLeft, BookOpen, Lock, Check, User, Layers, Globe, Database, FileText, ClipboardList, CircleCheck } from 'lucide-react';
+import { Phone, Monitor, Sparkles, Loader as Loader2, ChevronDown, ChevronUp, RefreshCw, Play, Plus, X, Settings, Info, Pencil, Trash2, ArrowLeft, BookOpen, Lock, Check, User, Layers, Globe, Database, FileText, ClipboardList, CircleCheck, Wand2 } from 'lucide-react';
 import { practiceApi, sessionsApi, personasApi, teamRoleplaysApi, evaluationPromptsApi } from '@/lib/api';
 import type { AssignmentScope, AssignmentTarget, EvaluationGroupDef } from '@/types';
 import { Framework, SessionType, FRAMEWORK_INFO, ScenarioConfig, Persona, TeamRoleplay, KnowledgeBaseEntry } from '@/types';
@@ -218,6 +218,220 @@ function pickFramework(roleplayType: string): Framework {
   if (t.includes('support') || t.includes('conflict') || t.includes('leadership')) return 'SNAP';
   if (t.includes('interview')) return 'BANT';
   return 'MEDDIC';
+}
+
+interface FrameworkRec {
+  framework: Framework;
+  reason: string;
+  confidence: 'High' | 'Medium';
+}
+
+function recommendFramework(
+  roleplayType: string,
+  industry: string,
+  difficulty: string,
+  personaTitle: string,
+): FrameworkRec {
+  const t = roleplayType.toLowerCase();
+  const i = industry.toLowerCase();
+  const p = personaTitle.toLowerCase();
+
+  // Cold Call
+  if (t.includes('cold call')) return {
+    framework: 'SPIN',
+    reason: `Cold calls focus on uncovering pain quickly. SPIN's Situation → Problem → Implication → Need-Payoff sequence guides reps from rapport to urgency in under 5 minutes.`,
+    confidence: 'High',
+  };
+
+  // Discovery
+  if (t.includes('discovery')) return {
+    framework: 'SPIN',
+    reason: `Discovery calls are where SPIN shines — systematic questioning moves the prospect from describing their situation to feeling the full impact of their problem.`,
+    confidence: 'High',
+  };
+
+  // Complex enterprise / VP / C-suite + negotiation/pitch
+  if ((p.includes('vp') || p.includes('cro') || p.includes('ceo') || p.includes('chief') || p.includes('director')) &&
+    (t.includes('pitch') || t.includes('discovery') || t.includes('expansion'))) return {
+    framework: 'MEDDIC',
+    reason: `Senior buyers require proof of economic impact and clear decision processes. MEDDIC ensures you map Metrics, the Economic Buyer, and Champion before pushing to close.`,
+    confidence: 'High',
+  };
+
+  // Negotiation
+  if (t.includes('negotiation')) return {
+    framework: 'CHALLENGER',
+    reason: `Negotiations reward reps who control the conversation with insight rather than concession. Challenger's Teach-Tailor-Take Control model keeps you from being commoditised on price.`,
+    confidence: 'High',
+  };
+
+  // Pitching / Sales pitch
+  if (t.includes('pitch') || t.includes('sales pitch')) {
+    if (i.includes('saas') || i.includes('tech') || i.includes('software')) return {
+      framework: 'MEDDIC',
+      reason: `SaaS pitches involve multiple stakeholders and long cycles. MEDDIC aligns your pitch to measurable ROI and ensures you're talking to the Economic Buyer.`,
+      confidence: 'High',
+    };
+    return {
+      framework: 'CHALLENGER',
+      reason: `Sales pitches benefit from the Challenger approach — teach the prospect something they don't know, then position your solution as the only logical answer.`,
+      confidence: 'Medium',
+    };
+  }
+
+  // Account expansion / upsell
+  if (t.includes('expansion') || t.includes('upsell') || t.includes('renewal')) return {
+    framework: 'MEDDICC',
+    reason: `Expansion deals face internal competition from the status quo. MEDDICC adds Competition awareness on top of MEDDIC — critical when justifying incremental spend to existing buyers.`,
+    confidence: 'High',
+  };
+
+  // Fast-cycle / transactional / startup / SMB
+  if (difficulty.toLowerCase() === 'easy' || i.includes('retail') || i.includes('smb')) return {
+    framework: 'BANT',
+    reason: `For transactional or early-stage conversations, BANT quickly qualifies Budget, Authority, Need and Timeline — efficient when deal cycles are short.`,
+    confidence: 'Medium',
+  };
+
+  // Customer support / leadership / HR
+  if (t.includes('support') || t.includes('conflict') || t.includes('leadership') || t.includes('hr')) return {
+    framework: 'SNAP',
+    reason: `Non-sales conversations require empathy and alignment over pushing. SNAP keeps interactions Simple, Invaluable, Aligned and Priority-focused.`,
+    confidence: 'High',
+  };
+
+  // Default
+  return {
+    framework: 'MEDDIC',
+    reason: `MEDDIC is the gold standard for B2B sales. It ensures you qualify rigorously on Metrics, Economic Buyer, Decision Criteria, Process, Pain and Champion before advancing.`,
+    confidence: 'Medium',
+  };
+}
+
+interface FrameworkSelectorProps {
+  framework: Framework;
+  setFramework: (f: Framework) => void;
+  roleplayType: string;
+  industry: string;
+  difficulty: string;
+  personaTitle: string;
+  compact?: boolean;
+}
+
+function FrameworkSelector({ framework, setFramework, roleplayType, industry, difficulty, personaTitle, compact }: FrameworkSelectorProps) {
+  const [showRec, setShowRec] = useState(false);
+  const hasContext = !!(roleplayType || industry || personaTitle);
+  const rec = hasContext ? recommendFramework(roleplayType, industry, difficulty, personaTitle) : null;
+  const recDiffers = rec && rec.framework !== framework;
+
+  return (
+    <div className="flex flex-col gap-2">
+      {/* Label + AI button */}
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Sales Framework</p>
+        {hasContext && (
+          <button
+            onClick={() => setShowRec(v => !v)}
+            className={clsx(
+              'flex items-center gap-1 px-2 py-0.5 rounded-[6px] text-[9.5px] font-semibold border transition-all',
+              showRec
+                ? 'bg-accent/15 border-accent/40 text-accent'
+                : recDiffers
+                  ? 'bg-amber-400/10 border-amber-400/30 text-amber-400 hover:bg-amber-400/15'
+                  : 'bg-accent/[0.07] border-accent/20 text-accent/70 hover:text-accent hover:bg-accent/10'
+            )}
+          >
+            <Wand2 size={9} />
+            AI Suggest
+            {recDiffers && !showRec && (
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 ml-0.5" />
+            )}
+          </button>
+        )}
+      </div>
+
+      {/* Recommendation panel */}
+      <AnimatePresence>
+        {showRec && rec && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: 'auto' }}
+            exit={{ opacity: 0, y: -4, height: 0 }}
+            transition={{ duration: 0.15 }}
+            className="overflow-hidden"
+          >
+            <div
+              className="rounded-[10px] p-3 flex flex-col gap-2"
+              style={{
+                background: 'rgba(91,111,255,0.07)',
+                border: '1px solid rgba(91,111,255,0.2)',
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <Wand2 size={11} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                <span className="text-[10.5px] font-semibold" style={{ color: 'var(--accent)' }}>
+                  AI recommends: {FRAMEWORK_INFO[rec.framework].label}
+                </span>
+                <span
+                  className="ml-auto text-[8.5px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                  style={{
+                    background: rec.confidence === 'High' ? 'rgba(6,214,160,0.12)' : 'rgba(255,209,102,0.12)',
+                    color: rec.confidence === 'High' ? '#06D6A0' : '#FFD166',
+                    border: `1px solid ${rec.confidence === 'High' ? 'rgba(6,214,160,0.25)' : 'rgba(255,209,102,0.25)'}`,
+                  }}
+                >
+                  {rec.confidence} confidence
+                </span>
+              </div>
+              <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text3)' }}>{rec.reason}</p>
+              <div className="flex gap-2 mt-0.5">
+                {rec.framework !== framework && (
+                  <button
+                    onClick={() => { setFramework(rec.framework); setShowRec(false); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[11px] font-semibold transition-all hover:scale-105 active:scale-95"
+                    style={{ background: 'var(--accent)', color: '#fff' }}
+                  >
+                    <Check size={10} /> Use {FRAMEWORK_INFO[rec.framework].label}
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowRec(false)}
+                  className="px-3 py-1.5 rounded-[8px] text-[11px] font-medium transition-all"
+                  style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--text3)' }}
+                >
+                  {rec.framework === framework ? 'Good choice' : 'Keep current'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Selector */}
+      <div className="relative">
+        <select
+          value={framework}
+          onChange={e => setFramework(e.target.value as Framework)}
+          className={clsx('w-full appearance-none input-base font-medium pr-7 cursor-pointer', compact ? 'text-[12.5px]' : 'text-[13px]')}
+          style={{ backgroundImage: 'none' }}
+        >
+          {(Object.keys(FRAMEWORK_INFO) as Framework[]).map(f => (
+            <option key={f} value={f}>
+              {FRAMEWORK_INFO[f].label} — {FRAMEWORK_INFO[f].components.slice(0, 2).join(', ')}{FRAMEWORK_INFO[f].components.length > 2 ? '…' : ''}
+            </option>
+          ))}
+        </select>
+        <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+      </div>
+
+      {/* Component pills */}
+      <div className="flex flex-wrap gap-1">
+        {FRAMEWORK_INFO[framework].components.map((c, i) => (
+          <span key={i} className="text-[9px] px-1.5 py-0.5 rounded-full bg-accent/[0.06] border border-accent/15 text-accent/70">{i + 1}. {c}</span>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -1031,25 +1245,15 @@ export function PracticePage() {
               {/* Right: session config + start */}
               <div className="flex flex-col gap-3 w-full md:w-72 md:flex-shrink-0">
                 <div className="card p-4">
-                  <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Sales Framework</p>
-                  <div className="relative mb-2">
-                    <select
-                      value={framework}
-                      onChange={e => setFramework(e.target.value as Framework)}
-                      className="w-full appearance-none input-base text-[12.5px] font-medium pr-7 cursor-pointer"
-                      style={{ backgroundImage: 'none' }}
-                    >
-                      {(Object.keys(FRAMEWORK_INFO) as Framework[]).map(f => (
-                        <option key={f} value={f}>{FRAMEWORK_INFO[f].label} — {FRAMEWORK_INFO[f].components.slice(0, 2).join(', ')}{FRAMEWORK_INFO[f].components.length > 2 ? '…' : ''}</option>
-                      ))}
-                    </select>
-                    <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {FRAMEWORK_INFO[framework].components.map((c, i) => (
-                      <span key={i} className="text-[9px] px-1.5 py-0.5 rounded-full bg-accent/[0.06] border border-accent/15 text-accent/70">{i + 1}. {c}</span>
-                    ))}
-                  </div>
+                  <FrameworkSelector
+                    framework={framework}
+                    setFramework={setFramework}
+                    roleplayType={roleplayType}
+                    industry={industry}
+                    difficulty={difficulty}
+                    personaTitle={displayTitle}
+                    compact
+                  />
                 </div>
                 <div className="card p-4">
                   <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2.5">Call Format</p>
@@ -1876,28 +2080,14 @@ export function PracticePage() {
 
                       {/* Framework selector + call format */}
                       <div className="flex flex-col gap-3">
-                        <div>
-                          <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Sales Framework</p>
-                          <div className="relative">
-                            <select
-                              value={framework}
-                              onChange={e => setFramework(e.target.value as Framework)}
-                              className="w-full appearance-none input-base text-[13px] font-medium pr-8 cursor-pointer"
-                              style={{ backgroundImage: 'none' }}
-                            >
-                              {(Object.keys(FRAMEWORK_INFO) as Framework[]).map(f => (
-                                <option key={f} value={f}>{FRAMEWORK_INFO[f].label} — {FRAMEWORK_INFO[f].components.slice(0, 2).join(', ')}{FRAMEWORK_INFO[f].components.length > 2 ? '…' : ''}</option>
-                              ))}
-                            </select>
-                            <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
-                          </div>
-                          {/* Component pills for selected */}
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {FRAMEWORK_INFO[framework].components.map((c, i) => (
-                              <span key={i} className="text-[9px] px-1.5 py-0.5 rounded-full bg-accent/[0.06] border border-accent/15 text-accent/70">{i + 1}. {c}</span>
-                            ))}
-                          </div>
-                        </div>
+                        <FrameworkSelector
+                          framework={framework}
+                          setFramework={setFramework}
+                          roleplayType={roleplayType}
+                          industry={industry}
+                          difficulty={difficulty}
+                          personaTitle={displayTitle}
+                        />
 
                         <div>
                           <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Call Format</p>
