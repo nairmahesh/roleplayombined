@@ -1,5 +1,5 @@
 // pitchiq/frontend/src/components/practice/PersonaBuilder.tsx
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { X, Plus, Trash2, Sparkles, Check, Loader as Loader2, RefreshCw } from 'lucide-react';
@@ -61,6 +61,54 @@ function SuggestedObjectionsDropdown({ onSelect }: { onSelect: (items: string[])
   );
 }
 
+// ── Collapsed avatar picker field ────────────────────────────────────────────
+
+function AvatarPickerField({ avatarId, onChange }: { avatarId: string; onChange: (id: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = AVATARS.find(a => a.id === avatarId) ?? AVATARS[0];
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <label className="text-xs font-medium text-white/70 block mb-1.5">Avatar</label>
+      {/* Trigger row */}
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center gap-3 p-2.5 rounded-[10px] bg-white/[0.03] border border-white/[0.08] hover:border-white/20 transition-all text-left"
+      >
+        <AvatarDisplay avatarId={avatarId} size={36} />
+        <div className="flex-1 min-w-0">
+          <p className="text-[12.5px] font-semibold text-white truncate">{selected.name}</p>
+          <p className="text-[10.5px] text-white/40 capitalize">{selected.gender} · {selected.ethnicity.replace('-', ' ')}</p>
+        </div>
+        <span className="text-[10px] text-accent flex-shrink-0">Change</span>
+      </button>
+
+      {/* Expandable picker panel */}
+      {open && (
+        <div className="mt-1.5 p-3 rounded-[12px] bg-[#1a1a2e] border border-white/[0.10] shadow-2xl z-10">
+          <EthnicityAvatarPicker
+            value={avatarId}
+            onChange={id => { onChange(id); setOpen(false); }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 interface Props {
   onCreated: (persona: Persona) => void;
   onClose: () => void;
@@ -97,8 +145,6 @@ export function PersonaBuilder({ onCreated, onClose, initialAvatarId }: Props) {
     set('frameworks', form.frameworks.includes(fw)
       ? form.frameworks.filter(f => f !== fw)
       : [...form.frameworks, fw]);
-
-  const selectedAvatar = AVATARS.find(a => a.id === form.avatarId) ?? AVATARS[0];
 
   const handleSave = async () => {
     if (!form.name || !form.title || !form.systemPrompt) {
@@ -175,35 +221,11 @@ export function PersonaBuilder({ onCreated, onClose, initialAvatarId }: Props) {
           <AnimatePresence mode="wait">
             {step === 1 && (
               <motion.div key="s1" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex flex-col gap-5">
-                {/* Avatar picker */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-medium text-white/70">Avatar</label>
-                    <span className="text-[10px] text-white/40">Filter by gender & ethnicity</span>
-                  </div>
-
-                  {/* Selected preview */}
-                  <div className="flex items-center gap-3 mb-3 p-3 rounded-[10px] bg-white/[0.03] border border-white/[0.06]">
-                    <AvatarDisplay avatarId={form.avatarId} size={44} />
-                    <div>
-                      <p className="text-[13px] font-semibold text-white">{selectedAvatar.name}</p>
-                      <p className="text-[11px] text-white/45 capitalize">{selectedAvatar.gender} · {selectedAvatar.ethnicity.replace('-', ' ')}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const others = AVATARS.filter(a => a.id !== form.avatarId);
-                        set('avatarId', others[Math.floor(Math.random() * others.length)].id);
-                      }}
-                      className="ml-auto p-1.5 rounded-[7px] text-white/40 hover:text-white/70 hover:bg-white/[0.06] transition-all"
-                      title="Random avatar"
-                    >
-                      <RefreshCw size={13} />
-                    </button>
-                  </div>
-
-                  <EthnicityAvatarPicker value={form.avatarId} onChange={id => set('avatarId', id)} />
-                </div>
+                {/* Avatar picker — collapsed by default, expands on click */}
+                <AvatarPickerField
+                  avatarId={form.avatarId}
+                  onChange={id => set('avatarId', id)}
+                />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>

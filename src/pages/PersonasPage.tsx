@@ -732,52 +732,49 @@ export function PersonasPage() {
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        {/* Search */}
-        <div className="relative flex-1 min-w-0">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35 pointer-events-none" />
+      <div className="flex items-center gap-2 flex-wrap">
+        {/* Search — grows to fill space */}
+        <div className="relative flex-1 min-w-[160px]">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35 pointer-events-none" />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search personas by name, title, or industry…"
-            className="input-base pl-9 w-full text-[13px]"
+            placeholder="Search personas…"
+            className="input-base pl-8 w-full text-[12px] py-1.5"
           />
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-          {/* Type filter */}
-          <div className="flex rounded-[9px] border border-white/[0.08] overflow-hidden">
-            {(['all', 'preset', 'custom'] as const).map(t => (
-              <button key={t} onClick={() => setFilterType(t)}
-                className={clsx('px-3 py-1.5 text-[11.5px] font-medium capitalize transition-colors',
-                  filterType === t ? 'bg-accent text-white' : 'text-white/55 hover:text-white/80 hover:bg-white/[0.04]'
-                )}>
-                {t}
-              </button>
-            ))}
-          </div>
-
-          {/* Difficulty filter */}
-          <select
-            value={filterDifficulty}
-            onChange={e => setFilterDifficulty(e.target.value)}
-            className="input-base text-[11px] py-1.5 pr-7 cursor-pointer"
-          >
-            <option value="">All difficulties</option>
-            {DIFFICULTIES.map(d => <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1).toLowerCase()}</option>)}
-          </select>
-
-          {/* Create button — managers/admins only */}
-          {!isReadOnly && (
-            <button
-              onClick={() => setShowBuilder(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-[10px] bg-accent text-white text-[13px] font-semibold hover:bg-accent/85 transition-all shadow-[0_4px_16px_rgba(91,111,255,0.25)] flex-shrink-0"
-            >
-              <Plus size={14} /> New Persona
+        {/* Type filter */}
+        <div className="flex rounded-[9px] border border-white/[0.08] overflow-hidden flex-shrink-0">
+          {(['all', 'preset', 'custom'] as const).map(t => (
+            <button key={t} onClick={() => setFilterType(t)}
+              className={clsx('px-3 py-1.5 text-[11px] font-medium capitalize transition-colors',
+                filterType === t ? 'bg-accent text-white' : 'text-white/55 hover:text-white/80 hover:bg-white/[0.04]'
+              )}>
+              {t}
             </button>
-          )}
+          ))}
         </div>
+
+        {/* Difficulty filter — compact, auto width */}
+        <select
+          value={filterDifficulty}
+          onChange={e => setFilterDifficulty(e.target.value)}
+          className="input-base text-[11px] py-1.5 w-auto flex-shrink-0 cursor-pointer"
+        >
+          <option value="">All difficulties</option>
+          {DIFFICULTIES.map(d => <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1).toLowerCase()}</option>)}
+        </select>
+
+        {/* Create button — managers/admins only */}
+        {!isReadOnly && (
+          <button
+            onClick={() => setShowBuilder(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-[10px] bg-accent text-white text-[13px] font-semibold hover:bg-accent/85 transition-all shadow-[0_4px_16px_rgba(91,111,255,0.25)] flex-shrink-0"
+          >
+            <Plus size={14} /> New Persona
+          </button>
+        )}
       </div>
 
       {/* Persona grid */}

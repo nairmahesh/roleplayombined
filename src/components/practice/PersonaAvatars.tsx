@@ -77,11 +77,36 @@ export const AVATAR_VOICE_CONFIG: Record<AvatarId, VoiceConfig> = {
   zara:    { elevenlabsId: 'EXAVITQu4vr4xnSDxMaL', lang: 'en-US', nameHints: ['Serena', 'Google US English Female'],            pitch: 1.1,  rate: 1.0  },
 };
 
-// ── Static AI-generated avatar photos (public/avatars/*.jpg) ─────────────────
+// ── Avatar portrait photos (randomuser.me CDN – square face-cropped headshots) ──
 
-const AVATAR_PHOTOS: Record<string, string> = Object.fromEntries(
-  AVATARS.map(a => [a.id, `/avatars/${a.id}.jpg`])
-);
+const AVATAR_PHOTOS: Record<string, string> = {
+  alex:    'https://randomuser.me/api/portraits/men/32.jpg',
+  sarah:   'https://randomuser.me/api/portraits/women/44.jpg',
+  james:   'https://randomuser.me/api/portraits/men/46.jpg',
+  maria:   'https://randomuser.me/api/portraits/women/67.jpg',
+  robert:  'https://randomuser.me/api/portraits/men/52.jpg',
+  emma:    'https://randomuser.me/api/portraits/women/28.jpg',
+  priya:   'https://randomuser.me/api/portraits/women/79.jpg',
+  jordan:  'https://randomuser.me/api/portraits/men/41.jpg',
+  marcus:  'https://randomuser.me/api/portraits/men/83.jpg',
+  layla:   'https://randomuser.me/api/portraits/women/56.jpg',
+  ravi:    'https://randomuser.me/api/portraits/men/91.jpg',
+  yuki:    'https://randomuser.me/api/portraits/women/33.jpg',
+  aisha:   'https://randomuser.me/api/portraits/women/64.jpg',
+  carlos:  'https://randomuser.me/api/portraits/men/74.jpg',
+  noah:    'https://randomuser.me/api/portraits/men/22.jpg',
+  sofia:   'https://randomuser.me/api/portraits/women/48.jpg',
+  kwame:   'https://randomuser.me/api/portraits/men/89.jpg',
+  nina:    'https://randomuser.me/api/portraits/women/19.jpg',
+  wei:     'https://randomuser.me/api/portraits/men/37.jpg',
+  amara:   'https://randomuser.me/api/portraits/women/72.jpg',
+  hassan:  'https://randomuser.me/api/portraits/men/55.jpg',
+  mei:     'https://randomuser.me/api/portraits/women/26.jpg',
+  diego:   'https://randomuser.me/api/portraits/men/68.jpg',
+  fatima:  'https://randomuser.me/api/portraits/women/85.jpg',
+  dev:     'https://randomuser.me/api/portraits/men/11.jpg',
+  zara:    'https://randomuser.me/api/portraits/women/39.jpg',
+};
 
 export function AvatarPhotoProvider({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
@@ -119,7 +144,7 @@ export function AvatarDisplay({
             src={photoUrl}
             alt={found.name}
             className="w-full h-full object-cover"
-            style={{ objectPosition: 'center 15%' }}
+            style={{ objectPosition: 'center center' }}
             draggable={false}
             onError={() => setImgError(true)}
           />
@@ -172,7 +197,7 @@ function AvatarPickerCard({
         selected ? 'ring-accent' : 'ring-transparent'
       )}>
         {photoUrl && !imgError
-          ? <img src={photoUrl} alt={av.name} className="w-full h-full object-cover" style={{ objectPosition: 'center 15%' }} draggable={false} onError={() => setImgError(true)} />
+          ? <img src={photoUrl} alt={av.name} className="w-full h-full object-cover" style={{ objectPosition: 'center center' }} draggable={false} onError={() => setImgError(true)} />
           : <div className="w-full h-full bg-gradient-to-br from-white/20 to-white/5 flex items-center justify-center">
               <span className="text-white/75 text-[14px] font-semibold select-none">{av.name.charAt(0)}</span>
             </div>
