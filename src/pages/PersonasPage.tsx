@@ -762,10 +762,10 @@ export function PersonasPage() {
           <select
             value={filterDifficulty}
             onChange={e => setFilterDifficulty(e.target.value)}
-            className="input-base text-[12px] py-1.5 pr-7 cursor-pointer"
+            className="input-base text-[11px] py-1.5 pr-7 cursor-pointer"
           >
             <option value="">All difficulties</option>
-            {DIFFICULTIES.map(d => <option key={d} value={d}>{d.toLowerCase()}</option>)}
+            {DIFFICULTIES.map(d => <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1).toLowerCase()}</option>)}
           </select>
 
           {/* Create button — managers/admins only */}
