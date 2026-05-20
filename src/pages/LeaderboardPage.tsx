@@ -33,7 +33,7 @@ function UserDetail({ entry, onBack }: UserDetailProps) {
     }).finally(() => setLoading(false));
   }, [entry.user.id]);
 
-  const initials = `${entry.user.firstName[0]}${entry.user.lastName[0]}`;
+  const initials = `${entry.user.firstName?.[0] ?? '?'}${entry.user.lastName?.[0] ?? ''}`;
   const color = scoreColor(entry.avgScore);
 
   return (
