@@ -1,49 +1,82 @@
 // pitchiq/frontend/src/components/practice/PersonaBuilder.tsx
-// Allows managers/admins to create custom AI personas
-
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { X, Plus, Trash2, Sparkles, Check, User, Frown, Smile, CircleHelp as HelpCircle, Smartphone, Building2, CircleAlert as AlertCircle, Search, Briefcase, Target, DollarSign, Microscope } from 'lucide-react';
+import { X, Plus, Trash2, Sparkles, Check, Loader as Loader2, RefreshCw } from 'lucide-react';
 import { personasApi } from '@/lib/api';
 import { Persona, Framework } from '@/types';
+import { EthnicityAvatarPicker, AvatarDisplay, AVATARS } from '@/components/practice/PersonaAvatars';
 import clsx from 'clsx';
 
 const FRAMEWORKS: Framework[] = ['MEDDIC', 'MEDDICC', 'SPIN', 'BANT', 'CHALLENGER', 'SNAP'];
 const DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD', 'EXPERT'] as const;
 
-const PERSONA_ICONS = [
-  { id: 'user',         Icon: User,         label: 'Professional'  },
-  { id: 'frown',        Icon: Frown,        label: 'Frustrated'    },
-  { id: 'smile',        Icon: Smile,        label: 'Friendly'      },
-  { id: 'help',         Icon: HelpCircle,   label: 'Skeptical'     },
-  { id: 'phone',        Icon: Smartphone,   label: 'Mobile-first'  },
-  { id: 'building',     Icon: Building2,    label: 'Enterprise'    },
-  { id: 'alert',        Icon: AlertCircle,  label: 'Demanding'     },
-  { id: 'search',       Icon: Search,       label: 'Analytical'    },
-  { id: 'briefcase',    Icon: Briefcase,    label: 'Executive'     },
-  { id: 'target',       Icon: Target,       label: 'Goal-driven'   },
-  { id: 'dollar',       Icon: DollarSign,   label: 'Cost-conscious'},
-  { id: 'microscope',   Icon: Microscope,   label: 'Technical'     },
-] as const;
+// Curated AI-generated objections per personality type
+const SUGGESTED_OBJECTIONS: Record<string, string[]> = {
+  price:     ["Your pricing is too high compared to alternatives", "We don't have budget for this right now", "Can we negotiate a lower rate?", "We need a bigger discount to justify this"],
+  timing:    ["Now isn't a good time to make a change", "We're locked into a contract until next year", "We have other priorities at the moment", "Can we revisit this in Q3?"],
+  value:     ["I don't see how this solves our specific problem", "We already have a solution in place", "What's the ROI on this?", "Prove to me this works for companies like ours"],
+  trust:     ["We've been burned by vendors before", "Your company is too new / small for us", "I need references from similar companies", "How do I know your product actually delivers?"],
+  technical: ["Our IT team will never approve this", "Integration with our stack looks complex", "What about data security and compliance?", "We'd need a full technical audit first"],
+  authority: ["I need to get buy-in from my CFO", "This decision needs to go through procurement", "I'm not the right person to make this call", "Our leadership team would need to see this first"],
+};
 
-type PersonaIconId = typeof PERSONA_ICONS[number]['id'];
+function SuggestedObjectionsDropdown({ onSelect }: { onSelect: (items: string[]) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-1.5 text-[11px] text-accent hover:text-accent/80 border border-accent/30 hover:border-accent/60 px-2.5 py-1 rounded-[7px] transition-all"
+      >
+        <Sparkles size={10} /> AI Suggestions
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.97 }}
+            className="absolute top-full mt-1.5 right-0 z-30 w-56 rounded-[12px] border border-white/10 bg-bg-2 shadow-2xl overflow-hidden"
+          >
+            <div className="px-3 py-2 border-b border-white/[0.06]">
+              <p className="text-[10px] font-semibold text-white/45 uppercase tracking-wider">Objection type</p>
+            </div>
+            {Object.entries(SUGGESTED_OBJECTIONS).map(([key, items]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => { onSelect(items); setOpen(false); }}
+                className="w-full text-left px-3 py-2 text-[12px] text-white/75 hover:bg-white/[0.06] hover:text-white transition-colors capitalize"
+              >
+                {key}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {open && <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />}
+    </div>
+  );
+}
 
 interface Props {
   onCreated: (persona: Persona) => void;
   onClose: () => void;
+  initialAvatarId?: string;
 }
 
-export function PersonaBuilder({ onCreated, onClose }: Props) {
+export function PersonaBuilder({ onCreated, onClose, initialAvatarId }: Props) {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
+    avatarId: initialAvatarId ?? AVATARS[0].id,
     name: '',
     title: '',
     company: '',
     industry: '',
-    iconId: 'user' as PersonaIconId,
-    difficulty: 'MEDIUM' as const,
+    difficulty: 'MEDIUM' as typeof DIFFICULTIES[number],
     personality: '',
     systemPrompt: '',
     objections: [''],
@@ -51,29 +84,21 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
     frameworks: [] as Framework[],
   });
 
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }));
+  const set = (k: string, v: unknown) => setForm(f => ({ ...f, [k]: v }));
 
   const addItem = (field: 'objections' | 'buyingSignals') =>
     set(field, [...form[field], '']);
-
   const updateItem = (field: 'objections' | 'buyingSignals', i: number, v: string) => {
-    const arr = [...form[field]];
-    arr[i] = v;
-    set(field, arr);
+    const arr = [...form[field]]; arr[i] = v; set(field, arr);
   };
-
   const removeItem = (field: 'objections' | 'buyingSignals', i: number) =>
     set(field, form[field].filter((_, idx) => idx !== i));
-
-  const toggleFramework = (fw: Framework) => {
+  const toggleFramework = (fw: Framework) =>
     set('frameworks', form.frameworks.includes(fw)
       ? form.frameworks.filter(f => f !== fw)
-      : [...form.frameworks, fw]
-    );
-  };
+      : [...form.frameworks, fw]);
 
-  const selectedIconEntry = PERSONA_ICONS.find(p => p.id === form.iconId) ?? PERSONA_ICONS[0];
-  const SelectedIcon = selectedIconEntry.Icon;
+  const selectedAvatar = AVATARS.find(a => a.id === form.avatarId) ?? AVATARS[0];
 
   const handleSave = async () => {
     if (!form.name || !form.title || !form.systemPrompt) {
@@ -84,7 +109,8 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
     try {
       const persona = await personasApi.create({
         ...form,
-        emoji: form.iconId,
+        emoji: form.avatarId,
+        avatarId: form.avatarId,
         objections: form.objections.filter(Boolean),
         buyingSignals: form.buyingSignals.filter(Boolean),
         personality: JSON.stringify({ description: form.personality }),
@@ -92,8 +118,9 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
       onCreated(persona);
       toast.success(`Persona "${form.name}" created`);
       onClose();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to create persona');
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { error?: string } } };
+      toast.error(e.response?.data?.error || 'Failed to create persona');
     } finally {
       setSaving(false);
     }
@@ -147,26 +174,35 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
         <div className="flex-1 overflow-y-auto p-6">
           <AnimatePresence mode="wait">
             {step === 1 && (
-              <motion.div key="s1" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex flex-col gap-4">
-                {/* Icon picker */}
+              <motion.div key="s1" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex flex-col gap-5">
+                {/* Avatar picker */}
                 <div>
-                  <label className="text-xs font-medium text-white/70 block mb-2">Persona Icon</label>
-                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                    {PERSONA_ICONS.map(({ id, Icon, label }) => (
-                      <button
-                        key={id}
-                        onClick={() => set('iconId', id)}
-                        title={label}
-                        className={clsx(
-                          'flex flex-col items-center gap-1 p-2 rounded-[10px] border transition-all hover:scale-105',
-                          form.iconId === id ? 'border-accent bg-accent/15' : 'border-white/[0.08] bg-white/[0.04] hover:border-white/20'
-                        )}
-                      >
-                        <Icon size={16} className={form.iconId === id ? 'text-accent' : 'text-white/70'} />
-                        <span className="text-[9px] text-white/75 truncate w-full text-center">{label}</span>
-                      </button>
-                    ))}
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-medium text-white/70">Avatar</label>
+                    <span className="text-[10px] text-white/40">Filter by gender & ethnicity</span>
                   </div>
+
+                  {/* Selected preview */}
+                  <div className="flex items-center gap-3 mb-3 p-3 rounded-[10px] bg-white/[0.03] border border-white/[0.06]">
+                    <AvatarDisplay avatarId={form.avatarId} size={44} />
+                    <div>
+                      <p className="text-[13px] font-semibold text-white">{selectedAvatar.name}</p>
+                      <p className="text-[11px] text-white/45 capitalize">{selectedAvatar.gender} · {selectedAvatar.ethnicity.replace('-', ' ')}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const others = AVATARS.filter(a => a.id !== form.avatarId);
+                        set('avatarId', others[Math.floor(Math.random() * others.length)].id);
+                      }}
+                      className="ml-auto p-1.5 rounded-[7px] text-white/40 hover:text-white/70 hover:bg-white/[0.06] transition-all"
+                      title="Random avatar"
+                    >
+                      <RefreshCw size={13} />
+                    </button>
+                  </div>
+
+                  <EthnicityAvatarPicker value={form.avatarId} onChange={id => set('avatarId', id)} />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -224,23 +260,27 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
                 <div>
                   <label className="text-xs font-medium text-white/70 block mb-1.5">
                     AI System Prompt *
-                    <span className="ml-1 text-white/70 font-normal">(This defines how the AI behaves in character)</span>
+                    <span className="ml-1 text-white/40 font-normal">(defines how the AI behaves in character)</span>
                   </label>
                   <textarea
                     value={form.systemPrompt}
                     onChange={e => set('systemPrompt', e.target.value)}
                     rows={5}
-                    placeholder={`You are Sarah Chen, VP of Sales at GrowthCo. You're open to new tools but have been burned by bad implementations before. You'll ask about adoption, training timelines, and ROI. Your main pain is that your reps spend 40% of their time on admin tasks...`}
+                    placeholder={`You are ${form.name || 'Sarah Chen'}, ${form.title || 'VP of Sales'} at ${form.company || 'GrowthCo'}. You're open to new tools but have been burned by bad implementations before. You'll ask about adoption, training timelines, and ROI...`}
                     className="input-base resize-none text-[12.5px] leading-relaxed"
                   />
                 </div>
 
+                {/* Objections */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-xs font-medium text-white/70">Common Objections</label>
-                    <button onClick={() => addItem('objections')} className="text-[11px] text-accent hover:underline flex items-center gap-1">
-                      <Plus size={11} /> Add
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <SuggestedObjectionsDropdown onSelect={items => set('objections', items)} />
+                      <button onClick={() => addItem('objections')} className="text-[11px] text-accent hover:underline flex items-center gap-1">
+                        <Plus size={11} /> Add
+                      </button>
+                    </div>
                   </div>
                   <div className="flex flex-col gap-2">
                     {form.objections.map((obj, i) => (
@@ -261,6 +301,7 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
                   </div>
                 </div>
 
+                {/* Buying signals */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-xs font-medium text-white/70">Buying Signals (what makes them receptive)</label>
@@ -313,23 +354,34 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
                   </div>
                 </div>
 
+                {/* Preview card */}
                 {form.name && (
                   <div className="p-4 rounded-[12px] bg-bg-3 border border-white/[0.08]">
                     <div className="text-[11px] font-semibold text-white/55 uppercase tracking-wider mb-3">Preview</div>
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-accent/15 border border-accent/25 flex items-center justify-center flex-shrink-0">
-                        <SelectedIcon size={18} className="text-accent" />
-                      </div>
-                      <div>
+                      <AvatarDisplay avatarId={form.avatarId} size={48} />
+                      <div className="flex-1 min-w-0">
                         <div className="font-display font-bold">{form.name}</div>
                         <div className="text-[12px] text-white/70 mb-2">{form.title}{form.company ? ` · ${form.company}` : ''}</div>
                         <div className="flex gap-1.5 flex-wrap">
-                          <span className={clsx('tag text-[10px]',
-                            (form.difficulty as string) === 'EASY' ? 'tag-green' :
-                            (form.difficulty as string) === 'MEDIUM' ? 'tag-amber' : 'tag-red'
+                          <span className={clsx('text-[10px] px-2 py-0.5 rounded border',
+                            form.difficulty === 'EASY' ? 'border-emerald-500/30 text-emerald-400' :
+                            form.difficulty === 'MEDIUM' ? 'border-amber-500/30 text-amber-400' : 'border-red-500/30 text-red-400'
                           )}>{form.difficulty}</span>
-                          {form.frameworks.map(fw => <span key={fw} className="tag text-[10px]">{fw}</span>)}
+                          {form.frameworks.map(fw => (
+                            <span key={fw} className="text-[10px] px-2 py-0.5 rounded border border-white/10 text-white/60">{fw}</span>
+                          ))}
                         </div>
+                        {form.objections.filter(Boolean).length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {form.objections.filter(Boolean).slice(0, 3).map((o, i) => (
+                              <span key={i} className="text-[9.5px] px-2 py-0.5 rounded-full bg-red-400/[0.07] border border-red-400/15 text-red-300/70">{o}</span>
+                            ))}
+                            {form.objections.filter(Boolean).length > 3 && (
+                              <span className="text-[9.5px] text-white/35">+{form.objections.filter(Boolean).length - 3} more</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -355,7 +407,7 @@ export function PersonaBuilder({ onCreated, onClose }: Props) {
               </button>
             ) : (
               <button onClick={handleSave} disabled={saving} className="btn-primary gap-2">
-                <Sparkles size={13} />
+                {saving ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
                 {saving ? 'Creating…' : 'Create Persona'}
               </button>
             )}

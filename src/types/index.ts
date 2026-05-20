@@ -156,6 +156,7 @@ export interface Persona {
   company?: string;
   industry?: string;
   emoji: string;
+  avatarId?: string;
   difficulty: Difficulty;
   personality: string;
   systemPrompt: string;

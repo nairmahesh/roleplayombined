@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Plus, Search, Pencil, Trash2, Copy, BarChart3, X, Check, Sparkles, Users, TrendingUp, Clock, ChevronDown, ChevronUp, Shield, Loader as Loader2, TriangleAlert as AlertTriangle, User, Frown, Smile, CircleHelp as HelpCircle, Smartphone, Building2, CircleAlert as AlertCircle, Briefcase, Target, DollarSign, Microscope } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, Copy, BarChart3, X, Check, Sparkles, Users, TrendingUp, Clock, ChevronDown, ChevronUp, Shield, Loader as Loader2, TriangleAlert as AlertTriangle, RefreshCw } from 'lucide-react';
 import { personasApi } from '@/lib/api';
 import { PersonaBuilder } from '@/components/practice/PersonaBuilder';
+import { AvatarDisplay, EthnicityAvatarPicker, AVATARS } from '@/components/practice/PersonaAvatars';
 import { Persona, Framework } from '@/types';
 import { useAuthStore, usePageCache } from '@/lib/store';
 import clsx from 'clsx';
@@ -20,27 +21,6 @@ const DIFFICULTY_STYLE: Record<string, string> = {
   HARD:   'text-orange-400 bg-orange-400/10 border-orange-400/25',
   EXPERT: 'text-red-400    bg-red-400/10    border-red-400/25',
 };
-
-const PERSONA_ICONS = [
-  { id: 'user',       Icon: User,        label: 'Professional'   },
-  { id: 'frown',      Icon: Frown,       label: 'Frustrated'     },
-  { id: 'smile',      Icon: Smile,       label: 'Friendly'       },
-  { id: 'help',       Icon: HelpCircle,  label: 'Skeptical'      },
-  { id: 'phone',      Icon: Smartphone,  label: 'Mobile-first'   },
-  { id: 'building',   Icon: Building2,   label: 'Enterprise'     },
-  { id: 'alert',      Icon: AlertCircle, label: 'Demanding'      },
-  { id: 'search',     Icon: Search,      label: 'Analytical'     },
-  { id: 'briefcase',  Icon: Briefcase,   label: 'Executive'      },
-  { id: 'target',     Icon: Target,      label: 'Goal-driven'    },
-  { id: 'dollar',     Icon: DollarSign,  label: 'Cost-conscious' },
-  { id: 'microscope', Icon: Microscope,  label: 'Technical'      },
-] as const;
-
-type PersonaIconId = typeof PERSONA_ICONS[number]['id'];
-
-function getIcon(iconId: string) {
-  return PERSONA_ICONS.find(p => p.id === iconId)?.Icon ?? User;
-}
 
 // ── Analytics panel ───────────────────────────────────────────────────────────
 
@@ -170,14 +150,53 @@ function AnalyticsPanel({ personaId, onClose }: { personaId: string; onClose: ()
   );
 }
 
-// ── Edit modal (inline edit form based on PersonaBuilder fields) ──────────────
+// ── Edit modal ────────────────────────────────────────────────────────────────
 
 interface EditForm {
+  avatarId: string;
   name: string; title: string; company: string; industry: string;
-  iconId: PersonaIconId; difficulty: typeof DIFFICULTIES[number];
+  difficulty: typeof DIFFICULTIES[number];
   personality: string; systemPrompt: string;
   objections: string[]; buyingSignals: string[];
   frameworks: Framework[];
+}
+
+const SUGGESTED_OBJECTIONS: Record<string, string[]> = {
+  price:     ["Your pricing is too high compared to alternatives", "We don't have budget for this right now", "Can we negotiate a lower rate?", "We need a bigger discount to justify this"],
+  timing:    ["Now isn't a good time to make a change", "We're locked into a contract until next year", "We have other priorities at the moment", "Can we revisit this in Q3?"],
+  value:     ["I don't see how this solves our specific problem", "We already have a solution in place", "What's the ROI on this?", "Prove to me this works for companies like ours"],
+  trust:     ["We've been burned by vendors before", "Your company is too new / small for us", "I need references from similar companies", "How do I know your product actually delivers?"],
+  technical: ["Our IT team will never approve this", "Integration with our stack looks complex", "What about data security and compliance?", "We'd need a full technical audit first"],
+  authority: ["I need to get buy-in from my CFO", "This decision needs to go through procurement", "I'm not the right person to make this call", "Our leadership team would need to see this first"],
+};
+
+function SuggestedObjectionsDropdown({ onSelect }: { onSelect: (items: string[]) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button type="button" onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-1.5 text-[11px] text-accent hover:text-accent/80 border border-accent/30 hover:border-accent/60 px-2.5 py-1 rounded-[7px] transition-all">
+        <Sparkles size={10} /> AI Suggestions
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+            className="absolute top-full mt-1.5 right-0 z-30 w-52 rounded-[12px] border border-white/10 bg-bg-2 shadow-2xl overflow-hidden">
+            <div className="px-3 py-2 border-b border-white/[0.06]">
+              <p className="text-[10px] font-semibold text-white/45 uppercase tracking-wider">Objection type</p>
+            </div>
+            {Object.entries(SUGGESTED_OBJECTIONS).map(([key, items]) => (
+              <button key={key} type="button" onClick={() => { onSelect(items); setOpen(false); }}
+                className="w-full text-left px-3 py-2 text-[12px] text-white/75 hover:bg-white/[0.06] hover:text-white transition-colors capitalize">
+                {key}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {open && <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />}
+    </div>
+  );
 }
 
 function EditPersonaModal({ persona, onSave, onClose }: {
@@ -188,11 +207,11 @@ function EditPersonaModal({ persona, onSave, onClose }: {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<EditForm>({
+    avatarId: persona.avatarId || persona.emoji || AVATARS[0].id,
     name: persona.name,
     title: persona.title,
     company: persona.company ?? '',
     industry: persona.industry ?? '',
-    iconId: (persona.emoji as PersonaIconId) || 'user',
     difficulty: persona.difficulty as typeof DIFFICULTIES[number],
     personality: typeof persona.personality === 'string'
       ? (persona.personality.startsWith('{') ? JSON.parse(persona.personality).description ?? persona.personality : persona.personality)
@@ -203,8 +222,7 @@ function EditPersonaModal({ persona, onSave, onClose }: {
     frameworks: persona.frameworks,
   });
 
-  const set = (k: keyof EditForm, v: any) => setForm(f => ({ ...f, [k]: v }));
-
+  const set = (k: keyof EditForm, v: unknown) => setForm(f => ({ ...f, [k]: v }));
   const updateItem = (field: 'objections' | 'buyingSignals', i: number, v: string) => {
     const arr = [...form[field]]; arr[i] = v; set(field, arr);
   };
@@ -214,7 +232,7 @@ function EditPersonaModal({ persona, onSave, onClose }: {
   const toggleFramework = (fw: Framework) =>
     set('frameworks', form.frameworks.includes(fw) ? form.frameworks.filter(f => f !== fw) : [...form.frameworks, fw]);
 
-  const SelectedIcon = getIcon(form.iconId);
+  const selectedAvatar = AVATARS.find(a => a.id === form.avatarId) ?? AVATARS[0];
 
   const handleSave = async () => {
     if (!form.name || !form.title || !form.systemPrompt) {
@@ -225,7 +243,8 @@ function EditPersonaModal({ persona, onSave, onClose }: {
     try {
       const updated = await personasApi.update(persona.id, {
         ...form,
-        emoji: form.iconId,
+        emoji: form.avatarId,
+        avatarId: form.avatarId,
         objections: form.objections.filter(Boolean),
         buyingSignals: form.buyingSignals.filter(Boolean),
         personality: JSON.stringify({ description: form.personality }),
@@ -258,16 +277,13 @@ function EditPersonaModal({ persona, onSave, onClose }: {
           </button>
         </div>
 
-        {/* Step indicator */}
         <div className="flex items-center gap-1 px-6 py-3 border-b border-white/[0.05]">
           {[1, 2, 3].map(s => (
             <div key={s} className="flex items-center gap-1">
-              <button
-                onClick={() => setStep(s)}
+              <button onClick={() => setStep(s)}
                 className={clsx('w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold transition-all',
                   step === s ? 'bg-accent text-white' : step > s ? 'bg-emerald-500 text-white' : 'bg-white/[0.08] text-white/55'
-                )}
-              >
+                )}>
                 {step > s ? <Check size={10} /> : s}
               </button>
               {s < 3 && <div className={clsx('w-8 h-px', step > s ? 'bg-emerald-500/50' : 'bg-white/10')} />}
@@ -279,26 +295,33 @@ function EditPersonaModal({ persona, onSave, onClose }: {
         <div className="flex-1 overflow-y-auto p-6">
           <AnimatePresence mode="wait">
             {step === 1 && (
-              <motion.div key="s1" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex flex-col gap-4">
+              <motion.div key="s1" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex flex-col gap-5">
+                {/* Avatar picker */}
                 <div>
-                  <label className="text-xs font-medium text-white/70 block mb-2">Icon</label>
-                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                    {PERSONA_ICONS.map(({ id, Icon, label }) => (
-                      <button key={id} onClick={() => set('iconId', id)} title={label}
-                        className={clsx('flex flex-col items-center gap-1 p-2 rounded-[10px] border transition-all hover:scale-105',
-                          form.iconId === id ? 'border-accent bg-accent/15' : 'border-white/[0.08] bg-white/[0.04] hover:border-white/20'
-                        )}>
-                        <Icon size={16} className={form.iconId === id ? 'text-accent' : 'text-white/70'} />
-                        <span className="text-[9px] text-white/75 truncate w-full text-center">{label}</span>
-                      </button>
-                    ))}
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-medium text-white/70">Avatar</label>
                   </div>
+                  <div className="flex items-center gap-3 mb-3 p-3 rounded-[10px] bg-white/[0.03] border border-white/[0.06]">
+                    <AvatarDisplay avatarId={form.avatarId} size={44} />
+                    <div>
+                      <p className="text-[13px] font-semibold text-white">{selectedAvatar.name}</p>
+                      <p className="text-[11px] text-white/45 capitalize">{selectedAvatar.gender} · {selectedAvatar.ethnicity.replace('-', ' ')}</p>
+                    </div>
+                    <button type="button" onClick={() => {
+                      const others = AVATARS.filter(a => a.id !== form.avatarId);
+                      set('avatarId', others[Math.floor(Math.random() * others.length)].id);
+                    }} className="ml-auto p-1.5 rounded-[7px] text-white/40 hover:text-white/70 hover:bg-white/[0.06] transition-all">
+                      <RefreshCw size={13} />
+                    </button>
+                  </div>
+                  <EthnicityAvatarPicker value={form.avatarId} onChange={id => set('avatarId', id)} />
                 </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {([['name','Full Name *','Sarah Chen'],['title','Job Title *','VP of Sales'],['company','Company','Acme Corp'],['industry','Industry','SaaS']] as const).map(([k, lbl, ph]) => (
                     <div key={k}>
                       <label className="text-xs font-medium text-white/70 block mb-1.5">{lbl}</label>
-                      <input value={form[k as keyof EditForm] as string} onChange={e => set(k as keyof EditForm, e.target.value)} placeholder={ph} className="input-base" />
+                      <input value={form[k as 'name'|'title'|'company'|'industry']} onChange={e => set(k as keyof EditForm, e.target.value)} placeholder={ph} className="input-base" />
                     </div>
                   ))}
                 </div>
@@ -332,32 +355,53 @@ function EditPersonaModal({ persona, onSave, onClose }: {
                   <textarea value={form.systemPrompt} onChange={e => set('systemPrompt', e.target.value)} rows={5}
                     className="input-base resize-none text-[12.5px] leading-relaxed" />
                 </div>
-                {(['objections', 'buyingSignals'] as const).map(field => (
-                  <div key={field}>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs font-medium text-white/70">
-                        {field === 'objections' ? 'Common Objections' : 'Buying Signals'}
-                      </label>
-                      <button onClick={() => addItem(field)} className="text-[11px] text-accent hover:underline flex items-center gap-1">
+                {/* Objections */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-medium text-white/70">Common Objections</label>
+                    <div className="flex items-center gap-2">
+                      <SuggestedObjectionsDropdown onSelect={items => set('objections', items)} />
+                      <button onClick={() => addItem('objections')} className="text-[11px] text-accent hover:underline flex items-center gap-1">
                         <Plus size={11} /> Add
                       </button>
                     </div>
-                    <div className="flex flex-col gap-2">
-                      {form[field].map((val, i) => (
-                        <div key={i} className="flex gap-2">
-                          <input value={val} onChange={e => updateItem(field, i, e.target.value)}
-                            placeholder={`${field === 'objections' ? 'Objection' : 'Signal'} ${i + 1}…`}
-                            className="input-base flex-1 text-[12.5px]" />
-                          {form[field].length > 1 && (
-                            <button onClick={() => removeItem(field, i)} className="p-2 text-white/55 hover:text-red-400 transition-colors">
-                              <Trash2 size={13} />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
                   </div>
-                ))}
+                  <div className="flex flex-col gap-2">
+                    {form.objections.map((val, i) => (
+                      <div key={i} className="flex gap-2">
+                        <input value={val} onChange={e => updateItem('objections', i, e.target.value)}
+                          placeholder={`Objection ${i + 1}…`} className="input-base flex-1 text-[12.5px]" />
+                        {form.objections.length > 1 && (
+                          <button onClick={() => removeItem('objections', i)} className="p-2 text-white/55 hover:text-red-400 transition-colors">
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Buying signals */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-medium text-white/70">Buying Signals</label>
+                    <button onClick={() => addItem('buyingSignals')} className="text-[11px] text-accent hover:underline flex items-center gap-1">
+                      <Plus size={11} /> Add
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {form.buyingSignals.map((val, i) => (
+                      <div key={i} className="flex gap-2">
+                        <input value={val} onChange={e => updateItem('buyingSignals', i, e.target.value)}
+                          placeholder={`Signal ${i + 1}…`} className="input-base flex-1 text-[12.5px]" />
+                        {form.buyingSignals.length > 1 && (
+                          <button onClick={() => removeItem('buyingSignals', i)} className="p-2 text-white/55 hover:text-red-400 transition-colors">
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </motion.div>
             )}
 
@@ -380,9 +424,7 @@ function EditPersonaModal({ persona, onSave, onClose }: {
                   <div className="p-4 rounded-[12px] bg-bg-3 border border-white/[0.08]">
                     <p className="text-[10px] font-semibold text-white/45 uppercase tracking-wider mb-3">Preview</p>
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-accent/15 border border-accent/25 flex items-center justify-center flex-shrink-0">
-                        <SelectedIcon size={18} className="text-accent" />
-                      </div>
+                      <AvatarDisplay avatarId={form.avatarId} size={48} />
                       <div>
                         <div className="font-display font-bold">{form.name}</div>
                         <div className="text-[12px] text-white/70 mb-2">{form.title}{form.company ? ` · ${form.company}` : ''}</div>
@@ -429,7 +471,7 @@ function PersonaCard({
   onAnalytics: (p: Persona) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const Icon = getIcon(persona.emoji);
+  const avatarId = persona.avatarId || persona.emoji;
 
   return (
     <motion.div
@@ -440,9 +482,7 @@ function PersonaCard({
     >
       {/* Card header */}
       <div className="flex items-start gap-4 p-5">
-        <div className="w-11 h-11 rounded-[12px] bg-accent/10 border border-accent/20 flex items-center justify-center flex-shrink-0">
-          <Icon size={20} className="text-accent" />
-        </div>
+        <AvatarDisplay avatarId={avatarId} size={44} className="rounded-[12px] flex-shrink-0" />
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
