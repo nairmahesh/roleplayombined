@@ -2624,78 +2624,100 @@ export function PracticePage() {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={e => e.stopPropagation()}
-              className="bg-bg-2 border border-white/10 rounded-[18px] p-6 w-full max-w-md shadow-[0_24px_80px_rgba(0,0,0,0.6)]"
+              className="bg-bg-2 border border-white/10 rounded-[18px] w-full max-w-lg shadow-[0_24px_80px_rgba(0,0,0,0.6)] flex flex-col max-h-[90vh]"
             >
-              {/* Persona preview */}
-              <div className="flex items-center gap-4 mb-4">
-                <div className="rounded-full overflow-hidden ring-2 ring-white/10 flex-shrink-0">
-                  <AvatarDisplay avatarId={avatarId} size={64} />
-                </div>
-                <div className="min-w-0">
-                  <div className="font-display text-[16px] font-bold leading-tight truncate">{displayName}</div>
-                  {displayTitle && <div className="text-[12px] text-white/70 mt-0.5 truncate">{displayTitle}</div>}
-                  <div className="flex flex-wrap gap-1.5 mt-1.5">
-                    <span className={clsx('text-[10.5px] px-2 py-0.5 rounded border', DIFFICULTY_COLORS[difficulty] || 'text-white/80 bg-white/5 border-white/10')}>{difficulty}</span>
-                    {industry && <span className="text-[10.5px] px-2 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/70">{industry}</span>}
-                    {roleplayType && <span className="text-[10.5px] px-2 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/70">{roleplayType}</span>}
-                    <span className="text-[10.5px] px-2 py-0.5 rounded bg-accent/10 border border-accent/20 text-accent/70 flex items-center gap-1">
-                      <Globe size={9} /> {language || 'English'}
-                    </span>
+              {/* Scrollable body */}
+              <div className="overflow-y-auto flex-1 p-6 flex flex-col gap-4">
+                {/* Persona header */}
+                <div className="flex items-center gap-4">
+                  <div className="rounded-full overflow-hidden ring-2 ring-white/10 flex-shrink-0">
+                    <AvatarDisplay avatarId={avatarId} size={64} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-display text-[17px] font-bold leading-tight truncate">{displayName}</div>
+                    {displayTitle && <div className="text-[12.5px] text-white/65 mt-0.5 truncate">{displayTitle}</div>}
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      <span className={clsx('text-[10.5px] px-2 py-0.5 rounded border', DIFFICULTY_COLORS[difficulty] || 'text-white/80 bg-white/5 border-white/10')}>{difficulty}</span>
+                      {industry && <span className="text-[10.5px] px-2 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/70">{industry}</span>}
+                      {roleplayType && <span className="text-[10.5px] px-2 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/70">{roleplayType}</span>}
+                      <span className="text-[10.5px] px-2 py-0.5 rounded bg-accent/10 border border-accent/20 text-accent/70 flex items-center gap-1">
+                        <Globe size={9} /> {language || 'English'}
+                      </span>
+                    </div>
                   </div>
                 </div>
+
+                {/* Scenario context — full, no truncation */}
+                {personaContext && (
+                  <div className="bg-white/[0.03] border border-white/[0.07] rounded-[12px] p-4">
+                    <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wider mb-2">Scenario Context</p>
+                    <p className="text-[12.5px] text-white/80 leading-relaxed whitespace-pre-wrap">{personaContext}</p>
+                  </div>
+                )}
+
+                {/* Expect questions from the persona */}
+                {suggestedQuestions.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wider mb-2">Expect questions like</p>
+                    <div className="flex flex-col gap-1.5">
+                      {suggestedQuestions.map((q, i) => (
+                        <div
+                          key={i}
+                          className="flex items-start gap-2 px-3 py-2 rounded-[9px] bg-white/[0.03] border border-white/[0.05]"
+                        >
+                          <span className="text-[10px] font-mono text-white/25 flex-shrink-0 mt-0.5">{String(i + 1).padStart(2, '0')}</span>
+                          <span className="text-[12px] text-white/65 leading-snug">{q}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Context preview */}
-              {personaContext && (
-                <div className="mb-4 bg-white/[0.03] border border-white/[0.07] rounded-[10px] p-3">
-                  <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-1.5">Context</p>
-                  <p className="text-[12px] text-white/70 leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto">{personaContext}</p>
+              {/* Sticky footer */}
+              <div className="flex-shrink-0 px-6 py-4 border-t border-white/[0.07] flex flex-col gap-3">
+                {/* Call format */}
+                <div>
+                  <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wider mb-2">Call Format</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSessionType('PHONE_CALL')}
+                      className={clsx(
+                        'flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-[10px] border text-[13px] font-medium transition-all',
+                        sessionType === 'PHONE_CALL' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/70 hover:text-white hover:bg-white/[0.05]'
+                      )}
+                    >
+                      <Phone size={13} /> Phone Call
+                    </button>
+                    <button
+                      onClick={() => setSessionType('ONLINE_MEETING')}
+                      className={clsx(
+                        'flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-[10px] border text-[13px] font-medium transition-all',
+                        sessionType === 'ONLINE_MEETING' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/70 hover:text-white hover:bg-white/[0.05]'
+                      )}
+                    >
+                      <Monitor size={13} /> Online
+                    </button>
+                  </div>
                 </div>
-              )}
 
-              {/* Call format */}
-              <div className="mb-4">
-                <p className="text-[10px] font-semibold text-white/80 uppercase tracking-wider mb-2">Call Format</p>
+                {/* Actions */}
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => setSessionType('PHONE_CALL')}
-                    title="Practice as a phone call"
-                    className={clsx(
-                      'flex items-center gap-2 flex-1 justify-center px-3 py-2.5 rounded-[10px] border text-[13px] font-medium transition-all',
-                      sessionType === 'PHONE_CALL' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/70 hover:text-white hover:bg-white/[0.05]'
-                    )}
-                  >
-                    <Phone size={13} /> Phone Call
+                  <button onClick={() => setQuickLaunchData(null)} className="btn-ghost flex-shrink-0 px-4">
+                    Cancel
                   </button>
                   <button
-                    onClick={() => setSessionType('ONLINE_MEETING')}
-                    title="Practice as an online meeting"
-                    className={clsx(
-                      'flex items-center gap-2 flex-1 justify-center px-3 py-2.5 rounded-[10px] border text-[13px] font-medium transition-all',
-                      sessionType === 'ONLINE_MEETING' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/65 text-white/70 hover:text-white hover:bg-white/[0.05]'
-                    )}
+                    onClick={handleStart}
+                    disabled={starting || !isReady}
+                    className="flex-1 btn-primary gap-2 py-2.5 text-[14px] justify-center disabled:opacity-40"
                   >
-                    <Monitor size={13} /> Online
+                    {starting ? <><Loader2 size={14} className="animate-spin" /> Starting…</> : <><Play size={14} /> Start Session</>}
                   </button>
                 </div>
+                {!isReady && (
+                  <p className="text-[11px] text-amber-400/60 text-center">Missing persona context or industry</p>
+                )}
               </div>
-
-              {/* Actions */}
-              <div className="flex gap-2">
-                <button onClick={() => setQuickLaunchData(null)} className="btn-ghost flex-shrink-0 px-4">
-                  Cancel
-                </button>
-                <button
-                  onClick={handleStart}
-                  disabled={starting || !isReady}
-                  className="flex-1 btn-primary gap-2 py-2.5 text-[14px] justify-center disabled:opacity-40"
-                >
-                  {starting ? <><Loader2 size={14} className="animate-spin" /> Starting…</> : <><Play size={14} /> Start Session</>}
-                </button>
-              </div>
-              {!isReady && (
-                <p className="text-[11px] text-amber-400/60 text-center mt-2">Missing persona context or industry</p>
-              )}
             </motion.div>
           </motion.div>
         )}
