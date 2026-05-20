@@ -36,10 +36,15 @@ interface Props {
 }
 
 // ── Ring tone (3 rings via Web Audio API) ─────────────────────────────────────
-function playRings(): Promise<void> {
-  return new Promise(resolve => {
+// Returns { promise, stop } so callers can cancel the audio mid-ring.
+function playRings(): { promise: Promise<void>; stop: () => void } {
+  let audioCtx: AudioContext | null = null;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  const promise = new Promise<void>(resolve => {
     try {
-      const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const ctx = audioCtx;
       for (let i = 0; i < 3; i++) {
         const t = ctx.currentTime + i * 2.2;
         const o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), g = ctx.createGain();
@@ -51,9 +56,16 @@ function playRings(): Promise<void> {
         g.gain.linearRampToValueAtTime(0, t + 1.0);
         o1.start(t); o2.start(t); o1.stop(t + 1.1); o2.stop(t + 1.1);
       }
-      setTimeout(resolve, 3 * 2200 + 200);
-    } catch { setTimeout(resolve, 2000); }
+      timeoutId = setTimeout(resolve, 3 * 2200 + 200);
+    } catch { timeoutId = setTimeout(resolve, 2000); }
   });
+
+  const stop = () => {
+    if (timeoutId !== null) clearTimeout(timeoutId);
+    try { audioCtx?.close(); } catch {}
+  };
+
+  return { promise, stop };
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
@@ -86,6 +98,7 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
   const handleEndRef     = useRef<(() => void) | null>(null);
   const isEndingRef      = useRef(false);
   const sessionStartedRef = useRef(false); // true once startSession() has been called
+  const stopRingsRef     = useRef<(() => void) | null>(null); // stops ring audio mid-play
 
   const socket = connectSocket();
   const recording = useRecording({ sessionId, mode: sessionType === 'ONLINE_MEETING' ? 'video' : 'audio' });
@@ -122,7 +135,10 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
       for (let i = 0; i < 3; i++) {
         setTimeout(() => { if (!cancelled) setRingDot(i + 1); }, i * 2200);
       }
-      await playRings();
+      const rings = playRings();
+      stopRingsRef.current = rings.stop;
+      await rings.promise;
+      stopRingsRef.current = null;
       if (cancelled) return;
 
       setPhase('active');
@@ -204,6 +220,8 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
       console.log('[CallInterface] useEffect cleanup — sessionStarted=%s', sessionStartedRef.current);
       cancelled = true;
       sessionStartedRef.current = false;
+      stopRingsRef.current?.();
+      stopRingsRef.current = null;
       if (timerRef.current) clearInterval(timerRef.current);
       try { endSession(); } catch {}
       socket.emit('session:leave', { sessionId });
@@ -297,7 +315,11 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
             <div className="text-[12px] text-white/70 mb-6">Ringing…</div>
             <button
               type="button"
-              onClick={() => onEnd(sessionId)}
+              onClick={() => {
+                stopRingsRef.current?.();
+                stopRingsRef.current = null;
+                onEnd(sessionId);
+              }}
               className="px-6 py-2.5 bg-accent-4/15 text-accent-4 border border-accent-4/25 rounded-[9px] text-[12.5px] font-semibold cursor-pointer hover:bg-accent-4/25 transition-colors"
             >
               Cancel
