@@ -67,7 +67,7 @@ export function LeaderboardPage() {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.04 }}
-                className={`flex items-center gap-3 px-3 sm:px-5 py-3 sm:py-3.5 ${entry.user.id === user?.id ? 'bg-accent/[0.05]' : 'hover:bg-white/[0.02]'} transition-colors`}
+                className={`flex items-center gap-4 px-5 py-3.5 ${entry.user.id === user?.id ? 'bg-accent/[0.05]' : 'hover:bg-white/[0.02]'} transition-colors`}
               >
                 <span className={`font-display text-[13px] font-bold w-5 text-center flex-shrink-0 ${rankStyle(entry.rank)}`}>
                   #{entry.rank}
@@ -75,19 +75,19 @@ export function LeaderboardPage() {
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-accent-2 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
                   {entry.user.firstName[0]}{entry.user.lastName[0]}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13.5px] font-medium flex items-center gap-2 flex-wrap">
-                    <span className="truncate">{entry.user.firstName} {entry.user.lastName}</span>
-                    {entry.user.id === user?.id && <span className="text-[10px] text-accent font-semibold flex-shrink-0">You</span>}
+                <div className="flex-1">
+                  <div className="text-[13.5px] font-medium flex items-center gap-2">
+                    {entry.user.firstName} {entry.user.lastName}
+                    {entry.user.id === user?.id && <span className="text-[10px] text-accent font-semibold">You</span>}
                   </div>
                   <div className="text-[11px] text-white/55">{entry.sessionCount} sessions</div>
                 </div>
-                <div className="w-24 hidden sm:block flex-shrink-0">
+                <div className="w-32 hidden sm:block">
                   <div className="progress-bar">
                     <div className="progress-fill bg-accent" style={{ width: `${entry.avgScore}%` }} />
                   </div>
                 </div>
-                <div className="font-display text-[16px] font-bold text-accent-3 w-10 text-right flex-shrink-0">{entry.avgScore}</div>
+                <div className="font-display text-[16px] font-bold text-accent-3 w-10 text-right">{entry.avgScore}</div>
               </motion.div>
             ))}
           </div>

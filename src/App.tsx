@@ -15,13 +15,10 @@ const SessionsPage      = lazy(() => import('@/pages/SessionsPage').then(m => ({
 const FeedbackPage      = lazy(() => import('@/pages/FeedbackPage').then(m => ({ default: m.FeedbackPage })));
 const LeaderboardPage   = lazy(() => import('@/pages/LeaderboardPage').then(m => ({ default: m.LeaderboardPage })));
 const TeamPage          = lazy(() => import('@/pages/TeamPage').then(m => ({ default: m.TeamPage })));
-const SettingsPage          = lazy(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
-const EvaluationPromptsPage = lazy(() => import('@/pages/EvaluationPromptsPage').then(m => ({ default: m.EvaluationPromptsPage })));
+const SettingsPage      = lazy(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const CompaniesPage     = lazy(() => import('@/pages/CompaniesPage').then(m => ({ default: m.CompaniesPage })));
 const CompanyDetailPage = lazy(() => import('@/pages/CompanyDetailPage').then(m => ({ default: m.CompanyDetailPage })));
 const SuperAdminStatsPage = lazy(() => import('@/pages/SuperAdminStatsPage').then(m => ({ default: m.SuperAdminStatsPage })));
-const PlanSettingsPage    = lazy(() => import('@/pages/PlanSettingsPage').then(m => ({ default: m.PlanSettingsPage })));
-const PersonasPage        = lazy(() => import('@/pages/PersonasPage').then(m => ({ default: m.PersonasPage })));
 
 function PageLoader() {
   return (
@@ -116,30 +113,6 @@ export default function App() {
                 element={
                   <RequireRole roles={['COMPANY_ADMIN', 'SUPER_ADMIN']}>
                     <ErrorBoundary><SettingsPage /></ErrorBoundary>
-                  </RequireRole>
-                }
-              />
-              <Route
-                path="settings/plan"
-                element={
-                  <RequireRole roles={['COMPANY_ADMIN', 'SUPER_ADMIN', 'MANAGER', 'AGENT']}>
-                    <ErrorBoundary><PlanSettingsPage /></ErrorBoundary>
-                  </RequireRole>
-                }
-              />
-              <Route
-                path="settings/evaluation-prompts"
-                element={
-                  <RequireRole roles={['COMPANY_ADMIN', 'SUPER_ADMIN']}>
-                    <ErrorBoundary><EvaluationPromptsPage /></ErrorBoundary>
-                  </RequireRole>
-                }
-              />
-              <Route
-                path="personas"
-                element={
-                  <RequireRole roles={['COMPANY_ADMIN', 'MANAGER']}>
-                    <ErrorBoundary><PersonasPage /></ErrorBoundary>
                   </RequireRole>
                 }
               />

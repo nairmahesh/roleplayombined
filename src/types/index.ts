@@ -1,87 +1,6 @@
 // pitchiq/frontend/src/types/index.ts
 
 export type UserRole = 'SUPER_ADMIN' | 'COMPANY_ADMIN' | 'MANAGER' | 'AGENT';
-
-// ── Plan / Feature system ──────────────────────────────────────────────────────
-export type PlanTier = 'starter' | 'growth' | 'pro' | 'enterprise';
-
-export interface PlanFeatures {
-  // core limits
-  sessionsPerMonth: number | null;   // null = unlimited
-  agentsMax: number | null;
-  sessionMinutesMax: number | null;  // per session cap, null = unlimited
-  // modules
-  knowledgeBase: boolean;            // train bot on docs/URLs
-  preCallBriefing: boolean;          // user reads content before call
-  customPersonas: boolean;
-  teamRoleplays: boolean;
-  analytics: boolean;
-  leaderboard: boolean;
-  recordings: boolean;
-  aiCoaching: boolean;
-  evaluationPrompts: boolean;
-  multiLanguage: boolean;
-  apiAccess: boolean;
-}
-
-export const PLAN_CONFIGS: Record<PlanTier, { label: string; price: string; color: string; features: PlanFeatures }> = {
-  starter: {
-    label: 'Starter', price: '$49/mo', color: '#6B7280',
-    features: {
-      sessionsPerMonth: 20, agentsMax: 3, sessionMinutesMax: 5,
-      knowledgeBase: false, preCallBriefing: false,
-      customPersonas: false, teamRoleplays: false,
-      analytics: false, leaderboard: true, recordings: false,
-      aiCoaching: false, evaluationPrompts: false,
-      multiLanguage: false, apiAccess: false,
-    },
-  },
-  growth: {
-    label: 'Growth', price: '$149/mo', color: '#06D6A0',
-    features: {
-      sessionsPerMonth: 100, agentsMax: 15, sessionMinutesMax: 10,
-      knowledgeBase: false, preCallBriefing: false,
-      customPersonas: true, teamRoleplays: true,
-      analytics: true, leaderboard: true, recordings: true,
-      aiCoaching: true, evaluationPrompts: false,
-      multiLanguage: false, apiAccess: false,
-    },
-  },
-  pro: {
-    label: 'Pro', price: '$349/mo', color: '#5B6FFF',
-    features: {
-      sessionsPerMonth: 500, agentsMax: 50, sessionMinutesMax: 20,
-      knowledgeBase: true, preCallBriefing: true,
-      customPersonas: true, teamRoleplays: true,
-      analytics: true, leaderboard: true, recordings: true,
-      aiCoaching: true, evaluationPrompts: true,
-      multiLanguage: true, apiAccess: false,
-    },
-  },
-  enterprise: {
-    label: 'Enterprise', price: 'Custom', color: '#FFD166',
-    features: {
-      sessionsPerMonth: null, agentsMax: null, sessionMinutesMax: null,
-      knowledgeBase: true, preCallBriefing: true,
-      customPersonas: true, teamRoleplays: true,
-      analytics: true, leaderboard: true, recordings: true,
-      aiCoaching: true, evaluationPrompts: true,
-      multiLanguage: true, apiAccess: true,
-    },
-  },
-};
-
-// ── Knowledge base attachment ──────────────────────────────────────────────────
-export type KnowledgeBaseEntryType = 'text' | 'url' | 'file';
-
-export interface KnowledgeBaseEntry {
-  id: string;
-  type: KnowledgeBaseEntryType;
-  label: string;     // display name
-  content: string;   // raw text / url / filename
-  forRole: 'bot' | 'user' | 'both';
-  createdAt: string;
-}
 export type SessionType = 'PHONE_CALL' | 'ONLINE_MEETING';
 export type SessionStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
 export type Framework = 'MEDDIC' | 'MEDDICC' | 'SPIN' | 'BANT' | 'CHALLENGER' | 'SNAP';
@@ -103,10 +22,6 @@ export interface User {
   avgScore?: number;
   sessionCount?: number;
   location?: string;
-  region?: string;       // geographic region e.g. 'EMEA', 'APAC', 'North America'
-  team?: string;         // team name e.g. 'Enterprise', 'SMB', 'SDR Team'
-  territory?: string;    // sales territory
-  zone?: string;         // zone/district
   _count?: { sessions: number };
 }
 
@@ -197,7 +112,6 @@ export interface TimelineEvent {
 export interface ScenarioConfig {
   industry: string;
   roleplayType: string;
-  callMode?: 'Call' | 'Online';
   personaContext: string;
   displayName: string;
   displayTitle: string;
@@ -211,9 +125,6 @@ export interface ScenarioConfig {
   avatarId?: string;
   elevenlabsVoiceId?: string;
   language?: string;
-  // Knowledge base
-  botKnowledge?: KnowledgeBaseEntry[];    // context fed to the AI bot
-  userBriefing?: KnowledgeBaseEntry[];    // content shown to user before call
 }
 
 export interface Session {
@@ -236,31 +147,6 @@ export interface Session {
   messages?: Message[];
 }
 
-// ── Assignment targeting ───────────────────────────────────────────────────────
-export type AssignmentScope = 'all' | 'team' | 'region' | 'individual';
-
-export interface AssignmentTarget {
-  scope: AssignmentScope;
-  teamIds?: string[];       // if scope = 'team'
-  regions?: string[];       // if scope = 'region'
-  userIds?: string[];       // if scope = 'individual'
-}
-
-// ── Peer session listening ─────────────────────────────────────────────────────
-export interface PeerSession {
-  sessionId: string;
-  userId: string;
-  userName: string;
-  userLocation?: string;
-  userTeam?: string;
-  score: number;
-  rank: number;
-  durationSeconds: number;
-  completedAt: string;
-  canListen: boolean;   // manager allowed listening
-  playbackUrl?: string;
-}
-
 export interface TeamRoleplay {
   id: string;
   name: string;
@@ -271,10 +157,6 @@ export interface TeamRoleplay {
   createdBy: Pick<User, 'id' | 'firstName' | 'lastName'>;
   createdAt: string;
   updatedAt: string;
-  // Assignment targeting
-  assignmentTarget?: AssignmentTarget;
-  allowPeerListening?: boolean;  // whether peers can hear each other's sessions
-  completionCount?: number;      // how many people have completed it
 }
 
 export interface DashboardRecentSession {
@@ -342,45 +224,6 @@ export interface ParsedFeedback {
   strengths: string[];
   improvements: string[];
   proTip: string;
-  scorecardGroups?: ScorecardGroup[];
-}
-
-// Rubric-based scoring (per roleplay type)
-export interface ScorecardCriterion {
-  question: string;
-  hint?: string;
-  passed: boolean;
-  reasoning: string; // AI's one-line evidence
-}
-
-export interface ScorecardGroup {
-  group: string;
-  maxPoints: number;
-  earnedPoints: number;
-  criteria: ScorecardCriterion[];
-}
-
-// Evaluation prompt definition (stored in DB / admin settings)
-export interface EvaluationCriterionDef {
-  question: string;
-  hint?: string;
-}
-
-export interface EvaluationGroupDef {
-  group: string;
-  criteria: EvaluationCriterionDef[];
-}
-
-export interface EvaluationPrompt {
-  id: string;
-  companyId?: string;
-  roleplayType: string;
-  displayName: string;
-  scoringCriteria: EvaluationGroupDef[];
-  promptTemplate: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export const FRAMEWORK_INFO: Record<Framework, { label: string; components: string[]; color: string }> = {

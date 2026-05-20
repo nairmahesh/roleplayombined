@@ -79,7 +79,7 @@ function SessionRow({
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: delay ?? 0 }}
       onClick={onClick}
-      className="flex items-center gap-3 px-3 sm:px-5 py-3 sm:py-3.5 cursor-pointer hover:bg-white/[0.03] transition-colors group"
+      className="flex items-center gap-4 px-5 py-3.5 cursor-pointer hover:bg-white/[0.03] transition-colors group"
     >
       <div className="w-7 h-7 rounded-full bg-accent/15 border border-accent/20 flex items-center justify-center flex-shrink-0">
         {session.sessionType === 'PHONE_CALL'

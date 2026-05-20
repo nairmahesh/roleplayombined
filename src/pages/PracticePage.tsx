@@ -2,19 +2,15 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Phone, Monitor, Sparkles, Loader as Loader2, ChevronDown, ChevronUp, RefreshCw, Play, Plus, X, Settings, Info, Pencil, Trash2, ArrowLeft, BookOpen, Lock, Check, User, Layers, Globe, Database, FileText, Users, UserPlus } from 'lucide-react';
+import { Phone, Monitor, Sparkles, Loader as Loader2, ChevronDown, ChevronUp, RefreshCw, Play, Plus, X, Settings, Info, Pencil, Trash2, ArrowLeft, BookOpen, Lock, Check, User, Layers, Globe } from 'lucide-react';
 import { practiceApi, sessionsApi, personasApi, teamRoleplaysApi } from '@/lib/api';
-import type { AssignmentScope, AssignmentTarget } from '@/types';
-import { Framework, SessionType, FRAMEWORK_INFO, ScenarioConfig, Persona, TeamRoleplay, KnowledgeBaseEntry } from '@/types';
+import { Framework, SessionType, FRAMEWORK_INFO, ScenarioConfig, Persona, TeamRoleplay } from '@/types';
 import { CallInterface, PersonaDisplay } from '@/components/practice/CallInterface';
 import { PersonaBuilder } from '@/components/practice/PersonaBuilder';
 import { AvatarDisplay, EthnicityAvatarPicker, AVATAR_VOICE_CONFIG, AVATARS, type AvatarId } from '@/components/practice/PersonaAvatars';
 import { VoicePickerModal } from '@/components/practice/VoicePickerModal';
 import { CURATED_VOICES } from '@/components/practice/VoicePicker';
-import { KnowledgeBaseEditor } from '@/components/practice/KnowledgeBaseEditor';
-import { PreCallBriefing } from '@/components/practice/PreCallBriefing';
-import { PlanGate } from '@/components/PlanGate';
-import { useAuthStore, usePlanStore } from '@/lib/store';
+import { useAuthStore } from '@/lib/store';
 import clsx from 'clsx';
 
 // ── Static config ─────────────────────────────────────────────────────────────
@@ -39,7 +35,7 @@ const LANGUAGES = [
 const TEMPLATES: Array<ScenarioConfig & { id: string; label: string; avatarId: string }> = [
   {
     id: 't1', label: 'Enterprise CRM Pitch', avatarId: 'alex',
-    industry: 'SaaS', roleplayType: 'Sales Pitch', callMode: 'Online', displayEmoji: '',
+    industry: 'SaaS', roleplayType: 'Sales Pitch', displayEmoji: '',
     displayName: 'Alex Chen', displayTitle: 'Head of Sales, Accenture',
     difficulty: 'Hard',
     suggestedQuestions: [
@@ -55,7 +51,7 @@ How to behave: Start by briefly welcoming the rep and asking them to walk you th
   },
   {
     id: 't2', label: 'SaaS Cold Call', avatarId: 'james',
-    industry: 'SaaS', roleplayType: 'Cold Call', callMode: 'Call', displayEmoji: '',
+    industry: 'SaaS', roleplayType: 'Cold Call', displayEmoji: '',
     displayName: "James O'Brien", displayTitle: 'VP of Engineering, TechCorp',
     difficulty: 'Hard',
     suggestedQuestions: [
@@ -71,7 +67,7 @@ How to behave: Be initially dismissive and short. Give the caller 60 seconds. If
   },
   {
     id: 't3', label: 'Healthcare Discovery Call', avatarId: 'sarah',
-    industry: 'Healthcare', roleplayType: 'Discovery Call', callMode: 'Call', displayEmoji: '',
+    industry: 'Healthcare', roleplayType: 'Discovery Call', displayEmoji: '',
     displayName: 'Sarah Mitchell', displayTitle: 'CMO, Regional Health System',
     difficulty: 'Medium',
     suggestedQuestions: [
@@ -87,7 +83,7 @@ How to behave: Probe deeply on compliance, integration, and implementation risk.
   },
   {
     id: 't4', label: 'Objection Handling — Price', avatarId: 'robert',
-    industry: 'Consulting', roleplayType: 'Objection Handling', callMode: 'Online', displayEmoji: '',
+    industry: 'Consulting', roleplayType: 'Objection Handling', displayEmoji: '',
     displayName: 'Robert Hayes', displayTitle: 'Procurement Director, Global Corp',
     difficulty: 'Expert',
     suggestedQuestions: [
@@ -104,7 +100,7 @@ How to behave: Lead with price objections immediately. Push hard on discounts, p
   },
   {
     id: 't5', label: 'Banking Negotiation', avatarId: 'emma',
-    industry: 'Banking', roleplayType: 'Negotiation', callMode: 'Online', displayEmoji: '',
+    industry: 'Banking', roleplayType: 'Negotiation', displayEmoji: '',
     displayName: 'Emma Wilson', displayTitle: 'Head of Treasury, First National Bank',
     difficulty: 'Hard',
     suggestedQuestions: [
@@ -118,7 +114,7 @@ How to behave: Clarify key terms you need addressed: SLAs, regulatory compliance
   },
   {
     id: 't6', label: 'Account Expansion', avatarId: 'priya',
-    industry: 'SaaS', roleplayType: 'Account Expansion', callMode: 'Online', displayEmoji: '',
+    industry: 'SaaS', roleplayType: 'Account Expansion', displayEmoji: '',
     displayName: 'Priya Kapoor', displayTitle: 'Head of Operations, ScaleUp Inc',
     difficulty: 'Medium',
     suggestedQuestions: [
@@ -135,7 +131,7 @@ How to behave: Be friendly — you have a good relationship. But be analytically
   },
   {
     id: 't7', label: 'Insurance Cold Call', avatarId: 'layla',
-    industry: 'Insurance', roleplayType: 'Cold Call', callMode: 'Call', displayEmoji: '',
+    industry: 'Insurance', roleplayType: 'Cold Call', displayEmoji: '',
     displayName: 'Layla Hassan', displayTitle: 'CFO, MidWest Logistics',
     difficulty: 'Hard',
     suggestedQuestions: [
@@ -154,7 +150,7 @@ How to behave: Be initially dismissive. If the rep leads with cost savings and r
   },
   {
     id: 't8', label: 'Real Estate Pitch', avatarId: 'carlos',
-    industry: 'Real Estate', roleplayType: 'Sales Pitch', callMode: 'Online', displayEmoji: '',
+    industry: 'Real Estate', roleplayType: 'Sales Pitch', displayEmoji: '',
     displayName: 'Carlos Rivera', displayTitle: 'Head of Acquisitions, Apex Properties',
     difficulty: 'Medium',
     suggestedQuestions: [
@@ -171,7 +167,7 @@ How to behave: Ask tough questions about valuation methodology, market comparabl
   },
   {
     id: 't9', label: 'HR / Talent Platform', avatarId: 'aisha',
-    industry: 'Consulting', roleplayType: 'Discovery Call', callMode: 'Online', displayEmoji: '',
+    industry: 'Consulting', roleplayType: 'Discovery Call', displayEmoji: '',
     displayName: 'Aisha Brown', displayTitle: 'Chief People Officer, GrowthCo',
     difficulty: 'Easy',
     suggestedQuestions: [
@@ -190,7 +186,7 @@ How to behave: Be warm and engaged. Ask practical questions about implementation
   },
   {
     id: 't10', label: 'Manufacturing Demo', avatarId: 'marcus',
-    industry: 'Manufacturing', roleplayType: 'Sales Pitch', callMode: 'Online', displayEmoji: '',
+    industry: 'Manufacturing', roleplayType: 'Sales Pitch', displayEmoji: '',
     displayName: 'Marcus Johnson', displayTitle: 'VP of Operations, PrecisionMfg',
     difficulty: 'Hard',
     suggestedQuestions: [
@@ -207,51 +203,7 @@ Your current situation: Unplanned downtime is costing ~$180K/month. Your mainten
 
 How to behave: Be gruff and direct. Challenge every claim with real-world edge cases. Demand specifics on integration complexity and downtime risk. If the rep demonstrates genuine manufacturing knowledge and credible ROI data, warm up gradually and ask about a pilot program.`,
   },
-  {
-    id: 't11', label: 'Fintech Cold Call', avatarId: 'ravi',
-    industry: 'Fintech', roleplayType: 'Cold Call', callMode: 'Call', displayEmoji: '',
-    displayName: 'Ravi Patel', displayTitle: 'Head of Finance, PayScale Ltd',
-    difficulty: 'Hard',
-    suggestedQuestions: [
-      'How did you get my number?',
-      "We already use Stripe and Brex — what gap are you filling?",
-      'Is this regulated? What jurisdictions are you licensed in?',
-      'What happens to our data if your startup folds?',
-      'Give me one number that proves you save companies like mine money.',
-      "I'm in back-to-back meetings — why should I give you 5 more minutes?",
-    ],
-    personaContext: `You are the Head of Finance at a 300-person fintech company. You just received an unexpected cold call from a payments infrastructure vendor. You are busy, skeptical of cold callers, and highly compliance-aware.
-
-Your current situation: Your current payment stack works but fees are creeping up and reconciliation is manual. You haven't actively looked for alternatives but you're quietly frustrated.
-
-How to behave: Be clipped and impatient at first. If the caller mentions compliance certifications and a specific number around cost reduction, give them 2 more minutes. Push hard on data security and regulatory standing. Only agree to a callback if they can cite a comparable fintech client.`,
-  },
-  {
-    id: 't12', label: 'EdTech Platform Demo', avatarId: 'yuki',
-    industry: 'Education', roleplayType: 'Sales Pitch', callMode: 'Online', displayEmoji: '',
-    displayName: 'Yuki Tanaka', displayTitle: 'VP of Learning & Development, GlobalEd',
-    difficulty: 'Medium',
-    suggestedQuestions: [
-      'How does this compare to what we already use with Coursera?',
-      'Can you white-label the platform with our branding?',
-      'How do you measure learning outcomes — not completion rates?',
-      'What does content migration look like from our existing LMS?',
-      'How customizable is the learning path engine?',
-      "We have 8,000 learners across 12 countries — how does pricing work at our scale?",
-    ],
-    personaContext: `You are the VP of Learning & Development at a global education company with 8,000 active learners across 12 countries. You are evaluating a new LMS platform in an online product demo.
-
-Your current situation: Your current LMS is clunky, learner NPS is low, and content management is a nightmare across regions. You have budget and executive buy-in — you just need the right platform.
-
-How to behave: Be engaged and ask detailed questions about localization, analytics depth, and content authoring. You've seen a lot of demos so you can tell when reps are winging it. If the rep customizes the demo to your specific use case and answers confidently on localization, show genuine enthusiasm and ask about implementation timelines.`,
-  },
 ];
-
-function inferCallMode(sc: ScenarioConfig): 'Call' | 'Online' {
-  if (sc.callMode) return sc.callMode;
-  const t = sc.roleplayType.toLowerCase();
-  return t.includes('cold call') ? 'Call' : 'Online';
-}
 
 function pickFramework(roleplayType: string): Framework {
   const t = roleplayType.toLowerCase();
@@ -270,7 +222,7 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   Expert: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
 };
 
-type GalleryTab = 'assigned' | 'mine' | 'templates';
+type GalleryTab = 'assigned' | 'mine';
 type SetupMode = 'view' | 'edit';
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -296,7 +248,7 @@ export function PracticePage() {
   const [selectedVoiceId, setSelectedVoiceId]     = useState<string | undefined>(undefined);
   const [voiceOpen, setVoiceOpen]                 = useState(false);
   const [voiceModalOpen, setVoiceModalOpen]       = useState(false);
-  const [displayName, setDisplayName]             = useState('');
+  const [displayName, setDisplayName]             = useState('Custom Persona');
   const [displayTitle, setDisplayTitle]           = useState('');
   const [displayEmoji, setDisplayEmoji]           = useState('');
   const [personaContext, setPersonaContext]        = useState('');
@@ -306,17 +258,6 @@ export function PracticePage() {
   const [questionInput, setQuestionInput]         = useState('');
   // AI-generated staging: questions returned by AI before user picks them
   const [stagedQuestions, setStagedQuestions]     = useState<string[]>([]);
-
-  // ── Multi-persona mode ─────────────────────────────────────────────────────
-  const [multiPersonaMode, setMultiPersonaMode] = useState(false);
-  const [personaGroupName, setPersonaGroupName] = useState('');
-  const [additionalPersonas, setAdditionalPersonas] = useState<Array<{
-    id: string; avatarId: string; name: string; title: string; difficulty: string; voiceId?: string;
-  }>>([]);
-  // For adding personas to the multi-persona list
-  const [showMultiPersonaPicker, setShowMultiPersonaPicker] = useState(false);
-  const [showMultiPersonaBuilder, setShowMultiPersonaBuilder] = useState(false);
-  const [loadingMultiPersonas, setLoadingMultiPersonas] = useState(false);
 
   // ── Context fields ─────────────────────────────────────────────────────────
   const [industry, setIndustry]         = useState('');
@@ -330,7 +271,7 @@ export function PracticePage() {
   const [sessionType, setSessionType]   = useState<SessionType>('PHONE_CALL');
   const [aiCanEnd, setAiCanEnd]         = useState(true);
   const [endCondition, setEndCondition] = useState('');
-  const [timeLimitMins, setTimeLimitMins] = useState('3');
+  const [timeLimitMins, setTimeLimitMins] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   // ── AI generate panel ──────────────────────────────────────────────────────
@@ -357,7 +298,6 @@ export function PracticePage() {
   } | null>(null);
 
   // ── Modals ─────────────────────────────────────────────────────────────────
-  const [showSaveDropdown, setShowSaveDropdown] = useState(false);
   const [showSaveModal, setShowSaveModal]     = useState(false);
   const [saveRoleplayName, setSaveRoleplayName] = useState('');
   const [saveRoleplayDesc, setSaveRoleplayDesc] = useState('');
@@ -368,31 +308,8 @@ export function PracticePage() {
   const [editSaving, setEditSaving]           = useState(false);
   const [quickLaunchData, setQuickLaunchData] = useState<{ label: string; desc: string } | null>(null);
 
-  // ── Assignment targeting ───────────────────────────────────────────────────
-  const [assignScope, setAssignScope]         = useState<AssignmentScope>('all');
-  const [assignRegions, setAssignRegions]     = useState<string[]>([]);
-  const [assignTeams, setAssignTeams]         = useState<string[]>([]);
-  const [assignUserIds, setAssignUserIds]     = useState<string[]>([]);
-  const [allowPeerListening, setAllowPeerListening] = useState(true);
-  const [targetOptions, setTargetOptions]     = useState<{
-    regions: string[]; teams: string[]; territories: string[];
-    users: { id: string; name: string; team?: string; region?: string }[];
-  } | null>(null);
-
   const contextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoGenRef      = useRef('');
-
-  // ── Knowledge base state ──────────────────────────────────────────────────
-  const [botKnowledge, setBotKnowledge]     = useState<KnowledgeBaseEntry[]>([]);
-  const [userBriefing, setUserBriefing]     = useState<KnowledgeBaseEntry[]>([]);
-  const [kbEnabled, setKbEnabled]           = useState(true);
-  const [botSectionOpen, setBotSectionOpen] = useState(true);
-  const [briefingSectionOpen, setBriefingSectionOpen] = useState(true);
-  const [showBriefing, setShowBriefing]     = useState(false);
-  const [pendingSession, setPendingSession] = useState<{ id: string; personaDisplay: PersonaDisplay } | null>(null);
-
-  const canKnowledgeBase = usePlanStore(s => s.can('knowledgeBase'));
-  const canPreCallBriefing = usePlanStore(s => s.can('preCallBriefing'));
 
   const isManagerOrAdmin  = !!(user?.role && ['COMPANY_ADMIN', 'MANAGER', 'SUPER_ADMIN'].includes(user.role));
   const canCreatePersona  = isManagerOrAdmin;
@@ -461,15 +378,12 @@ export function PracticePage() {
     setShowQuestions(true);
     setIndustry(t.industry);
     setRoleplayType(t.roleplayType);
-    setSessionType(t.callMode === 'Call' ? 'PHONE_CALL' : t.callMode === 'Online' ? 'ONLINE_MEETING' : 'PHONE_CALL');
     setLanguage('English');
     setObjections([]);
     setAiCanEnd(true);
     setEndCondition('');
-    setTimeLimitMins('3');
+    setTimeLimitMins('');
     setActiveTeamRoleplayId(null);
-    setBotKnowledge([]);
-    setUserBriefing([]);
     autoGenRef.current = `${t.industry}::${t.roleplayType}`;
   };
 
@@ -486,15 +400,12 @@ export function PracticePage() {
     setShowQuestions(true);
     setIndustry(sc.industry);
     setRoleplayType(sc.roleplayType);
-    setSessionType(inferCallMode(sc) === 'Call' ? 'PHONE_CALL' : 'ONLINE_MEETING');
     setLanguage((sc as any).language || 'English');
     setObjections(sc.objections ?? []);
     setAiCanEnd(sc.aiCanEnd ?? true);
     setEndCondition(sc.endCondition ?? '');
-    setTimeLimitMins(sc.timeLimitMins ? String(sc.timeLimitMins) : '3');
+    setTimeLimitMins(sc.timeLimitMins ? String(sc.timeLimitMins) : '');
     setActiveTeamRoleplayId(tr.id);
-    setBotKnowledge(sc.botKnowledge ?? []);
-    setUserBriefing(sc.userBriefing ?? []);
     autoGenRef.current = `${sc.industry}::${sc.roleplayType}`;
   };
 
@@ -520,10 +431,10 @@ export function PracticePage() {
 
   const handleCreateNew = () => {
     setAvatarId('alex');
-    setSelectedVoiceId(undefined);
-    setDisplayName('');
+    setSelectedVoiceId(AVATAR_VOICE_CONFIG['alex']?.elevenlabsId ?? undefined);
+    setDisplayName('Custom Persona');
     setDisplayTitle('');
-    setDisplayEmoji('');
+    setDisplayEmoji('🧑‍💼');
     setPersonaContext('');
     setDifficulty('Medium');
     setSuggestedQuestions([]);
@@ -536,14 +447,9 @@ export function PracticePage() {
     setObjections([]);
     setAiCanEnd(true);
     setEndCondition('');
-    setTimeLimitMins('3');
+    setTimeLimitMins('');
     setActiveTeamRoleplayId(null);
-    setBotKnowledge([]);
-    setUserBriefing([]);
     autoGenRef.current = '';
-    setMultiPersonaMode(false);
-    setPersonaGroupName('');
-    setAdditionalPersonas([]);
     openSetup('edit', 'New Roleplay', '', '');
   };
 
@@ -589,44 +495,21 @@ export function PracticePage() {
     }
   };
 
-  const openSaveModal = (presetScope?: AssignmentScope) => {
-    setSaveRoleplayName(selectedLabel && selectedLabel !== 'New Roleplay' ? selectedLabel : '');
-    setSaveRoleplayDesc(selectedDesc || '');
-    setAssignScope(presetScope ?? 'all');
-    setAssignRegions([]);
-    setAssignTeams([]);
-    setAssignUserIds([]);
-    setAllowPeerListening(true);
-    setShowSaveModal(true);
-    setShowSaveDropdown(false);
-    if (!targetOptions) {
-      teamRoleplaysApi.getTargetOptions().then(setTargetOptions).catch(() => {});
-    }
-  };
-
   const handleSaveRoleplay = async () => {
     if (!saveRoleplayName.trim()) return toast.error('Enter a name');
     const timeLimitMinsNum = timeLimitMins ? parseInt(timeLimitMins, 10) || null : null;
-    const assignmentTarget: AssignmentTarget = {
-      scope: assignScope,
-      ...(assignScope === 'region' && { regions: assignRegions }),
-      ...(assignScope === 'team' && { teamIds: assignTeams }),
-      ...(assignScope === 'individual' && { userIds: assignUserIds }),
-    };
     setSavingRoleplay(true);
     try {
       const saved = await teamRoleplaysApi.create({
         name: saveRoleplayName.trim(),
         description: saveRoleplayDesc.trim() || undefined,
-        assignmentTarget,
-        allowPeerListening,
         scenarioConfig: {
           industry, roleplayType, personaContext,
           displayName, displayTitle, displayEmoji,
           difficulty, suggestedQuestions, objections,
           aiCanEnd, endCondition, timeLimitMins: timeLimitMinsNum,
           avatarId, elevenlabsVoiceId: selectedVoiceId,
-          language, botKnowledge, userBriefing,
+          language,
         } as any,
       });
       setTeamRoleplays(prev => [saved, ...prev]);
@@ -704,53 +587,21 @@ export function PracticePage() {
       .finally(() => setLoadingPersonas(false));
   };
 
-  const applyPersonaToAdditional = (p: Persona) => {
-    const used = [avatarId, ...additionalPersonas.map(ap => ap.avatarId)];
-    const avatarOptions = ['james', 'sarah', 'robert', 'emma', 'priya', 'carlos', 'aisha', 'marcus', 'maria', 'ravi', 'jordan', 'yuki', 'alex'];
-    const fallback = avatarOptions.find(a => !used.includes(a)) || 'alex';
-    setAdditionalPersonas(prev => [...prev, {
-      id: crypto.randomUUID(),
-      avatarId: fallback,
-      name: p.name,
-      title: p.title,
-      difficulty: p.difficulty,
-      voiceId: p.voiceId,
-    }]);
-    setShowMultiPersonaPicker(false);
-  };
-
-  const loadMultiPersonas = () => {
-    if (dbPersonas.length > 0) { setShowMultiPersonaPicker(true); return; }
-    setLoadingMultiPersonas(true);
-    personasApi.list()
-      .then(p => { setDbPersonas(p); setShowMultiPersonaPicker(true); })
-      .catch(() => toast.error('Failed to load personas'))
-      .finally(() => setLoadingMultiPersonas(false));
-  };
-
   const handleStart = async () => {
     if (!industry) return toast.error('Select an industry first (Context step)');
     if (!roleplayType) return toast.error('Select a roleplay type (Context step)');
     if (!personaContext.trim()) return toast.error('Add persona context (Persona step)');
     setStarting(true);
     try {
-      const resolvedName = displayName || AVATARS.find(a => a.id === avatarId)?.name || 'Persona';
       const sc: ScenarioConfig = {
-        industry, roleplayType, personaContext, displayName: resolvedName, displayTitle,
+        industry, roleplayType, personaContext, displayName, displayTitle,
         displayEmoji, difficulty, suggestedQuestions, objections,
         aiCanEnd, endCondition, timeLimitMins: timeLimitMins ? parseInt(timeLimitMins, 10) || null : null,
         avatarId, elevenlabsVoiceId: selectedVoiceId,
-        language, botKnowledge, userBriefing,
+        language,
       } as ScenarioConfig & { language: string };
       const session = await sessionsApi.create({ scenarioConfig: sc, type: sessionType, framework });
-      const pd: PersonaDisplay = { name: resolvedName, title: displayTitle, emoji: displayEmoji, avatarId, elevenlabsVoiceId: selectedVoiceId };
-      // Show pre-call briefing if user has content to review
-      if (canPreCallBriefing && userBriefing.length > 0) {
-        setPendingSession({ id: session.id, personaDisplay: pd });
-        setShowBriefing(true);
-      } else {
-        setActiveSession({ id: session.id, personaDisplay: pd });
-      }
+      setActiveSession({ id: session.id, personaDisplay: { name: displayName, title: displayTitle, emoji: displayEmoji, avatarId, elevenlabsVoiceId: selectedVoiceId } });
       setQuickLaunchData(null);
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Failed to start session');
@@ -774,25 +625,28 @@ export function PracticePage() {
           </div>
 
           {/* Tab bar */}
-          <div className="flex gap-0 border-b border-white/[0.07] overflow-x-auto scrollbar-none">
-            {([
-              { id: 'assigned' as const,  icon: Lock,   label: 'Assigned to Me',  count: !loadingTeamRoleplays ? assignedRoleplays.length : null },
-              { id: 'mine' as const,      icon: User,   label: 'Created by Me',   count: myRoleplays.length },
-              { id: 'templates' as const, icon: Layers, label: 'Bot Library',     count: TEMPLATES.length },
-            ] as const).map(({ id, icon: Icon, label, count }) => (
+          <div className="flex gap-0 border-b border-white/[0.07]">
+            {(['assigned', 'mine'] as const).map(tab => (
               <button
-                key={id}
-                onClick={() => setGalleryTab(id)}
+                key={tab}
+                onClick={() => setGalleryTab(tab)}
                 className={clsx(
-                  'flex items-center gap-1.5 px-3 sm:px-5 py-3 text-[12px] sm:text-[13px] font-medium border-b-2 -mb-px transition-colors whitespace-nowrap flex-shrink-0',
-                  galleryTab === id ? 'border-accent text-white' : 'border-transparent text-white/55 hover:text-white/75'
+                  'flex items-center gap-2 px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                  galleryTab === tab
+                    ? 'border-accent text-white'
+                    : 'border-transparent text-white/75 hover:text-white/75'
                 )}
               >
-                <Icon size={12} />
-                <span className="hidden xs:inline sm:inline">{label}</span>
-                <span className="xs:hidden sm:hidden">{label.split(' ')[0]}</span>
-                {count != null && (
-                  <span className="ml-0.5 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">{count}</span>
+                {tab === 'assigned' ? <><Lock size={12} /> Assigned to Me</> : <><User size={12} /> Created by Me</>}
+                {tab === 'assigned' && !loadingTeamRoleplays && (
+                  <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">
+                    {assignedRoleplays.length + TEMPLATES.length}
+                  </span>
+                )}
+                {tab === 'mine' && (
+                  <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">
+                    {myRoleplays.length}
+                  </span>
                 )}
               </button>
             ))}
@@ -831,9 +685,7 @@ export function PracticePage() {
                         subtitle={tr.scenarioConfig.displayTitle}
                         industry={tr.scenarioConfig.industry}
                         type={tr.scenarioConfig.roleplayType}
-                        callMode={inferCallMode(tr.scenarioConfig)}
                         difficulty={tr.scenarioConfig.difficulty}
-                        timeLimitMins={tr.scenarioConfig.timeLimitMins ?? 3}
                         metaLabel={`by ${tr.createdBy.firstName} ${tr.createdBy.lastName}`}
                         description={tr.description}
                         badge="Assigned"
@@ -847,7 +699,7 @@ export function PracticePage() {
               {/* Built-in Templates */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <p className="text-[11px] font-semibold text-white/70 uppercase tracking-wider">Bot Library</p>
+                  <p className="text-[11px] font-semibold text-white/70 uppercase tracking-wider">Built-in Templates</p>
                   <span className="text-[10px] text-white/65">Practice scenarios included with PitchIQ</span>
                 </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -859,40 +711,12 @@ export function PracticePage() {
                       subtitle={t.displayTitle}
                       industry={t.industry}
                       type={t.roleplayType}
-                      callMode={t.callMode}
                       difficulty={t.difficulty}
-                      timeLimitMins={3}
                       metaLabel="Built-in"
                       onSelect={() => handleSelectTemplate(t)}
                     />
                   ))}
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── Bot Library ──────────────────────────────────────────────── */}
-          {galleryTab === 'templates' && (
-            <div className="flex flex-col gap-4">
-              <p className="text-[12px] text-white/55">
-                Ready-made practice scenarios included with PitchIQ. Jump straight in — no setup required.
-              </p>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {TEMPLATES.map(t => (
-                  <GalleryCard
-                    key={t.id}
-                    avatarId={t.avatarId}
-                    name={t.label}
-                    subtitle={t.displayTitle}
-                    industry={t.industry}
-                    type={t.roleplayType}
-                    callMode={t.callMode}
-                    difficulty={t.difficulty}
-                    timeLimitMins={3}
-                    metaLabel="Built-in"
-                    onSelect={() => handleSelectTemplate(t)}
-                  />
-                ))}
               </div>
             </div>
           )}
@@ -907,7 +731,7 @@ export function PracticePage() {
                     : 'Create a custom practice session for yourself.'}
                 </p>
                 <button onClick={handleCreateNew} className="btn-primary gap-2 text-[13px]">
-                  <Plus size={14} /> Create Roleplay
+                  <Plus size={14} /> Create New
                 </button>
               </div>
 
@@ -925,7 +749,7 @@ export function PracticePage() {
                     </p>
                   </div>
                   <button onClick={handleCreateNew} className="btn-primary gap-2 text-[13px] mt-1">
-                    <Plus size={14} /> Create your first Roleplay
+                    <Plus size={14} /> Create your first roleplay
                   </button>
                 </div>
               ) : (
@@ -938,9 +762,7 @@ export function PracticePage() {
                       subtitle={tr.scenarioConfig.displayTitle}
                       industry={tr.scenarioConfig.industry}
                       type={tr.scenarioConfig.roleplayType}
-                      callMode={tr.scenarioConfig.callMode}
                       difficulty={tr.scenarioConfig.difficulty}
-                      timeLimitMins={tr.scenarioConfig.timeLimitMins ?? 3}
                       metaLabel={`by ${tr.createdBy.firstName} ${tr.createdBy.lastName}`}
                       description={tr.description}
                       badge="Mine"
@@ -984,51 +806,17 @@ export function PracticePage() {
               </span>
             )}
             {setupMode === 'edit' && (
-              <div className="relative flex-shrink-0">
-                <div className="flex items-stretch rounded-[8px] border border-white/[0.1] overflow-hidden">
-                  <button
-                    onClick={() => openSaveModal()}
-                    disabled={!isReady}
-                    className="flex items-center gap-1.5 text-[12.5px] font-medium px-3 py-1.5 text-white/70 hover:text-white hover:bg-white/[0.05] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                  >
-                    <BookOpen size={13} /> {isManagerOrAdmin ? 'Save for Team' : 'Save Roleplay'}
-                  </button>
-                  {isManagerOrAdmin && (
-                    <button
-                      onClick={() => setShowSaveDropdown(v => !v)}
-                      disabled={!isReady}
-                      className="flex items-center px-2 border-l border-white/[0.1] text-white/50 hover:text-white hover:bg-white/[0.05] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                    >
-                      <ChevronDown size={12} />
-                    </button>
-                  )}
-                </div>
-                {showSaveDropdown && isManagerOrAdmin && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowSaveDropdown(false)} />
-                    <div className="absolute right-0 top-full mt-1 z-50 rounded-[10px] border border-white/[0.12] shadow-[0_12px_40px_rgba(0,0,0,0.5)] overflow-hidden min-w-[200px]" style={{ background: 'var(--bg2)' }}>
-                      <button
-                        onClick={() => openSaveModal('all')}
-                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12.5px] text-white/80 hover:bg-white/[0.06] hover:text-white transition-colors text-left"
-                      >
-                        <User size={13} className="text-white/50" /> Save for All Users
-                      </button>
-                      <button
-                        onClick={() => openSaveModal('team')}
-                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12.5px] text-white/80 hover:bg-white/[0.06] hover:text-white transition-colors text-left"
-                      >
-                        <Layers size={13} className="text-white/50" /> Share with Team
-                      </button>
-                      <button
-                        onClick={() => openSaveModal('individual')}
-                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12.5px] text-white/80 hover:bg-white/[0.06] hover:text-white transition-colors text-left"
-                      >
-                        <User size={13} className="text-white/50" /> Share with Individual
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
+              <button
+                onClick={() => {
+                  setSaveRoleplayName(selectedLabel && selectedLabel !== 'New Roleplay' ? selectedLabel : '');
+                  setSaveRoleplayDesc(selectedDesc || '');
+                  setShowSaveModal(true);
+                }}
+                disabled={!isReady}
+                className="flex items-center gap-1.5 text-[12.5px] font-medium px-3 py-1.5 rounded-[8px] border border-white/[0.1] text-white/70 hover:text-white hover:border-white/25 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0"
+              >
+                <BookOpen size={13} /> {isManagerOrAdmin ? 'Save for Team' : 'Save Roleplay'}
+              </button>
             )}
           </div>
 
@@ -1082,19 +870,10 @@ export function PracticePage() {
               {/* Right: session config + start */}
               <div className="flex flex-col gap-3 w-full md:w-72 md:flex-shrink-0">
                 <div className="card p-4">
-                  <div className="flex items-center justify-between mb-2.5">
-                    <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Sales Framework</p>
-                    {isManagerOrAdmin && (
-                      <button
-                        onClick={() => setSetupMode('edit')}
-                        className="text-[9.5px] text-accent/60 hover:text-accent transition-colors flex items-center gap-0.5"
-                      >
-                        <Pencil size={8} /> Change
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 mb-2">
+                  <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2.5">Sales Framework</p>
+                  <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-[13px] font-bold text-white">{FRAMEWORK_INFO[framework].label}</span>
+                    <span className="text-[9px] font-semibold uppercase tracking-wide text-accent/70 bg-accent/[0.08] border border-accent/15 px-1.5 py-0.5 rounded">Auto</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {FRAMEWORK_INFO[framework].components.map((c, i) => (
@@ -1137,14 +916,8 @@ export function PracticePage() {
                           <textarea value={endCondition} onChange={e => setEndCondition(e.target.value)} placeholder="When should AI end? (optional)" disabled={!aiCanEnd} className={clsx('input-base resize-none min-h-[60px] text-[12px]', !aiCanEnd && 'opacity-35 pointer-events-none')} />
                           <div className="flex items-center gap-2">
                             <span className="text-[12.5px] text-white/80 flex-1">Time limit</span>
-                            {isManagerOrAdmin ? (
-                              <>
-                                <input type="number" min={1} max={120} value={timeLimitMins} onChange={e => setTimeLimitMins(e.target.value)} placeholder="—" className="input-base w-16 text-[12.5px] text-center" />
-                                <span className="text-[12px] text-white/75">min</span>
-                              </>
-                            ) : (
-                              <span className="text-[12.5px] font-semibold text-white/80">{timeLimitMins || '3'} min</span>
-                            )}
+                            <input type="number" min={1} max={120} value={timeLimitMins} onChange={e => setTimeLimitMins(e.target.value)} placeholder="—" className="input-base w-16 text-[12.5px] text-center" />
+                            <span className="text-[12px] text-white/75">min</span>
                           </div>
                         </div>
                       </motion.div>
@@ -1167,9 +940,8 @@ export function PracticePage() {
                 <div className="card p-2 flex flex-row md:flex-col gap-1">
                   {[
                     { n: 1, label: 'Context', sub: industry || 'Industry & type' },
-                    { n: 2, label: 'Persona', sub: displayName || 'Avatar & context' },
-                    { n: 3, label: 'Knowledge', sub: (botKnowledge.length + userBriefing.length) > 0 ? `${botKnowledge.length + userBriefing.length} items` : 'Docs & briefing' },
-                    { n: 4, label: 'Launch', sub: roleplayType || 'Settings & start' },
+                    { n: 2, label: 'Persona', sub: displayName !== 'Custom Persona' ? displayName : 'Avatar & context' },
+                    { n: 3, label: 'Launch', sub: roleplayType || 'Settings & start' },
                   ].map(({ n, label, sub }) => {
                     const done = n < currentStep;
                     const active = n === currentStep;
@@ -1202,7 +974,7 @@ export function PracticePage() {
                     <AvatarDisplay avatarId={avatarId} size={44} />
                   </div>
                   <div className="min-w-0 w-full">
-                    {displayName && (
+                    {displayName && displayName !== 'Custom Persona' && (
                       <div className="text-[11.5px] font-semibold truncate">{displayName}</div>
                     )}
                     {displayTitle && <div className="text-[10px] text-white/75 mt-0.5 truncate">{displayTitle}</div>}
@@ -1322,112 +1094,9 @@ export function PracticePage() {
                       transition={{ duration: 0.18, ease: 'easeOut' }}
                       className="card p-4 sm:p-5 flex flex-col gap-4"
                     >
-                      {/* Multi-persona mode toggle */}
-                      <div className="flex items-center justify-between p-3.5 rounded-[12px] border border-white/[0.08] bg-white/[0.02]">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-[9px] bg-accent/10 flex items-center justify-center flex-shrink-0">
-                            <Users size={15} className="text-accent/70" />
-                          </div>
-                          <div>
-                            <p className="text-[12.5px] font-semibold text-white leading-tight">Multi-Persona Mode</p>
-                            <p className="text-[10.5px] text-white/55 mt-0.5">Add multiple AI attendees to simulate a panel or committee</p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => setMultiPersonaMode(v => !v)}
-                          role="switch"
-                          aria-checked={multiPersonaMode}
-                          className={clsx('relative flex-shrink-0 w-10 h-[22px] rounded-full transition-colors', multiPersonaMode ? 'bg-accent' : 'bg-white/[0.18]')}
-                        >
-                          <span className={clsx('absolute top-0.5 left-0.5 w-[18px] h-[18px] rounded-full bg-white shadow-sm transition-transform', multiPersonaMode ? 'translate-x-[18px]' : 'translate-x-0')} />
-                        </button>
-                      </div>
-
-                      {/* Multi-persona group config */}
-                      <AnimatePresence>
-                        {multiPersonaMode && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.18 }}
-                            className="overflow-hidden"
-                          >
-                            <div className="flex flex-col gap-3 p-3.5 rounded-[12px] border border-accent/20 bg-accent/[0.04]">
-                              <div>
-                                <label className="text-[10px] font-semibold text-white/70 uppercase tracking-wider block mb-1.5">Persona Group Name</label>
-                                <input
-                                  value={personaGroupName}
-                                  onChange={e => setPersonaGroupName(e.target.value)}
-                                  placeholder="e.g. Sales Team, Procurement Committee…"
-                                  className="input-base text-[12.5px] w-full"
-                                  maxLength={80}
-                                />
-                                <p className="text-[10px] text-white/40 mt-1">{personaGroupName.length}/80</p>
-                              </div>
-                              <div>
-                                <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Attendees</p>
-                                <div className="flex flex-col gap-2">
-                                  {/* Primary persona always shown */}
-                                  <div className="flex items-center gap-2.5 p-2.5 rounded-[9px] bg-white/[0.04] border border-white/[0.07]">
-                                    <AvatarDisplay avatarId={avatarId} size={32} />
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-[12px] font-semibold truncate">{displayName || 'Primary Persona'}</p>
-                                      {displayTitle && <p className="text-[10px] text-white/55 truncate">{displayTitle}</p>}
-                                    </div>
-                                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-accent/10 border border-accent/20 text-accent flex-shrink-0">Host</span>
-                                  </div>
-                                  {/* Additional personas */}
-                                  {additionalPersonas.map((ap, idx) => (
-                                    <div key={ap.id} className="flex items-center gap-2.5 p-2.5 rounded-[9px] bg-white/[0.03] border border-white/[0.06]">
-                                      <AvatarDisplay avatarId={ap.avatarId} size={32} />
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-[12px] font-semibold truncate">{ap.name}</p>
-                                        {ap.title && <p className="text-[10px] text-white/55 truncate">{ap.title}</p>}
-                                      </div>
-                                      <span className={clsx('text-[9px] px-1.5 py-0.5 rounded border flex-shrink-0', DIFFICULTY_COLORS[ap.difficulty] || 'text-white/80 bg-white/5 border-white/10')}>{ap.difficulty}</span>
-                                      <button
-                                        onClick={() => setAdditionalPersonas(prev => prev.filter((_, i) => i !== idx))}
-                                        className="text-white/30 hover:text-accent-4 transition-colors flex-shrink-0"
-                                      >
-                                        <X size={13} />
-                                      </button>
-                                    </div>
-                                  ))}
-                                  {/* Add persona button */}
-                                  {additionalPersonas.length < 4 && (
-                                    <div className="relative">
-                                      <div className="flex rounded-[9px] border border-dashed border-accent/25 overflow-hidden">
-                                        <button
-                                          onClick={() => loadMultiPersonas()}
-                                          disabled={loadingMultiPersonas}
-                                          className="flex items-center justify-center gap-1.5 flex-1 py-2 text-[11px] text-accent/60 hover:text-accent hover:bg-accent/[0.04] transition-all border-r border-dashed border-accent/25"
-                                        >
-                                          {loadingMultiPersonas ? <Loader2 size={11} className="animate-spin" /> : <BookOpen size={11} />}
-                                          From Library
-                                        </button>
-                                        <button
-                                          onClick={() => setShowMultiPersonaBuilder(true)}
-                                          className="flex items-center justify-center gap-1.5 flex-1 py-2 text-[11px] text-accent/60 hover:text-accent hover:bg-accent/[0.04] transition-all"
-                                        >
-                                          <UserPlus size={11} /> Create New
-                                        </button>
-                                      </div>
-                                    </div>
-                                  )}
-                                  {additionalPersonas.length >= 4 && (
-                                    <p className="text-[10.5px] text-white/35 text-center">Maximum 5 attendees (including host)</p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
                       {/* Avatar picker with ethnicity + gender filter */}
                       <div>
-                        <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">{multiPersonaMode ? 'Host Avatar' : 'Avatar'}</p>
+                        <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Avatar</p>
                         <EthnicityAvatarPicker value={avatarId} onChange={id => {
                           setAvatarId(id);
                           const cfg = AVATAR_VOICE_CONFIG[id as AvatarId];
@@ -1696,177 +1365,12 @@ export function PracticePage() {
 
                       <div className="flex items-center justify-between pt-1 border-t border-white/[0.06]">
                         <button onClick={() => goToStep(1)} className="btn-ghost gap-1.5 text-[13px]"><ArrowLeft size={12} /> Context</button>
-                        <button onClick={() => goToStep(3)} className="btn-primary gap-2 text-[13px]">Knowledge <ArrowLeft size={12} className="rotate-180" /></button>
+                        <button onClick={() => goToStep(3)} className="btn-primary gap-2 text-[13px]">Launch <ArrowLeft size={12} className="rotate-180" /></button>
                       </div>
                     </motion.div>
                   )}
 
                   {currentStep === 3 && (
-                    <motion.div
-                      key="s3-kb"
-                      initial={{ opacity: 0, x: stepDirection.current * 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: stepDirection.current * -20 }}
-                      transition={{ duration: 0.18, ease: 'easeOut' }}
-                      className="card p-4 sm:p-5 flex flex-col gap-6"
-                    >
-                      {/* Header with master toggle */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h3 className="font-display text-[14px] font-bold text-white mb-0.5">Knowledge Base</h3>
-                          <p className="text-[11.5px] text-white/70">Attach content to train the AI bot and optionally brief the user before the call starts.</p>
-                        </div>
-                        <button
-                          onClick={() => setKbEnabled(v => !v)}
-                          className={clsx(
-                            'relative w-11 h-6 rounded-full transition-colors flex-shrink-0 mt-0.5',
-                            kbEnabled ? 'bg-accent' : 'bg-white/20',
-                          )}
-                          title={kbEnabled ? 'Disable Knowledge Base' : 'Enable Knowledge Base'}
-                        >
-                          <span className={clsx('absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform', kbEnabled ? 'translate-x-5' : 'translate-x-0.5')} />
-                        </button>
-                      </div>
-
-                      {kbEnabled && (
-                        <div className="flex flex-col gap-3">
-                          {/* Bot Training section */}
-                          <div className="rounded-[12px] border border-white/[0.07] overflow-hidden">
-                            <div
-                              className="flex items-center justify-between w-full px-4 py-3 cursor-pointer hover:bg-white/[0.02] transition-colors select-none"
-                              onClick={() => setBotSectionOpen(v => !v)}
-                            >
-                              <div className="flex items-center gap-2.5">
-                                <Database size={13} className="text-accent/70" />
-                                <span className="text-[13px] font-semibold text-white">Bot Training</span>
-                                {botKnowledge.length > 0 && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-accent/10 text-accent">
-                                    {botKnowledge.length} item{botKnowledge.length !== 1 ? 's' : ''}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                                <button
-                                  onClick={() => setBotSectionOpen(v => !v)}
-                                  className={clsx(
-                                    'relative w-9 h-5 rounded-full transition-colors flex-shrink-0',
-                                    botSectionOpen ? 'bg-accent' : 'bg-white/20',
-                                  )}
-                                  title={botSectionOpen ? 'Collapse section' : 'Expand section'}
-                                >
-                                  <span className={clsx('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform', botSectionOpen ? 'translate-x-4' : 'translate-x-0.5')} />
-                                </button>
-                                <ChevronDown size={13} className={clsx('text-white/40 transition-transform', botSectionOpen ? 'rotate-180' : '')} />
-                              </div>
-                            </div>
-                            <AnimatePresence>
-                              {botSectionOpen && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: 'auto', opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  transition={{ duration: 0.18 }}
-                                  className="overflow-hidden"
-                                >
-                                  <div className="px-4 pb-4 border-t border-white/[0.06]">
-                                    <p className="text-[11px] text-white/50 mt-3 mb-3">Context the AI persona will use during the call — product docs, FAQs, competitor info, pricing.</p>
-                                    {canKnowledgeBase ? (
-                                      <KnowledgeBaseEditor
-                                        label=""
-                                        description=""
-                                        forRole="bot"
-                                        entries={botKnowledge}
-                                        onChange={setBotKnowledge}
-                                        maxEntries={5}
-                                      />
-                                    ) : (
-                                      <PlanGate feature="knowledgeBase" overlay={false} upgradeLabel="Bot Knowledge Base — Pro feature">
-                                        <KnowledgeBaseEditor label="" description="" forRole="bot" entries={[]} onChange={() => {}} />
-                                      </PlanGate>
-                                    )}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-
-                          {/* Pre-Call Briefing section */}
-                          <div className="rounded-[12px] border border-white/[0.07] overflow-hidden">
-                            <div
-                              className="flex items-center justify-between w-full px-4 py-3 cursor-pointer hover:bg-white/[0.02] transition-colors select-none"
-                              onClick={() => setBriefingSectionOpen(v => !v)}
-                            >
-                              <div className="flex items-center gap-2.5">
-                                <FileText size={13} className="text-accent/70" />
-                                <span className="text-[13px] font-semibold text-white">Pre-Call User Briefing</span>
-                                {userBriefing.length > 0 && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-accent/10 text-accent">
-                                    {userBriefing.length} item{userBriefing.length !== 1 ? 's' : ''}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                                <button
-                                  onClick={() => setBriefingSectionOpen(v => !v)}
-                                  className={clsx(
-                                    'relative w-9 h-5 rounded-full transition-colors flex-shrink-0',
-                                    briefingSectionOpen ? 'bg-accent' : 'bg-white/20',
-                                  )}
-                                  title={briefingSectionOpen ? 'Collapse section' : 'Expand section'}
-                                >
-                                  <span className={clsx('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform', briefingSectionOpen ? 'translate-x-4' : 'translate-x-0.5')} />
-                                </button>
-                                <ChevronDown size={13} className={clsx('text-white/40 transition-transform', briefingSectionOpen ? 'rotate-180' : '')} />
-                              </div>
-                            </div>
-                            <AnimatePresence>
-                              {briefingSectionOpen && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: 'auto', opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  transition={{ duration: 0.18 }}
-                                  className="overflow-hidden"
-                                >
-                                  <div className="px-4 pb-4 border-t border-white/[0.06]">
-                                    <p className="text-[11px] text-white/50 mt-3 mb-3">Material shown to the user before the call starts — product brochure, LinkedIn profile, website URL. Tests how well they've absorbed the content.</p>
-                                    {canPreCallBriefing ? (
-                                      <KnowledgeBaseEditor
-                                        label=""
-                                        description=""
-                                        forRole="user"
-                                        entries={userBriefing}
-                                        onChange={setUserBriefing}
-                                        maxEntries={5}
-                                      />
-                                    ) : (
-                                      <PlanGate feature="preCallBriefing" overlay={false} upgradeLabel="Pre-Call Briefing — Pro feature">
-                                        <KnowledgeBaseEditor label="" description="" forRole="user" entries={[]} onChange={() => {}} />
-                                      </PlanGate>
-                                    )}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        </div>
-                      )}
-
-                      {!kbEnabled && (
-                        <div className="rounded-[12px] border border-white/[0.06] bg-white/[0.02] p-5 flex flex-col items-center gap-2 text-center">
-                          <Database size={20} className="text-white/25" />
-                          <p className="text-[12px] text-white/40">Knowledge Base is disabled. Toggle it on to add bot training data or user briefing material.</p>
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between pt-1 border-t border-white/[0.06]">
-                        <button onClick={() => goToStep(2)} className="btn-ghost gap-1.5 text-[13px]"><ArrowLeft size={12} /> Persona</button>
-                        <button onClick={() => goToStep(4)} className="btn-primary gap-2 text-[13px]">Launch <ArrowLeft size={12} className="rotate-180" /></button>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {currentStep === 4 && (
                     <motion.div
                       key="s3"
                       initial={{ opacity: 0, x: stepDirection.current * 20 }}
@@ -1891,70 +1395,32 @@ export function PracticePage() {
                         </div>
                       </div>
 
-                      {/* Framework selector + call format */}
-                      <div className="flex flex-col gap-3">
+                      {/* Framework + call format side by side */}
+                      <div className="grid grid-cols-2 gap-3">
                         <div>
                           <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Sales Framework</p>
-                          <div className="relative">
-                            <select
-                              value={framework}
-                              onChange={e => setFramework(e.target.value as Framework)}
-                              className="w-full appearance-none input-base text-[13px] font-medium pr-8 cursor-pointer"
-                              style={{ backgroundImage: 'none' }}
-                            >
-                              {(Object.keys(FRAMEWORK_INFO) as Framework[]).map(f => (
-                                <option key={f} value={f}>{FRAMEWORK_INFO[f].label} — {FRAMEWORK_INFO[f].components.slice(0, 2).join(', ')}{FRAMEWORK_INFO[f].components.length > 2 ? '…' : ''}</option>
+                          <div className="p-3 rounded-[10px] bg-white/[0.03] border border-white/[0.07]">
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <span className="text-[12.5px] font-bold">{FRAMEWORK_INFO[framework].label}</span>
+                              <span className="text-[9px] font-semibold uppercase tracking-wide text-accent/70 bg-accent/[0.08] border border-accent/15 px-1.5 py-0.5 rounded">Auto</span>
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {FRAMEWORK_INFO[framework].components.map((c, i) => (
+                                <span key={i} className="text-[9.5px] px-1.5 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.07] text-white/75">{i + 1}. {c}</span>
                               ))}
-                            </select>
-                            <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
-                          </div>
-                          {/* Component pills for selected */}
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {FRAMEWORK_INFO[framework].components.map((c, i) => (
-                              <span key={i} className="text-[9px] px-1.5 py-0.5 rounded-full bg-accent/[0.06] border border-accent/15 text-accent/70">{i + 1}. {c}</span>
-                            ))}
+                            </div>
                           </div>
                         </div>
-
                         <div>
                           <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Call Format</p>
-                          <div className="flex gap-2">
-                            <button onClick={() => setSessionType('PHONE_CALL')} className={clsx('flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-[8px] border text-[12px] font-medium transition-all', sessionType === 'PHONE_CALL' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/80 hover:text-white hover:bg-white/[0.05]')}>
-                              <Phone size={12} /> Phone
+                          <div className="flex flex-col gap-2">
+                            <button onClick={() => setSessionType('PHONE_CALL')} className={clsx('flex items-center gap-2 px-3 py-2 rounded-[8px] border text-[12px] font-medium transition-all', sessionType === 'PHONE_CALL' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/80 hover:text-white hover:bg-white/[0.05]')}>
+                              <Phone size={12} /> Phone Call
                             </button>
-                            <button onClick={() => setSessionType('ONLINE_MEETING')} className={clsx('flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-[8px] border text-[12px] font-medium transition-all', sessionType === 'ONLINE_MEETING' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/80 hover:text-white hover:bg-white/[0.05]')}>
-                              <Monitor size={12} /> Online
+                            <button onClick={() => setSessionType('ONLINE_MEETING')} className={clsx('flex items-center gap-2 px-3 py-2 rounded-[8px] border text-[12px] font-medium transition-all', sessionType === 'ONLINE_MEETING' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/80 hover:text-white hover:bg-white/[0.05]')}>
+                              <Monitor size={12} /> Online Meeting
                             </button>
                           </div>
-                        </div>
-                      </div>
-
-                      {/* Time limit — always visible, manager-editable */}
-                      <div className="flex items-center justify-between px-3 py-2.5 rounded-[10px] border border-white/[0.07] bg-white/[0.02]">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[12px] font-medium text-white/80">Time Limit</span>
-                          {!isManagerOrAdmin && (
-                            <span className="flex items-center gap-0.5 text-[9px] text-white/40 border border-white/[0.08] px-1.5 py-0.5 rounded">
-                              <Lock size={7} /> Manager only
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {isManagerOrAdmin ? (
-                            <>
-                              <input
-                                type="number"
-                                min={1}
-                                max={120}
-                                value={timeLimitMins}
-                                onChange={e => setTimeLimitMins(e.target.value)}
-                                className="input-base w-14 text-[12.5px] text-center"
-                              />
-                              <span className="text-[12px] text-white/60">min</span>
-                            </>
-                          ) : (
-                            <span className="text-[13px] font-bold text-white/80">{timeLimitMins || '3'} min</span>
-                          )}
                         </div>
                       </div>
 
@@ -1981,6 +1447,11 @@ export function PracticePage() {
                                   </button>
                                 </div>
                                 <textarea value={endCondition} onChange={e => setEndCondition(e.target.value)} placeholder="Describe when AI should end call (optional)…" disabled={!aiCanEnd} className={clsx('input-base resize-none min-h-[60px] text-[12px]', !aiCanEnd && 'opacity-35 pointer-events-none')} />
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[12.5px] text-white/80 flex-1">Time limit</span>
+                                  <input type="number" min={1} max={120} value={timeLimitMins} onChange={e => setTimeLimitMins(e.target.value)} placeholder="—" className="input-base w-16 text-[12.5px] text-center" />
+                                  <span className="text-[12px] text-white/75">min</span>
+                                </div>
                               </div>
                             </motion.div>
                           )}
@@ -1997,53 +1468,20 @@ export function PracticePage() {
                             <p className="text-[11.5px] font-medium text-white/70">{isManagerOrAdmin ? 'Save for Team' : 'Save Roleplay'}</p>
                             <p className="text-[10px] text-white/70">{isManagerOrAdmin ? 'Publish so your team can practice' : 'Save to reuse in future sessions'}</p>
                           </div>
-                          {isManagerOrAdmin ? (
-                            <div className="relative flex-shrink-0">
-                              <div className="flex items-stretch rounded-[7px] border border-accent/25 overflow-hidden">
-                                <button
-                                  onClick={() => openSaveModal()}
-                                  disabled={!isReady}
-                                  className="flex items-center gap-1 text-[11.5px] font-medium px-2.5 py-1.5 text-accent/80 hover:text-accent hover:bg-accent/[0.06] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                >
-                                  Save
-                                </button>
-                                <button
-                                  onClick={() => setShowSaveDropdown(v => !v)}
-                                  disabled={!isReady}
-                                  className="flex items-center px-1.5 border-l border-accent/20 text-accent/50 hover:text-accent hover:bg-accent/[0.06] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                >
-                                  <ChevronDown size={11} />
-                                </button>
-                              </div>
-                              {showSaveDropdown && (
-                                <>
-                                  <div className="fixed inset-0 z-40" onClick={() => setShowSaveDropdown(false)} />
-                                  <div className="absolute right-0 bottom-full mb-1 z-50 rounded-[10px] border border-white/[0.12] shadow-[0_12px_40px_rgba(0,0,0,0.5)] overflow-hidden min-w-[190px]" style={{ background: 'var(--bg2)' }}>
-                                    <button onClick={() => openSaveModal('all')} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[12px] text-white/80 hover:bg-white/[0.06] hover:text-white transition-colors text-left">
-                                      <User size={12} className="text-white/50" /> Save for All Users
-                                    </button>
-                                    <button onClick={() => openSaveModal('team')} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[12px] text-white/80 hover:bg-white/[0.06] hover:text-white transition-colors text-left">
-                                      <Layers size={12} className="text-white/50" /> Share with Team
-                                    </button>
-                                    <button onClick={() => openSaveModal('individual')} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[12px] text-white/80 hover:bg-white/[0.06] hover:text-white transition-colors text-left">
-                                      <User size={12} className="text-white/50" /> Share with Individual
-                                    </button>
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => openSaveModal()}
-                              disabled={!isReady}
-                              className="flex items-center gap-1.5 text-[11.5px] font-medium px-2.5 py-1.5 rounded-[7px] border border-accent/25 text-accent/80 hover:text-accent hover:border-accent hover:bg-accent/[0.06] disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0"
-                            >
-                              Save
-                            </button>
-                          )}
+                          <button
+                            onClick={() => {
+                              setSaveRoleplayName(selectedLabel && selectedLabel !== 'New Roleplay' ? selectedLabel : '');
+                              setSaveRoleplayDesc(selectedDesc || '');
+                              setShowSaveModal(true);
+                            }}
+                            disabled={!isReady}
+                            className="flex items-center gap-1.5 text-[11.5px] font-medium px-2.5 py-1.5 rounded-[7px] border border-accent/25 text-accent/80 hover:text-accent hover:border-accent hover:bg-accent/[0.06] disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0"
+                          >
+                            Save
+                          </button>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => goToStep(3)} className="btn-ghost gap-1.5 text-[13px]"><ArrowLeft size={12} /> Knowledge</button>
+                          <button onClick={() => goToStep(2)} className="btn-ghost gap-1.5 text-[13px]"><ArrowLeft size={12} /> Persona</button>
                           <button onClick={handleStart} disabled={starting || !isReady} className="flex-1 btn-primary gap-2 py-2.5 text-[13.5px] justify-center disabled:opacity-40">
                             {starting ? <><Loader2 size={14} className="animate-spin" /> Starting…</> : <><Play size={14} /> Start Session</>}
                           </button>
@@ -2071,49 +1509,18 @@ export function PracticePage() {
                   <button onClick={() => setShowPersonaPicker(false)} className="text-white/70 hover:text-white"><X size={16} /></button>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto">
                 {dbPersonas.map(p => (
-                  <button key={p.id} onClick={() => applyDbPersona(p)} className="flex items-center gap-2.5 p-3 rounded-[10px] border border-white/[0.08] hover:border-white/20 hover:bg-white/[0.03] text-left transition-all group">
-                    <div className="w-9 h-9 rounded-full bg-white/[0.06] border border-white/[0.1] flex items-center justify-center flex-shrink-0 text-[18px] group-hover:border-accent/30 transition-colors">
-                      {p.emoji}
-                    </div>
+                  <button key={p.id} onClick={() => applyDbPersona(p)} className="flex items-center gap-2.5 p-3 rounded-[10px] border border-white/[0.08] hover:border-white/20 hover:bg-white/[0.03] text-left transition-all">
+                    <span className="text-xl flex-shrink-0">{p.emoji}</span>
                     <div className="min-w-0">
                       <div className="text-[12px] font-semibold truncate">{p.name}</div>
-                      <div className="text-[10.5px] text-white/55 truncate">{p.title}</div>
-                      <span className={clsx('text-[9px] px-1.5 py-0.5 rounded border mt-0.5 inline-block', DIFFICULTY_COLORS[p.difficulty] || 'text-white/80 bg-white/5 border-white/10')}>{p.difficulty}</span>
+                      <div className="text-[10.5px] text-white/75 truncate">{p.title}</div>
                     </div>
                   </button>
                 ))}
               </div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Pre-call briefing ─────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {showBriefing && pendingSession && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-[var(--bg)] overflow-y-auto p-4 md:p-8"
-          >
-            <PreCallBriefing
-              personaName={pendingSession.personaDisplay.name}
-              personaTitle={pendingSession.personaDisplay.title}
-              briefing={userBriefing}
-              onReady={() => {
-                setShowBriefing(false);
-                setActiveSession(pendingSession);
-                setPendingSession(null);
-              }}
-              onSkip={() => {
-                setShowBriefing(false);
-                setActiveSession(pendingSession);
-                setPendingSession(null);
-              }}
-            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -2154,101 +1561,24 @@ export function PracticePage() {
         )}
       </AnimatePresence>
 
-      {/* ── Multi-persona: library picker ──────────────────────────────────────── */}
-      <AnimatePresence>
-        {showMultiPersonaPicker && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowMultiPersonaPicker(false)}>
-            <motion.div initial={{ scale: 0.95, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }} onClick={e => e.stopPropagation()} className="bg-bg-2 border border-white/10 rounded-[18px] p-6 w-full max-w-md shadow-[0_24px_80px_rgba(0,0,0,0.6)]">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="font-display font-bold text-[15px]">Add from Library</h3>
-                  <p className="text-[11px] text-white/50 mt-0.5">Pick a saved persona to add as an attendee</p>
-                </div>
-                <button onClick={() => setShowMultiPersonaPicker(false)} className="text-white/50 hover:text-white"><X size={16} /></button>
-              </div>
-              {dbPersonas.length === 0 ? (
-                <div className="flex flex-col items-center gap-3 py-10 text-center">
-                  <BookOpen size={28} className="text-white/20" />
-                  <p className="text-[12.5px] text-white/50">No saved personas yet.</p>
-                  <button
-                    onClick={() => { setShowMultiPersonaPicker(false); setShowMultiPersonaBuilder(true); }}
-                    className="flex items-center gap-1.5 text-[12px] text-accent hover:text-accent/80 font-medium"
-                  >
-                    <Plus size={12} /> Create your first persona
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto">
-                  {dbPersonas
-                    .filter(p => !additionalPersonas.some(ap => ap.name === p.name))
-                    .map(p => (
-                      <button
-                        key={p.id}
-                        onClick={() => applyPersonaToAdditional(p)}
-                        className="flex items-center gap-2.5 p-3 rounded-[10px] border border-white/[0.08] hover:border-white/20 hover:bg-white/[0.03] text-left transition-all"
-                      >
-                        <span className="text-xl flex-shrink-0">{p.emoji}</span>
-                        <div className="min-w-0">
-                          <p className="text-[12px] font-semibold truncate">{p.name}</p>
-                          <p className="text-[10px] text-white/55 truncate">{p.title}</p>
-                          <span className={clsx('text-[9px] px-1.5 py-0.5 rounded border mt-1 inline-block', DIFFICULTY_COLORS[p.difficulty] || 'text-white/80 bg-white/5 border-white/10')}>{p.difficulty}</span>
-                        </div>
-                      </button>
-                    ))}
-                </div>
-              )}
-              <div className="flex justify-between items-center mt-4 pt-3 border-t border-white/[0.07]">
-                <button
-                  onClick={() => { setShowMultiPersonaPicker(false); setShowMultiPersonaBuilder(true); }}
-                  className="flex items-center gap-1.5 text-[11.5px] text-accent hover:text-accent/80 font-medium"
-                >
-                  <Plus size={11} /> Create new instead
-                </button>
-                <button onClick={() => setShowMultiPersonaPicker(false)} className="text-[11.5px] text-white/50 hover:text-white/80">Cancel</button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Multi-persona: builder ─────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {showMultiPersonaBuilder && (
-          <PersonaBuilder
-            onCreated={p => {
-              setDbPersonas(prev => [...prev, p]);
-              applyPersonaToAdditional(p);
-              setShowMultiPersonaBuilder(false);
-            }}
-            onClose={() => setShowMultiPersonaBuilder(false)}
-          />
-        )}
-      </AnimatePresence>
-
       {/* ── Save as Team Roleplay modal ────────────────────────────────────────── */}
       <AnimatePresence>
         {showSaveModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowSaveModal(false)}>
-            <motion.div initial={{ scale: 0.95, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }} onClick={e => e.stopPropagation()} className="bg-bg-2 border border-white/10 rounded-[18px] p-6 w-full max-w-lg shadow-[0_24px_80px_rgba(0,0,0,0.6)] max-h-[90vh] overflow-y-auto">
+            <motion.div initial={{ scale: 0.95, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }} onClick={e => e.stopPropagation()} className="bg-bg-2 border border-white/10 rounded-[18px] p-6 w-full max-w-md shadow-[0_24px_80px_rgba(0,0,0,0.6)]">
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <h3 className="font-display font-bold text-[16px]">
-                    {isManagerOrAdmin
-                      ? assignScope === 'individual' ? 'Share with Individual'
-                      : assignScope === 'team' ? 'Share with Team'
-                      : 'Save for All Users'
-                      : 'Save Roleplay'}
+                    {isManagerOrAdmin ? 'Save as Team Roleplay' : 'Save Roleplay'}
                   </h3>
                   <p className="text-[11.5px] text-white/75 mt-0.5">
                     {isManagerOrAdmin
-                      ? 'Assign to teammates and configure access.'
+                      ? 'Your teammates will see this in "Assigned to Me".'
                       : 'Saved to "Created by Me" — reuse it anytime.'}
                   </p>
                 </div>
                 <button onClick={() => setShowSaveModal(false)} className="text-white/70 hover:text-white"><X size={16} /></button>
               </div>
-
-              {/* Persona preview */}
               <div className="flex items-center gap-3 p-3 rounded-[10px] bg-white/[0.04] border border-white/[0.07] mb-4">
                 <div className="rounded-full overflow-hidden flex-shrink-0"><AvatarDisplay avatarId={avatarId} size={40} /></div>
                 <div className="min-w-0">
@@ -2256,161 +1586,20 @@ export function PracticePage() {
                   <div className="text-[11px] text-white/80">{industry}{roleplayType && ` · ${roleplayType}`}</div>
                 </div>
               </div>
-
-              <div className="flex flex-col gap-4">
-                {/* Name & Description */}
+              <div className="flex flex-col gap-3">
                 <div>
                   <label className="text-[11px] text-white/80 block mb-1.5">Name <span className="text-accent-4">*</span></label>
                   <input value={saveRoleplayName} onChange={e => setSaveRoleplayName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSaveRoleplay()} placeholder={industry ? `${industry} ${roleplayType}` : 'Enter name…'} className="input-base text-[13px] w-full" maxLength={80} autoFocus />
                 </div>
                 <div>
                   <label className="text-[11px] text-white/80 block mb-1.5">Description <span className="text-white/65">(optional)</span></label>
-                  <textarea value={saveRoleplayDesc} onChange={e => setSaveRoleplayDesc(e.target.value)} placeholder="Brief note about this scenario…" className="input-base resize-none text-[12.5px] w-full min-h-[60px]" maxLength={200} />
+                  <textarea value={saveRoleplayDesc} onChange={e => setSaveRoleplayDesc(e.target.value)} placeholder="Brief note about this scenario…" className="input-base resize-none text-[12.5px] w-full min-h-[70px]" maxLength={200} />
                 </div>
-
-                {/* Assignment targeting — managers/admins only */}
-                {isManagerOrAdmin && (
-                  <div className="rounded-[12px] border border-white/[0.08] bg-white/[0.02] p-4 flex flex-col gap-3">
-                    <p className="text-[11px] font-semibold text-white/70 uppercase tracking-wider">Assign To</p>
-
-                    {/* Scope selector */}
-                    <div className="grid grid-cols-2 gap-2">
-                      {(['all', 'team', 'region', 'individual'] as AssignmentScope[]).map(scope => {
-                        const labels: Record<AssignmentScope, string> = { all: 'All Users', team: 'Team(s)', region: 'Region(s)', individual: 'Individuals' };
-                        const icons: Record<AssignmentScope, React.ReactNode> = {
-                          all: <User size={11} />,
-                          team: <Layers size={11} />,
-                          region: <Globe size={11} />,
-                          individual: <User size={11} />,
-                        };
-                        const active = assignScope === scope;
-                        return (
-                          <button
-                            key={scope}
-                            onClick={() => setAssignScope(scope)}
-                            className={clsx(
-                              'flex items-center gap-2 px-3 py-2 rounded-[9px] text-[12px] border transition-all',
-                              active
-                                ? 'bg-accent/10 border-accent text-accent'
-                                : 'border-white/[0.08] text-white/60 hover:text-white hover:bg-white/[0.05]',
-                            )}
-                          >
-                            {icons[scope]}
-                            {labels[scope]}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Summary line */}
-                    <p className="text-[11px] text-white/50">
-                      {assignScope === 'all' && 'Everyone in your company will see this roleplay.'}
-                      {assignScope === 'team' && (assignTeams.length > 0 ? `Assigned to: ${assignTeams.join(', ')}` : 'Select one or more teams below.')}
-                      {assignScope === 'region' && (assignRegions.length > 0 ? `Assigned to: ${assignRegions.join(', ')}` : 'Select one or more regions below.')}
-                      {assignScope === 'individual' && (assignUserIds.length > 0 ? `${assignUserIds.length} user(s) selected.` : 'Search and select individual users below.')}
-                    </p>
-
-                    {/* Team picker */}
-                    {assignScope === 'team' && targetOptions && (
-                      <div className="flex flex-wrap gap-1.5">
-                        {targetOptions.teams.map(t => {
-                          const sel = assignTeams.includes(t);
-                          return (
-                            <button
-                              key={t}
-                              onClick={() => setAssignTeams(prev => sel ? prev.filter(x => x !== t) : [...prev, t])}
-                              className={clsx(
-                                'px-2.5 py-1 rounded-full text-[11px] border transition-all',
-                                sel ? 'bg-accent/15 border-accent/50 text-accent' : 'border-white/10 text-white/60 hover:border-white/30',
-                              )}
-                            >
-                              {sel && <Check size={9} className="inline mr-1" />}{t}
-                            </button>
-                          );
-                        })}
-                        {targetOptions.teams.length === 0 && <p className="text-[11px] text-white/40">No teams found.</p>}
-                      </div>
-                    )}
-
-                    {/* Region picker */}
-                    {assignScope === 'region' && targetOptions && (
-                      <div className="flex flex-wrap gap-1.5">
-                        {targetOptions.regions.map(r => {
-                          const sel = assignRegions.includes(r);
-                          return (
-                            <button
-                              key={r}
-                              onClick={() => setAssignRegions(prev => sel ? prev.filter(x => x !== r) : [...prev, r])}
-                              className={clsx(
-                                'px-2.5 py-1 rounded-full text-[11px] border transition-all',
-                                sel ? 'bg-accent/15 border-accent/50 text-accent' : 'border-white/10 text-white/60 hover:border-white/30',
-                              )}
-                            >
-                              {sel && <Check size={9} className="inline mr-1" />}{r}
-                            </button>
-                          );
-                        })}
-                        {targetOptions.regions.length === 0 && <p className="text-[11px] text-white/40">No regions found.</p>}
-                      </div>
-                    )}
-
-                    {/* Individual user picker */}
-                    {assignScope === 'individual' && targetOptions && (
-                      <div className="flex flex-col gap-1.5 max-h-[160px] overflow-y-auto">
-                        {targetOptions.users.map(u => {
-                          const sel = assignUserIds.includes(u.id);
-                          return (
-                            <button
-                              key={u.id}
-                              onClick={() => setAssignUserIds(prev => sel ? prev.filter(x => x !== u.id) : [...prev, u.id])}
-                              className={clsx(
-                                'flex items-center gap-2.5 px-3 py-2 rounded-[9px] border text-left transition-all',
-                                sel ? 'bg-accent/10 border-accent/40' : 'border-white/[0.07] hover:bg-white/[0.04]',
-                              )}
-                            >
-                              <div className={clsx('w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors', sel ? 'bg-accent border-accent' : 'border-white/20')}>
-                                {sel && <Check size={10} color="white" />}
-                              </div>
-                              <span className="text-[12px] font-medium flex-1">{u.name}</span>
-                              <span className="text-[10px] text-white/40">{[u.team, u.region].filter(Boolean).join(' · ')}</span>
-                            </button>
-                          );
-                        })}
-                        {targetOptions.users.length === 0 && <p className="text-[11px] text-white/40">No users found.</p>}
-                      </div>
-                    )}
-
-                    {/* Loading state */}
-                    {!targetOptions && (
-                      <div className="flex items-center gap-2 text-[11px] text-white/40">
-                        <Loader2 size={12} className="animate-spin" /> Loading options…
-                      </div>
-                    )}
-
-                    {/* Peer listening toggle */}
-                    <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
-                      <div>
-                        <p className="text-[12px] font-medium text-white/80">Allow peer listening</p>
-                        <p className="text-[10.5px] text-white/45 mt-0.5">Team members can replay each other's sessions.</p>
-                      </div>
-                      <button
-                        onClick={() => setAllowPeerListening(v => !v)}
-                        className={clsx(
-                          'relative w-10 h-5 rounded-full transition-colors flex-shrink-0',
-                          allowPeerListening ? 'bg-accent' : 'bg-white/20',
-                        )}
-                      >
-                        <span className={clsx('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform', allowPeerListening ? 'translate-x-5' : 'translate-x-0.5')} />
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
-
               <div className="flex gap-2 mt-5">
                 <button onClick={() => setShowSaveModal(false)} className="btn-ghost flex-1">Cancel</button>
                 <button onClick={handleSaveRoleplay} disabled={savingRoleplay || !saveRoleplayName.trim()} className="btn-primary flex-1 gap-1.5 disabled:opacity-50">
-                  {savingRoleplay ? <><Loader2 size={13} className="animate-spin" /> Saving…</> : (isManagerOrAdmin ? 'Save & Assign' : 'Save Roleplay')}
+                  {savingRoleplay ? <><Loader2 size={13} className="animate-spin" /> Saving…</> : 'Save for Team'}
                 </button>
               </div>
             </motion.div>
@@ -2516,8 +1705,8 @@ export function PracticePage() {
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function GalleryCard({
-  avatarId, name, subtitle, industry, type, callMode, difficulty,
-  timeLimitMins, metaLabel, description, badge, canEdit,
+  avatarId, name, subtitle, industry, type, difficulty,
+  metaLabel, description, badge, canEdit,
   onSelect, onEdit, onDelete,
 }: {
   avatarId?: string;
@@ -2525,9 +1714,7 @@ function GalleryCard({
   subtitle?: string;
   industry: string;
   type: string;
-  callMode?: 'Call' | 'Online';
   difficulty: string;
-  timeLimitMins?: number | null;
   metaLabel?: string;
   description?: string;
   badge?: string;
@@ -2542,12 +1729,6 @@ function GalleryCard({
     Hard:   'text-accent-4 bg-accent-4/10 border-accent-4/20',
     Expert: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
   } as Record<string, string>)[difficulty] ?? 'text-white/80 bg-white/5 border-white/10';
-
-  const displayMins = timeLimitMins ?? 3;
-  const CallModeIcon = callMode === 'Online' ? Monitor : Phone;
-  const callModeStyle = callMode === 'Online'
-    ? 'text-sky-400 bg-sky-400/10 border-sky-400/25'
-    : 'text-emerald-400 bg-emerald-400/10 border-emerald-400/25';
 
   return (
     <div
@@ -2564,18 +1745,7 @@ function GalleryCard({
             <div className="font-semibold text-[13.5px] leading-snug truncate">{name}</div>
             {subtitle && <div className="text-[12px] text-white/70 mt-0.5 truncate">{subtitle}</div>}
           </div>
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            {/* Call mode icon badge */}
-            {callMode && (
-              <span className={clsx('flex items-center gap-1 text-[9.5px] px-1.5 py-0.5 rounded-full border font-medium flex-shrink-0', callModeStyle)}>
-                <CallModeIcon size={9} />
-                {callMode}
-              </span>
-            )}
-            {/* Time limit badge */}
-            <span className="flex items-center gap-0.5 text-[9.5px] px-1.5 py-0.5 rounded-full border border-white/[0.1] bg-white/[0.04] text-white/55 font-medium flex-shrink-0">
-              {displayMins}m
-            </span>
+          <div className="flex items-center gap-1 flex-shrink-0">
             {canEdit && (
               <>
                 {onEdit && (
