@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Phone, Monitor, Sparkles, Loader as Loader2, ChevronDown, ChevronUp, RefreshCw, Play, Plus, X, Settings, Info, Pencil, Trash2, ArrowLeft, BookOpen, Lock, Check, User, Layers, Globe, Database, FileText, ClipboardList, CircleCheck, Wand2 } from 'lucide-react';
+import { Phone, Monitor, Sparkles, Loader as Loader2, ChevronDown, ChevronUp, RefreshCw, Play, Plus, X, Settings, Info, Pencil, Trash2, ArrowLeft, BookOpen, Lock, Check, User, Layers, Globe, Database, FileText, ClipboardList, CircleCheck, Wand as Wand2 } from 'lucide-react';
 import { practiceApi, sessionsApi, personasApi, teamRoleplaysApi, evaluationPromptsApi } from '@/lib/api';
 import type { AssignmentScope, AssignmentTarget, EvaluationGroupDef } from '@/types';
 import { Framework, SessionType, FRAMEWORK_INFO, ScenarioConfig, Persona, TeamRoleplay, KnowledgeBaseEntry } from '@/types';
@@ -941,9 +941,19 @@ export function PracticePage() {
       {/* ── Gallery ──────────────────────────────────────────────────────────── */}
       {view === 'gallery' && (
         <div className="flex flex-col gap-6 max-w-5xl">
-          <div>
-            <h2 className="font-display text-xl font-bold">Practice</h2>
-            <p className="text-sm text-white/80 mt-0.5">Choose a scenario to begin</p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="font-display text-xl font-bold">Practice</h2>
+              <p className="text-sm text-white/80 mt-0.5">Choose a scenario to begin</p>
+            </div>
+            <button
+              onClick={handleCreateNew}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-[10px] text-[13px] font-semibold transition-all hover:scale-[1.03] active:scale-[0.97] flex-shrink-0"
+              style={{ background: 'var(--accent)', color: '#fff', boxShadow: '0 2px 12px rgba(91,111,255,0.35)' }}
+            >
+              <Plus size={15} />
+              New Roleplay
+            </button>
           </div>
 
           {/* Tab bar */}
