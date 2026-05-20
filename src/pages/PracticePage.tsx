@@ -1037,6 +1037,10 @@ export function PracticePage() {
                         metaLabel={`by ${tr.createdBy.firstName} ${tr.createdBy.lastName}`}
                         description={tr.description}
                         badge="Assigned"
+                        hasKnowledge={
+                          (tr.scenarioConfig.botKnowledge?.length ?? 0) > 0 ||
+                          (tr.scenarioConfig.userBriefing?.length ?? 0) > 0
+                        }
                         onSelect={() => handleSelectAssigned(tr)}
                       />
                     ))}
@@ -1094,6 +1098,10 @@ export function PracticePage() {
                       metaLabel={`by ${tr.createdBy.firstName} ${tr.createdBy.lastName}`}
                       description={tr.description}
                       canEdit
+                      hasKnowledge={
+                        (tr.scenarioConfig.botKnowledge?.length ?? 0) > 0 ||
+                        (tr.scenarioConfig.userBriefing?.length ?? 0) > 0
+                      }
                       onSelect={() => handleSelectMine(tr)}
                       onEdit={e => {
                         e.stopPropagation();
@@ -2725,7 +2733,7 @@ export function PracticePage() {
 
 function GalleryCard({
   avatarId, name, subtitle, industry, type, difficulty,
-  timeLimitMins, metaLabel, description, badge, canEdit, sessionType,
+  timeLimitMins, metaLabel, description, badge, canEdit, sessionType, hasKnowledge,
   onSelect, onEdit, onDelete,
 }: {
   avatarId?: string;
@@ -2740,6 +2748,7 @@ function GalleryCard({
   badge?: string;
   canEdit?: boolean;
   sessionType?: SessionType;
+  hasKnowledge?: boolean;
   onSelect: () => void;
   onEdit?: (e: React.MouseEvent) => void;
   onDelete?: (e: React.MouseEvent) => void;
@@ -2786,6 +2795,15 @@ function GalleryCard({
             <span className="flex items-center gap-0.5 text-[9.5px] px-1.5 py-0.5 rounded-full border border-white/[0.1] bg-white/[0.04] text-white/55 font-medium flex-shrink-0">
               {displayMins}m
             </span>
+            {/* Knowledge base indicator */}
+            {hasKnowledge && (
+              <span
+                title="Has knowledge base content"
+                className="flex items-center justify-center w-5 h-5 rounded-full border border-accent/25 bg-accent/10 text-accent/70 flex-shrink-0"
+              >
+                <Database size={9} />
+              </span>
+            )}
             {canEdit && (
               <>
                 {onEdit && (
