@@ -981,23 +981,23 @@ export function PracticePage() {
               {/* Right: session config + start */}
               <div className="flex flex-col gap-3 w-full md:w-72 md:flex-shrink-0">
                 <div className="card p-4">
-                  <div className="flex items-center justify-between mb-2.5">
-                    <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Sales Framework</p>
-                    {isManagerOrAdmin && (
-                      <button
-                        onClick={() => setSetupMode('edit')}
-                        className="text-[9.5px] text-accent/60 hover:text-accent transition-colors flex items-center gap-0.5"
-                      >
-                        <Pencil size={8} /> Change
-                      </button>
-                    )}
+                  <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Sales Framework</p>
+                  <div className="relative mb-2">
+                    <select
+                      value={framework}
+                      onChange={e => setFramework(e.target.value as Framework)}
+                      className="w-full appearance-none input-base text-[12.5px] font-medium pr-7 cursor-pointer"
+                      style={{ backgroundImage: 'none' }}
+                    >
+                      {(Object.keys(FRAMEWORK_INFO) as Framework[]).map(f => (
+                        <option key={f} value={f}>{FRAMEWORK_INFO[f].label} — {FRAMEWORK_INFO[f].components.slice(0, 2).join(', ')}{FRAMEWORK_INFO[f].components.length > 2 ? '…' : ''}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
                   </div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[13px] font-bold text-white">{FRAMEWORK_INFO[framework].label}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1">
                     {FRAMEWORK_INFO[framework].components.map((c, i) => (
-                      <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.07] text-white/75">{i + 1}. {c}</span>
+                      <span key={i} className="text-[9px] px-1.5 py-0.5 rounded-full bg-accent/[0.06] border border-accent/15 text-accent/70">{i + 1}. {c}</span>
                     ))}
                   </div>
                 </div>
