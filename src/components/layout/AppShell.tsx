@@ -5,7 +5,7 @@ import { useAuthStore, useThemeStore } from '@/lib/store';
 import { authApi } from '@/lib/api';
 import { resetSocket } from '@/lib/socket';
 import toast from 'react-hot-toast';
-import { LayoutDashboard, Play, ClipboardList, Trophy, Users, Settings, LogOut, Target, Building2, Globe, Menu, X, Sun, Moon, Zap, Bot, BarChart3, CircleUser as UserCircle } from 'lucide-react';
+import { LayoutDashboard, Play, ClipboardList, Trophy, Users, Settings, LogOut, Target, Building2, Globe, Menu, X, Sun, Moon, Zap, Bot, BarChart3, CircleUser as UserCircle, ChevronDown } from 'lucide-react';
 import clsx from 'clsx';
 
 type NavItem = {
@@ -31,6 +31,85 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Plan & Modules', to: '/settings/plan', icon: Zap,       section: 'Admin', roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'] },
   { label: 'Settings',    to: '/settings',   icon: Settings,        section: 'Admin', roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'] },
 ];
+
+// sections that start collapsed by default
+const DEFAULT_COLLAPSED = new Set<string>(['Admin']);
+
+function NavSection({
+  section,
+  items,
+  currentPath,
+  onClose,
+}: {
+  section: string;
+  items: NavItem[];
+  currentPath: string;
+  onClose: () => void;
+}) {
+  const hasActive = items.some(i => currentPath.startsWith(i.to));
+  const [open, setOpen] = useState(!DEFAULT_COLLAPSED.has(section) || hasActive);
+
+  // Auto-open if an item becomes active (e.g. direct URL nav)
+  useEffect(() => {
+    if (hasActive) setOpen(true);
+  }, [hasActive]);
+
+  return (
+    <div className="mb-1">
+      {/* Section header — clickable to collapse */}
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center justify-between px-4 py-1.5 group transition-colors"
+      >
+        <span
+          className="text-[10px] font-bold tracking-[1.8px] uppercase transition-colors"
+          style={{ color: open ? 'var(--text2)' : 'var(--text3)' }}
+        >
+          {section}
+        </span>
+        <ChevronDown
+          size={11}
+          className={clsx('transition-transform duration-200', open ? 'rotate-0' : '-rotate-90')}
+          style={{ color: 'var(--text3)' }}
+        />
+      </button>
+
+      {/* Items */}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.18, ease: 'easeInOut' }}
+            className="overflow-hidden"
+          >
+            <div className="pb-1">
+              {items.map(item => (
+                <NavLink
+                  key={item.to + item.label}
+                  to={item.to}
+                  onClick={onClose}
+                  className={({ isActive }) =>
+                    clsx('nav-item', isActive && 'nav-item-active font-medium')
+                  }
+                >
+                  <item.icon size={15} className="opacity-75 flex-shrink-0" />
+                  <span className="flex-1">{item.label}</span>
+                  {item.badge && (
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-accent text-white">
+                      {item.badge}
+                    </span>
+                  )}
+                </NavLink>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -113,35 +192,16 @@ export function AppShell() {
         </div>
 
         {/* Nav */}
-        <div className="flex-1 py-4 overflow-y-auto">
-          {sections.map(section => {
-            const items = visibleNav.filter(n => n.section === section);
-            return (
-              <div key={section} className="mb-2">
-                <div className="px-5 py-2 text-[10px] font-semibold tracking-[1.5px] uppercase" style={{ color: 'var(--text3)' }}>
-                  {section}
-                </div>
-                {items.map(item => (
-                  <NavLink
-                    key={item.to + item.label}
-                    to={item.to}
-                    onClick={() => setSidebarOpen(false)}
-                    className={({ isActive }) =>
-                      clsx('nav-item', isActive && 'nav-item-active font-medium')
-                    }
-                  >
-                    <item.icon size={15} className="opacity-75 flex-shrink-0" />
-                    <span className="flex-1">{item.label}</span>
-                    {item.badge && (
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-accent text-white">
-                        {item.badge}
-                      </span>
-                    )}
-                  </NavLink>
-                ))}
-              </div>
-            );
-          })}
+        <div className="flex-1 py-3 overflow-y-auto">
+          {sections.map(section => (
+            <NavSection
+              key={section}
+              section={section}
+              items={visibleNav.filter(n => n.section === section)}
+              currentPath={location.pathname}
+              onClose={() => setSidebarOpen(false)}
+            />
+          ))}
         </div>
 
         {/* User footer */}
