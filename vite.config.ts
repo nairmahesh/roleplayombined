@@ -10,11 +10,16 @@ export default defineConfig({
     alias: { '@': path.resolve(__dirname, './src') },
   },
   server: {
+    host: true,
     port: 5173,
     proxy: {
       '/api': { target: 'http://localhost:4000', changeOrigin: true },
       '/socket.io': { target: 'http://localhost:4000', ws: true },
     },
+  },
+  preview: {
+    host: true,
+    port: 4173,
   },
   build: {
     target: 'es2020',
