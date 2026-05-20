@@ -2,9 +2,9 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Phone, Monitor, Sparkles, Loader as Loader2, ChevronDown, ChevronUp, RefreshCw, Play, Plus, X, Settings, Info, Pencil, Trash2, ArrowLeft, BookOpen, Lock, Check, User, Layers, Globe, Database, FileText } from 'lucide-react';
-import { practiceApi, sessionsApi, personasApi, teamRoleplaysApi } from '@/lib/api';
-import type { AssignmentScope, AssignmentTarget } from '@/types';
+import { Phone, Monitor, Sparkles, Loader as Loader2, ChevronDown, ChevronUp, RefreshCw, Play, Plus, X, Settings, Info, Pencil, Trash2, ArrowLeft, BookOpen, Lock, Check, User, Layers, Globe, Database, FileText, ClipboardList, CircleCheck } from 'lucide-react';
+import { practiceApi, sessionsApi, personasApi, teamRoleplaysApi, evaluationPromptsApi } from '@/lib/api';
+import type { AssignmentScope, AssignmentTarget, EvaluationGroupDef } from '@/types';
 import { Framework, SessionType, FRAMEWORK_INFO, ScenarioConfig, Persona, TeamRoleplay, KnowledgeBaseEntry } from '@/types';
 import { CallInterface, PersonaDisplay } from '@/components/practice/CallInterface';
 import { PersonaBuilder } from '@/components/practice/PersonaBuilder';
@@ -278,6 +278,8 @@ export function PracticePage() {
   const [endCondition, setEndCondition] = useState('');
   const [timeLimitMins, setTimeLimitMins] = useState('3');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [evalRubric, setEvalRubric] = useState<EvaluationGroupDef[] | null>(null);
+  const [showRubric, setShowRubric] = useState(false);
 
   // ── AI generate panel ──────────────────────────────────────────────────────
   const [aiKeywords, setAiKeywords]     = useState('');
@@ -364,6 +366,11 @@ export function PracticePage() {
   useEffect(() => {
     if (!roleplayType) return;
     setFramework(pickFramework(roleplayType));
+    // Load matching evaluation rubric
+    const typeKey = roleplayType.toLowerCase().replace(/\s+/g, '_');
+    evaluationPromptsApi.get(typeKey).then(ep => {
+      setEvalRubric(ep?.scoringCriteria ?? null);
+    }).catch(() => setEvalRubric(null));
   }, [roleplayType]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -1717,6 +1724,60 @@ export function PracticePage() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Scoring Rubric Preview */}
+                      {evalRubric && evalRubric.length > 0 && (
+                        <div className="rounded-[10px] border border-white/[0.07] overflow-hidden">
+                          <button
+                            onClick={() => setShowRubric(v => !v)}
+                            className="flex items-center justify-between w-full px-3 py-2.5 hover:bg-white/[0.02] transition-colors"
+                          >
+                            <div className="flex items-center gap-2">
+                              <ClipboardList size={12} className="text-white/70" />
+                              <span className="text-[12px] font-medium text-white/80">Scoring Rubric</span>
+                              <span className="text-[9.5px] px-1.5 py-0.5 rounded-full border border-white/[0.1] text-white/50">
+                                {evalRubric.reduce((a, g) => a + g.criteria.length, 0)} criteria
+                              </span>
+                            </div>
+                            {showRubric ? <ChevronUp size={12} className="text-white/40" /> : <ChevronDown size={12} className="text-white/40" />}
+                          </button>
+                          <AnimatePresence>
+                            {showRubric && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="px-3 pb-3 flex flex-col gap-2 border-t border-white/[0.06]">
+                                  {evalRubric.map((group, gi) => (
+                                    <div key={gi} className="mt-2">
+                                      <div className="flex items-center justify-between mb-1">
+                                        <span className="text-[10px] font-semibold text-white/60 uppercase tracking-wider">{group.group}</span>
+                                        <span className="text-[9px] text-white/35">{group.criteria.length} pts</span>
+                                      </div>
+                                      <div className="flex flex-col gap-1">
+                                        {group.criteria.map((c, ci) => (
+                                          <div key={ci} className="flex items-start gap-2">
+                                            <CircleCheck size={9} className="flex-shrink-0 mt-0.5 text-white/20" />
+                                            <span className="text-[11px] text-white/55 leading-relaxed">{c.question}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  ))}
+                                  <div className="mt-1 pt-2 border-t border-white/[0.06] flex items-center justify-between">
+                                    <span className="text-[10px] text-white/40">Edit rubric in Settings → Evaluation Prompts</span>
+                                    <span className="text-[9.5px] px-1.5 py-0.5 rounded border border-white/[0.08] text-white/35">
+                                      {evalRubric.reduce((a, g) => a + g.criteria.length, 0)} / {evalRubric.reduce((a, g) => a + g.criteria.length, 0)} pts max
+                                    </span>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      )}
 
                       {/* Time limit — always visible, manager-editable */}
                       <div className="flex items-center justify-between px-3 py-2.5 rounded-[10px] border border-white/[0.07] bg-white/[0.02]">
