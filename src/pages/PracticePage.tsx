@@ -385,10 +385,10 @@ function QuickLaunchTabs({
         ))}
       </div>
 
-      {/* Tab content */}
-      <div className="overflow-y-auto" style={{ maxHeight: '220px' }}>
+      {/* Tab content — max-height adapts: taller on mobile (more vertical room needed), shorter on desktop */}
+      <div className="overflow-y-auto" style={{ maxHeight: 'min(45vh, 280px)' }}>
         {activeTab === 'context' && personaContext && (
-          <p className="text-[12.5px] text-white/80 leading-relaxed whitespace-pre-wrap p-4 pr-3">{personaContext}</p>
+          <p className="text-[12px] sm:text-[12.5px] text-white/80 leading-relaxed whitespace-pre-wrap p-3 sm:p-4 pr-2 sm:pr-3">{personaContext}</p>
         )}
 
         {activeTab === 'knowledge' && (
@@ -399,15 +399,15 @@ function QuickLaunchTabs({
                 <div key={entry.id}>
                   <button
                     onClick={() => setExpandedKb(isOpen ? null : entry.id)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-white/[0.03] transition-colors"
+                    className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 text-left hover:bg-white/[0.03] transition-colors"
                   >
                     <span className="text-[10px] font-mono text-white/25 flex-shrink-0">{String(i + 1).padStart(2, '0')}</span>
-                    <span className="flex-1 text-[12.5px] font-medium text-white/80 truncate">{entry.label}</span>
+                    <span className="flex-1 text-[12px] sm:text-[12.5px] font-medium text-white/80 truncate">{entry.label}</span>
                     <ChevronDown size={12} className={clsx('flex-shrink-0 text-white/30 transition-transform', isOpen && 'rotate-180')} />
                   </button>
                   {isOpen && (
-                    <div className="px-4 pb-3 pt-0.5">
-                      <p className="text-[12px] text-white/65 leading-relaxed whitespace-pre-wrap">{entry.content}</p>
+                    <div className="px-3 sm:px-4 pb-3 pt-0.5">
+                      <p className="text-[11.5px] sm:text-[12px] text-white/65 leading-relaxed whitespace-pre-wrap">{entry.content}</p>
                     </div>
                   )}
                 </div>
@@ -417,11 +417,11 @@ function QuickLaunchTabs({
         )}
 
         {activeTab === 'questions' && (
-          <div className="flex flex-col gap-1.5 p-4">
+          <div className="flex flex-col gap-1.5 p-3 sm:p-4">
             {suggestedQuestions.map((q, i) => (
-              <div key={i} className="flex items-start gap-2 px-3 py-2 rounded-[9px] bg-white/[0.03] border border-white/[0.05]">
+              <div key={i} className="flex items-start gap-2 px-2.5 sm:px-3 py-2 rounded-[9px] bg-white/[0.03] border border-white/[0.05]">
                 <span className="text-[10px] font-mono text-white/25 flex-shrink-0 mt-0.5">{String(i + 1).padStart(2, '0')}</span>
-                <span className="text-[12px] text-white/65 leading-snug">{q}</span>
+                <span className="text-[11.5px] sm:text-[12px] text-white/65 leading-snug">{q}</span>
               </div>
             ))}
           </div>
@@ -1183,15 +1183,15 @@ export function PracticePage() {
           </div>
 
           {/* Tab bar */}
-          <div className="flex gap-0 border-b border-white/[0.07]">
+          <div className="flex gap-0 border-b border-white/[0.07] overflow-x-auto scrollbar-none -mx-1 px-1">
             <button
               onClick={() => setGalleryTab('assigned')}
               className={clsx(
-                'flex items-center gap-2 px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                'flex items-center gap-2 px-4 sm:px-5 py-3 text-[12.5px] sm:text-[13px] font-medium border-b-2 -mb-px transition-colors whitespace-nowrap flex-shrink-0',
                 galleryTab === 'assigned' ? 'border-accent text-white' : 'border-transparent text-white/75 hover:text-white',
               )}
             >
-              <Lock size={12} /> Assigned to Me
+              <Lock size={12} /> Assigned
               {!loadingTeamRoleplays && (
                 <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">
                   {assignedRoleplays.length}
@@ -1201,11 +1201,11 @@ export function PracticePage() {
             <button
               onClick={() => setGalleryTab('mine')}
               className={clsx(
-                'flex items-center gap-2 px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                'flex items-center gap-2 px-4 sm:px-5 py-3 text-[12.5px] sm:text-[13px] font-medium border-b-2 -mb-px transition-colors whitespace-nowrap flex-shrink-0',
                 galleryTab === 'mine' ? 'border-accent text-white' : 'border-transparent text-white/75 hover:text-white',
               )}
             >
-              <User size={12} /> Created by Me
+              <User size={12} /> My Roleplays
               <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">
                 {myRoleplays.length}
               </span>
@@ -1213,7 +1213,7 @@ export function PracticePage() {
             <button
               onClick={() => setGalleryTab('library')}
               className={clsx(
-                'flex items-center gap-2 px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                'flex items-center gap-2 px-4 sm:px-5 py-3 text-[12.5px] sm:text-[13px] font-medium border-b-2 -mb-px transition-colors whitespace-nowrap flex-shrink-0',
                 galleryTab === 'library' ? 'border-accent text-white' : 'border-transparent text-white/75 hover:text-white',
               )}
             >
@@ -1248,7 +1248,7 @@ export function PracticePage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {assignedRoleplays.map(tr => (
                       <GalleryCard
                         key={tr.id}
@@ -1309,7 +1309,7 @@ export function PracticePage() {
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {myRoleplays.map(tr => (
                     <GalleryCard
                       key={tr.id}
@@ -1348,7 +1348,7 @@ export function PracticePage() {
           {galleryTab === 'library' && (
             <div className="flex flex-col gap-4">
               <p className="text-[12px] text-white/75">Ready-made practice scenarios included with PitchIQ. Jump straight in — no setup required.</p>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {TEMPLATES.map(t => (
                   <GalleryCard
                     key={t.id}
@@ -2837,31 +2837,35 @@ export function PracticePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4"
             onClick={() => setQuickLaunchData(null)}
           >
             <motion.div
-              initial={{ scale: 0.95, y: 12 }}
+              initial={{ scale: 0.97, y: 20 }}
               animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+              exit={{ scale: 0.97, opacity: 0 }}
               onClick={e => e.stopPropagation()}
-              className="bg-bg-2 border border-white/10 rounded-[18px] w-full max-w-lg shadow-[0_24px_80px_rgba(0,0,0,0.6)] flex flex-col max-h-[90vh]"
+              className="bg-bg-2 border border-white/10 sm:rounded-[18px] rounded-t-[20px] w-full sm:max-w-lg shadow-[0_24px_80px_rgba(0,0,0,0.6)] flex flex-col max-h-[92vh] sm:max-h-[90vh]"
             >
+              {/* Drag handle on mobile */}
+              <div className="sm:hidden flex justify-center pt-3 pb-1 flex-shrink-0">
+                <div className="w-10 h-1 rounded-full bg-white/20" />
+              </div>
               {/* Scrollable body */}
-              <div className="overflow-y-auto flex-1 p-6 flex flex-col gap-4">
+              <div className="overflow-y-auto flex-1 px-4 py-4 sm:p-6 flex flex-col gap-4">
                 {/* Persona header */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
                   <div className="rounded-full overflow-hidden ring-2 ring-white/10 flex-shrink-0">
-                    <AvatarDisplay avatarId={avatarId} size={64} />
+                    <AvatarDisplay avatarId={avatarId} size={56} />
                   </div>
-                  <div className="min-w-0">
-                    <div className="font-display text-[17px] font-bold leading-tight truncate">{displayName}</div>
-                    {displayTitle && <div className="text-[12.5px] text-white/65 mt-0.5 truncate">{displayTitle}</div>}
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      <span className={clsx('text-[10.5px] px-2 py-0.5 rounded border', DIFFICULTY_COLORS[difficulty] || 'text-white/80 bg-white/5 border-white/10')}>{difficulty}</span>
-                      {industry && <span className="text-[10.5px] px-2 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/70">{industry}</span>}
-                      {roleplayType && <span className="text-[10.5px] px-2 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/70">{roleplayType}</span>}
-                      <span className="text-[10.5px] px-2 py-0.5 rounded bg-accent/10 border border-accent/20 text-accent/70 flex items-center gap-1">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-display text-[16px] sm:text-[17px] font-bold leading-tight truncate">{displayName}</div>
+                    {displayTitle && <div className="text-[12px] sm:text-[12.5px] text-white/65 mt-0.5 truncate">{displayTitle}</div>}
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      <span className={clsx('text-[10px] px-1.5 py-0.5 rounded border', DIFFICULTY_COLORS[difficulty] || 'text-white/80 bg-white/5 border-white/10')}>{difficulty}</span>
+                      {industry && <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/70">{industry}</span>}
+                      {roleplayType && <span className="hidden sm:inline text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/70">{roleplayType}</span>}
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 border border-accent/20 text-accent/70 flex items-center gap-1">
                         <Globe size={9} /> {language || 'English'}
                       </span>
                     </div>
@@ -2891,15 +2895,15 @@ export function PracticePage() {
               </div>
 
               {/* Sticky footer */}
-              <div className="flex-shrink-0 px-6 py-4 border-t border-white/[0.07] flex flex-col gap-3">
+              <div className="flex-shrink-0 px-4 py-4 sm:px-6 border-t border-white/[0.07] flex flex-col gap-3">
                 {/* Call format */}
                 <div>
                   <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wider mb-2">Call Format</p>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => setSessionType('PHONE_CALL')}
                       className={clsx(
-                        'flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-[10px] border text-[13px] font-medium transition-all',
+                        'flex items-center gap-2 justify-center px-3 py-2 rounded-[10px] border text-[12.5px] sm:text-[13px] font-medium transition-all',
                         sessionType === 'PHONE_CALL' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/70 hover:text-white hover:bg-white/[0.05]'
                       )}
                     >
@@ -2908,7 +2912,7 @@ export function PracticePage() {
                     <button
                       onClick={() => setSessionType('ONLINE_MEETING')}
                       className={clsx(
-                        'flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-[10px] border text-[13px] font-medium transition-all',
+                        'flex items-center gap-2 justify-center px-3 py-2 rounded-[10px] border text-[12.5px] sm:text-[13px] font-medium transition-all',
                         sessionType === 'ONLINE_MEETING' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/70 hover:text-white hover:bg-white/[0.05]'
                       )}
                     >
@@ -2919,13 +2923,13 @@ export function PracticePage() {
 
                 {/* Actions */}
                 <div className="flex gap-2">
-                  <button onClick={() => setQuickLaunchData(null)} className="btn-ghost flex-shrink-0 px-4">
+                  <button onClick={() => setQuickLaunchData(null)} className="btn-ghost flex-shrink-0 px-3 sm:px-4 text-[13px]">
                     Cancel
                   </button>
                   <button
                     onClick={handleStart}
                     disabled={starting || !isReady}
-                    className="flex-1 btn-primary gap-2 py-2.5 text-[14px] justify-center disabled:opacity-40"
+                    className="flex-1 btn-primary gap-2 py-2.5 text-[13.5px] sm:text-[14px] justify-center disabled:opacity-40"
                   >
                     {starting ? <><Loader2 size={14} className="animate-spin" /> Starting…</> : <><Play size={14} /> Start Session</>}
                   </button>
@@ -2979,23 +2983,23 @@ function GalleryCard({
   return (
     <div
       onClick={onSelect}
-      className="group card p-4 cursor-pointer hover:border-white/15 hover:bg-white/[0.02] transition-all flex gap-4 items-start"
+      className="group card p-3 sm:p-4 cursor-pointer hover:border-white/15 hover:bg-white/[0.02] transition-all flex gap-3 sm:gap-4 items-start"
     >
       <div className="flex-shrink-0 rounded-full overflow-hidden ring-2 ring-white/[0.07] group-hover:ring-accent/25 transition-all mt-0.5">
-        <AvatarDisplay avatarId={avatarId} size={54} />
+        <AvatarDisplay avatarId={avatarId} size={48} />
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-start gap-2 justify-between">
           <div className="min-w-0">
-            <div className="font-semibold text-[13.5px] leading-snug truncate">{name}</div>
-            {subtitle && <div className="text-[12px] text-white/70 mt-0.5 truncate">{subtitle}</div>}
+            <div className="font-semibold text-[13px] leading-snug truncate">{name}</div>
+            {subtitle && <div className="text-[11.5px] text-white/70 mt-0.5 truncate">{subtitle}</div>}
           </div>
-          <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="flex items-center gap-1 flex-shrink-0">
             {/* Session type pill */}
             {sessionType && (
               <span className={clsx(
-                'flex items-center gap-1 text-[9.5px] px-2 py-0.5 rounded-full border font-medium flex-shrink-0',
+                'hidden xs:flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full border font-medium flex-shrink-0',
                 isOnline
                   ? 'text-sky-400 bg-sky-400/10 border-sky-400/20'
                   : 'text-white/60 bg-white/[0.04] border-white/[0.1]',
@@ -3005,7 +3009,7 @@ function GalleryCard({
               </span>
             )}
             {/* Time limit badge */}
-            <span className="flex items-center gap-0.5 text-[9.5px] px-1.5 py-0.5 rounded-full border border-white/[0.1] bg-white/[0.04] text-white/55 font-medium flex-shrink-0">
+            <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full border border-white/[0.1] bg-white/[0.04] text-white/55 font-medium flex-shrink-0">
               {displayMins}m
             </span>
             {/* Knowledge base indicator */}
