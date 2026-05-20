@@ -334,6 +334,8 @@ export function PracticePage() {
   const [botKnowledge, setBotKnowledge]     = useState<KnowledgeBaseEntry[]>([]);
   const [userBriefing, setUserBriefing]     = useState<KnowledgeBaseEntry[]>([]);
   const [kbEnabled, setKbEnabled]           = useState(true);
+  const [botEnabled, setBotEnabled]         = useState(true);
+  const [briefingEnabled, setBriefingEnabled] = useState(true);
   const [botSectionOpen, setBotSectionOpen] = useState(true);
   const [briefingSectionOpen, setBriefingSectionOpen] = useState(true);
   const [showBriefing, setShowBriefing]     = useState(false);
@@ -1527,36 +1529,45 @@ export function PracticePage() {
                       {kbEnabled && (
                         <div className="flex flex-col gap-3">
                           {/* Bot Training section */}
-                          <div className="rounded-[12px] border border-white/[0.07] overflow-hidden">
+                          <div className={clsx('rounded-[12px] border overflow-hidden transition-colors', botEnabled ? 'border-white/[0.09]' : 'border-white/[0.05]')}>
                             <div
                               className="flex items-center justify-between w-full px-4 py-3 cursor-pointer hover:bg-white/[0.02] transition-colors select-none"
-                              onClick={() => setBotSectionOpen(v => !v)}
+                              onClick={() => { if (botEnabled) setBotSectionOpen(v => !v); }}
                             >
                               <div className="flex items-center gap-2.5">
-                                <Database size={13} className="text-accent/70" />
-                                <span className="text-[13px] font-semibold text-white">Bot Training</span>
-                                {botKnowledge.length > 0 && (
+                                <Database size={13} className={clsx('transition-colors', botEnabled ? 'text-accent/70' : 'text-white/25')} />
+                                <span className={clsx('text-[13px] font-semibold transition-colors', botEnabled ? 'text-white' : 'text-white/40')}>Bot Training</span>
+                                {botEnabled && botKnowledge.length > 0 && (
                                   <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-accent/10 text-accent">
                                     {botKnowledge.length} item{botKnowledge.length !== 1 ? 's' : ''}
                                   </span>
                                 )}
+                                {!botEnabled && (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-white/[0.08] text-white/30">off</span>
+                                )}
                               </div>
-                              <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                              <div className="flex items-center gap-2.5" onClick={e => e.stopPropagation()}>
+                                {botEnabled && (
+                                  <ChevronDown size={13} className={clsx('text-white/40 transition-transform', botSectionOpen ? 'rotate-180' : '')} />
+                                )}
                                 <button
-                                  onClick={() => setBotSectionOpen(v => !v)}
+                                  onClick={() => {
+                                    const next = !botEnabled;
+                                    setBotEnabled(next);
+                                    if (next) setBotSectionOpen(true);
+                                  }}
                                   className={clsx(
                                     'relative w-9 h-5 rounded-full transition-colors flex-shrink-0',
-                                    botSectionOpen ? 'bg-accent' : 'bg-white/20',
+                                    botEnabled ? 'bg-accent' : 'bg-white/[0.15]',
                                   )}
-                                  title={botSectionOpen ? 'Collapse section' : 'Expand section'}
+                                  title={botEnabled ? 'Disable Bot Training' : 'Enable Bot Training'}
                                 >
-                                  <span className={clsx('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform', botSectionOpen ? 'translate-x-4' : 'translate-x-0.5')} />
+                                  <span className={clsx('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform', botEnabled ? 'translate-x-4' : 'translate-x-0.5')} />
                                 </button>
-                                <ChevronDown size={13} className={clsx('text-white/40 transition-transform', botSectionOpen ? 'rotate-180' : '')} />
                               </div>
                             </div>
                             <AnimatePresence>
-                              {botSectionOpen && (
+                              {botEnabled && botSectionOpen && (
                                 <motion.div
                                   initial={{ height: 0, opacity: 0 }}
                                   animate={{ height: 'auto', opacity: 1 }}
@@ -1587,36 +1598,45 @@ export function PracticePage() {
                           </div>
 
                           {/* Pre-Call Briefing section */}
-                          <div className="rounded-[12px] border border-white/[0.07] overflow-hidden">
+                          <div className={clsx('rounded-[12px] border overflow-hidden transition-colors', briefingEnabled ? 'border-white/[0.09]' : 'border-white/[0.05]')}>
                             <div
                               className="flex items-center justify-between w-full px-4 py-3 cursor-pointer hover:bg-white/[0.02] transition-colors select-none"
-                              onClick={() => setBriefingSectionOpen(v => !v)}
+                              onClick={() => { if (briefingEnabled) setBriefingSectionOpen(v => !v); }}
                             >
                               <div className="flex items-center gap-2.5">
-                                <FileText size={13} className="text-accent/70" />
-                                <span className="text-[13px] font-semibold text-white">Pre-Call User Briefing</span>
-                                {userBriefing.length > 0 && (
+                                <FileText size={13} className={clsx('transition-colors', briefingEnabled ? 'text-accent/70' : 'text-white/25')} />
+                                <span className={clsx('text-[13px] font-semibold transition-colors', briefingEnabled ? 'text-white' : 'text-white/40')}>Pre-Call User Briefing</span>
+                                {briefingEnabled && userBriefing.length > 0 && (
                                   <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-accent/10 text-accent">
                                     {userBriefing.length} item{userBriefing.length !== 1 ? 's' : ''}
                                   </span>
                                 )}
+                                {!briefingEnabled && (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-white/[0.08] text-white/30">off</span>
+                                )}
                               </div>
-                              <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                              <div className="flex items-center gap-2.5" onClick={e => e.stopPropagation()}>
+                                {briefingEnabled && (
+                                  <ChevronDown size={13} className={clsx('text-white/40 transition-transform', briefingSectionOpen ? 'rotate-180' : '')} />
+                                )}
                                 <button
-                                  onClick={() => setBriefingSectionOpen(v => !v)}
+                                  onClick={() => {
+                                    const next = !briefingEnabled;
+                                    setBriefingEnabled(next);
+                                    if (next) setBriefingSectionOpen(true);
+                                  }}
                                   className={clsx(
                                     'relative w-9 h-5 rounded-full transition-colors flex-shrink-0',
-                                    briefingSectionOpen ? 'bg-accent' : 'bg-white/20',
+                                    briefingEnabled ? 'bg-accent' : 'bg-white/[0.15]',
                                   )}
-                                  title={briefingSectionOpen ? 'Collapse section' : 'Expand section'}
+                                  title={briefingEnabled ? 'Disable Pre-Call Briefing' : 'Enable Pre-Call Briefing'}
                                 >
-                                  <span className={clsx('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform', briefingSectionOpen ? 'translate-x-4' : 'translate-x-0.5')} />
+                                  <span className={clsx('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform', briefingEnabled ? 'translate-x-4' : 'translate-x-0.5')} />
                                 </button>
-                                <ChevronDown size={13} className={clsx('text-white/40 transition-transform', briefingSectionOpen ? 'rotate-180' : '')} />
                               </div>
                             </div>
                             <AnimatePresence>
-                              {briefingSectionOpen && (
+                              {briefingEnabled && briefingSectionOpen && (
                                 <motion.div
                                   initial={{ height: 0, opacity: 0 }}
                                   animate={{ height: 'auto', opacity: 1 }}
