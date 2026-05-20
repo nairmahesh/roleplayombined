@@ -384,7 +384,7 @@ export function FeedbackPage() {
   const jumpToTimestamp = useCallback((timestampMs: number, switchToTranscript = false) => {
     seekTo(timestampMs / 1000);
     // Scroll audio bar into view and flash it
-    audioBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    audioBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setAudioBarFlash(true);
     if (audioFlashRef.current) clearTimeout(audioFlashRef.current);
     audioFlashRef.current = setTimeout(() => setAudioBarFlash(false), 1200);
@@ -1255,20 +1255,29 @@ export function FeedbackPage() {
                               {!isRep && <span className="text-[8px] font-bold px-1 py-0.5 rounded" style={{ background: 'rgba(91,111,255,0.15)', color: 'var(--accent)' }}>AI</span>}
                               {/* Always-visible play+timestamp button */}
                               <button
-                                onClick={() => jumpToTimestamp(m.timestampMs)}
+                                onClick={() => {
+                                  if (playbackUrl) {
+                                    jumpToTimestamp(m.timestampMs);
+                                  } else {
+                                    audioBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                    setAudioBarFlash(true);
+                                    if (audioFlashRef.current) clearTimeout(audioFlashRef.current);
+                                    audioFlashRef.current = setTimeout(() => setAudioBarFlash(false), 1400);
+                                  }
+                                }}
                                 className={clsx(
-                                  'flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] transition-all hover:scale-105 active:scale-95',
+                                  'flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] transition-all',
                                   playbackUrl
-                                    ? 'hover:opacity-100 opacity-80'
-                                    : 'opacity-50 cursor-default',
+                                    ? 'hover:scale-105 active:scale-95 cursor-pointer'
+                                    : 'opacity-40 cursor-not-allowed',
                                 )}
                                 style={playbackUrl
-                                  ? { background: 'rgba(91,111,255,0.1)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.18)' }
-                                  : { color: 'var(--text3)' }
+                                  ? { background: 'rgba(91,111,255,0.14)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.25)' }
+                                  : { background: 'rgba(128,128,128,0.08)', color: 'var(--text3)', border: '1px solid var(--border)' }
                                 }
-                                title={playbackUrl ? `Play from ${fmt(m.timestampMs)}` : `Timestamp: ${fmt(m.timestampMs)}`}
+                                title={playbackUrl ? `Play from ${fmt(m.timestampMs)}` : 'No recording available'}
                               >
-                                <Play size={7} fill="currentColor" />
+                                <Play size={7} fill="currentColor" className={playbackUrl ? '' : 'opacity-60'} />
                                 <span className="text-[9.5px] font-mono">{fmt(m.timestampMs)}</span>
                               </button>
                             </div>
