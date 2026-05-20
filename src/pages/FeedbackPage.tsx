@@ -703,6 +703,32 @@ export function FeedbackPage() {
                 <Download size={13} />
               </button>
             </div>
+            {localRecording && (
+              <div className="flex items-center gap-2 mt-2 px-1">
+                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+                <span className="text-[10.5px]" style={{ color: 'var(--text3)' }}>
+                  Screen recording saved in your browser —
+                </span>
+                <button
+                  onClick={() => { setShowRecordingModal(true); setRecVideoPlaying(false); }}
+                  className="text-[10.5px] font-medium underline underline-offset-2 transition-colors"
+                  style={{ color: 'var(--accent)' }}
+                >
+                  click to play
+                </button>
+                <span className="text-[10.5px]" style={{ color: 'var(--text3)' }}>or</span>
+                <button
+                  onClick={() => { const a = document.createElement('a'); a.href = localRecording.objectUrl; a.download = `pitchiq-session-${id}.webm`; a.click(); }}
+                  className="text-[10.5px] font-medium underline underline-offset-2 transition-colors"
+                  style={{ color: 'var(--accent3)' }}
+                >
+                  download (.webm)
+                </button>
+                <span className="text-[9.5px] ml-auto flex-shrink-0" style={{ color: 'var(--text3)' }}>
+                  {(localRecording.sizeBytes / (1024 * 1024)).toFixed(1)} MB · cleared on browser reset
+                </span>
+              </div>
+            )}
         </div>
       </div>
 
@@ -1254,43 +1280,40 @@ export function FeedbackPage() {
                                 {isRep ? 'You' : personaName.split(' ')[0]}
                               </span>
                               {!isRep && <span className="text-[8px] font-bold px-1 py-0.5 rounded" style={{ background: 'rgba(91,111,255,0.15)', color: 'var(--accent)' }}>AI</span>}
-                              {/* Always-visible play+timestamp button */}
-                              <button
-                                onClick={() => {
-                                  if (playbackUrl) {
-                                    jumpToTimestamp(m.timestampMs);
-                                  } else {
-                                    audioBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                                    setAudioBarFlash(true);
-                                    if (audioFlashRef.current) clearTimeout(audioFlashRef.current);
-                                    audioFlashRef.current = setTimeout(() => setAudioBarFlash(false), 1400);
-                                  }
-                                }}
-                                className={clsx(
-                                  'flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] transition-all',
-                                  playbackUrl
-                                    ? 'hover:scale-105 active:scale-95 cursor-pointer'
-                                    : 'opacity-40 cursor-not-allowed',
-                                )}
-                                style={playbackUrl
-                                  ? { background: 'rgba(91,111,255,0.14)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.25)' }
-                                  : { background: 'rgba(128,128,128,0.08)', color: 'var(--text3)', border: '1px solid var(--border)' }
-                                }
-                                title={playbackUrl ? `Play from ${fmt(m.timestampMs)}` : 'No recording available'}
-                              >
-                                <Play size={7} fill="currentColor" className={playbackUrl ? '' : 'opacity-60'} />
-                                <span className="text-[9.5px] font-mono">{fmt(m.timestampMs)}</span>
-                              </button>
+                              <span className="text-[9px] font-mono" style={{ color: 'var(--text3)' }}>{fmt(m.timestampMs)}</span>
                             </div>
-                            <div
-                              className="text-left px-3 py-2.5 rounded-[10px] text-[12.5px] leading-relaxed"
+                            {/* Clickable bubble — clicking anywhere seeks audio */}
+                            <button
+                              onClick={() => {
+                                if (playbackUrl) {
+                                  jumpToTimestamp(m.timestampMs);
+                                } else {
+                                  audioBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                  setAudioBarFlash(true);
+                                  if (audioFlashRef.current) clearTimeout(audioFlashRef.current);
+                                  audioFlashRef.current = setTimeout(() => setAudioBarFlash(false), 1400);
+                                }
+                              }}
+                              title={playbackUrl ? `Click to play from ${fmt(m.timestampMs)}` : 'No recording available'}
+                              className={clsx(
+                                'text-left px-3 py-2.5 rounded-[10px] text-[12.5px] leading-relaxed group relative transition-all',
+                                playbackUrl ? 'cursor-pointer hover:brightness-110' : 'cursor-default'
+                              )}
                               style={isRep
                                 ? { background: 'rgba(91,111,255,0.1)', border: '1px solid rgba(91,111,255,0.15)', color: 'var(--text)' }
                                 : { background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text2)' }
                               }
                             >
                               {highlightText(m.content, transcriptSearch)}
-                            </div>
+                              {/* Play overlay on hover */}
+                              {playbackUrl && (
+                                <span className="absolute top-1.5 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 px-1.5 py-0.5 rounded-[5px]"
+                                  style={{ background: 'rgba(91,111,255,0.25)', color: 'var(--accent)' }}>
+                                  <Play size={7} fill="currentColor" />
+                                  <span className="text-[9px] font-mono">{fmt(m.timestampMs)}</span>
+                                </span>
+                              )}
+                            </button>
                           </div>
                         </div>
                       );
@@ -1488,13 +1511,30 @@ export function FeedbackPage() {
                   <div className="flex flex-col gap-3">
                     <div className="text-[10.5px] font-semibold uppercase tracking-[1.2px]" style={{ color: 'var(--text3)' }}>Pre-Loaded Objections</div>
                     {objections.map((obj, i) => {
-                      // Try to find relevant timeline events that mention this objection topic
+                      const allMsgs = session.messages || [];
+                      // Keywords from first 3 words of the objection
+                      const objKeywords = obj.toLowerCase().split(/\s+/).slice(0, 4).filter(w => w.length > 3);
+
+                      // Find AI messages where the persona raises this objection (keyword match)
+                      const aiObjMsgIdx = allMsgs.findIndex((m, idx) =>
+                        m.role === 'assistant' &&
+                        objKeywords.some(kw => m.content.toLowerCase().includes(kw))
+                      );
+                      const aiObjMsg   = aiObjMsgIdx >= 0 ? allMsgs[aiObjMsgIdx] : null;
+                      // The user's response is the next user message after the AI objection
+                      const userRespMsg = aiObjMsg
+                        ? allMsgs.slice(aiObjMsgIdx + 1).find(m => m.role === 'user') ?? null
+                        : null;
+
+                      // Fallback: timeline events
                       const relatedEvents = sortedEvents.filter(ev =>
                         ev.description.toLowerCase().includes(obj.toLowerCase().slice(0, 20)) ||
                         (ev.transcriptRef || '').toLowerCase().includes(obj.toLowerCase().slice(0, 15))
                       );
-                      const wasAddressed = relatedEvents.some(ev => ev.type === 'GOOD');
-                      const wasMissed    = relatedEvents.length === 0;
+
+                      const wasAddressed = relatedEvents.some(ev => ev.type === 'GOOD') || (userRespMsg != null && aiObjMsg != null);
+                      const wasMissed    = !aiObjMsg && relatedEvents.length === 0;
+                      const showTranscript = aiObjMsg || userRespMsg;
 
                       return (
                         <div
@@ -1524,26 +1564,84 @@ export function FeedbackPage() {
                                 : { background: 'rgba(255,209,102,0.12)', color: '#FFD166', border: '1px solid rgba(255,209,102,0.25)' }
                               }
                             >
-                              {wasAddressed ? 'Handled' : wasMissed ? 'Not addressed' : 'Partial'}
+                              {wasAddressed ? 'Handled' : wasMissed ? 'Not in transcript' : 'Partial'}
                             </span>
                           </div>
 
                           <div className="px-4 py-3 flex flex-col gap-3">
-                            {/* Related timeline events */}
-                            {relatedEvents.length > 0 && (
+
+                            {/* Transcript exchange — objection raised + your response */}
+                            {showTranscript && (
+                              <div className="flex flex-col gap-2">
+                                <div className="text-[9.5px] font-bold uppercase tracking-wider" style={{ color: 'var(--text3)' }}>Conversation at this moment</div>
+
+                                {aiObjMsg && (
+                                  <div className="flex items-start gap-2">
+                                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5" style={{ background: 'rgba(255,107,107,0.15)', color: '#FF6B6B' }}>
+                                      {personaName[0]}
+                                    </div>
+                                    <div className="flex-1 min-w-0 rounded-[10px] px-3 py-2.5" style={{ background: 'rgba(255,107,107,0.06)', border: '1px solid rgba(255,107,107,0.15)' }}>
+                                      <div className="flex items-center justify-between gap-2 mb-1">
+                                        <span className="text-[10px] font-semibold" style={{ color: '#FF6B6B' }}>{personaName}</span>
+                                        {playbackUrl && (
+                                          <button
+                                            onClick={() => jumpToTimestamp(aiObjMsg.timestampMs)}
+                                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[10px] font-semibold transition-all hover:scale-105 active:scale-95 flex-shrink-0"
+                                            style={{ background: 'rgba(255,107,107,0.18)', color: '#FF6B6B', border: '1px solid rgba(255,107,107,0.3)' }}
+                                          >
+                                            <Play size={9} fill="currentColor" />
+                                            Jump to {fmt(aiObjMsg.timestampMs)}
+                                          </button>
+                                        )}
+                                      </div>
+                                      <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text2)' }}>{aiObjMsg.content}</p>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {userRespMsg && (
+                                  <div className="flex items-start gap-2 flex-row-reverse">
+                                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5" style={{ background: 'rgba(91,111,255,0.18)', color: 'var(--accent)' }}>
+                                      You
+                                    </div>
+                                    <div className="flex-1 min-w-0 rounded-[10px] px-3 py-2.5" style={{ background: 'rgba(91,111,255,0.07)', border: '1px solid rgba(91,111,255,0.18)' }}>
+                                      <div className="flex items-center justify-between gap-2 mb-1 flex-row-reverse">
+                                        <span className="text-[10px] font-semibold" style={{ color: 'var(--accent)' }}>Your response</span>
+                                        {playbackUrl && (
+                                          <button
+                                            onClick={() => jumpToTimestamp(userRespMsg.timestampMs)}
+                                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[10px] font-semibold transition-all hover:scale-105 active:scale-95 flex-shrink-0"
+                                            style={{ background: 'rgba(91,111,255,0.15)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.25)' }}
+                                          >
+                                            <Play size={9} fill="currentColor" />
+                                            Jump to {fmt(userRespMsg.timestampMs)}
+                                          </button>
+                                        )}
+                                      </div>
+                                      <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text2)' }}>{userRespMsg.content}</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Fallback: related timeline events when no transcript match */}
+                            {!showTranscript && relatedEvents.length > 0 && (
                               <div>
                                 <div className="text-[9.5px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text3)' }}>From your call</div>
                                 {relatedEvents.map(ev => (
                                   <div key={ev.id} className="flex items-start gap-2 mb-1">
                                     <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ background: ev.type === 'GOOD' ? '#06D6A0' : ev.type === 'ISSUE' ? '#FF6B6B' : '#FFD166' }} />
                                     <p className="text-[12px] leading-relaxed flex-1" style={{ color: 'var(--text2)' }}>{ev.description}</p>
-                                    <button
-                                      onClick={() => jumpToTimestamp(ev.timestampMs)}
-                                      className="flex items-center gap-1 px-2 py-0.5 rounded-[6px] text-[10px] font-medium flex-shrink-0 transition-all hover:scale-105"
-                                      style={{ background: 'rgba(91,111,255,0.1)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.2)' }}
-                                    >
-                                      <Play size={7} fill="currentColor" /> {fmt(ev.timestampMs)}
-                                    </button>
+                                    {playbackUrl && (
+                                      <button
+                                        onClick={() => jumpToTimestamp(ev.timestampMs)}
+                                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[10px] font-semibold flex-shrink-0 transition-all hover:scale-105"
+                                        style={{ background: 'rgba(91,111,255,0.1)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.2)' }}
+                                      >
+                                        <Play size={9} fill="currentColor" /> {fmt(ev.timestampMs)}
+                                      </button>
+                                    )}
                                   </div>
                                 ))}
                               </div>
