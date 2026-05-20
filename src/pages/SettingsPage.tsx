@@ -3,10 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/lib/store';
 import { voiceApi, AgentSummary, AgentConfig, usageApi, UsageSummary } from '@/lib/api';
-import {
-  Save, Zap, Globe, Shield, ChevronRight, FileText, Plus, Trash2,
-  RefreshCw, Bot, Edit2, X, Check, DollarSign, TrendingUp,
-} from 'lucide-react';
+import { Save, Zap, Globe, Shield, ChevronRight, FileText, Plus, Trash2, RefreshCw, Bot, CreditCard as Edit2, X, Check, DollarSign, TrendingUp, Share2, Link2, Plug } from 'lucide-react';
 
 // ── Agent row ─────────────────────────────────────────────────────────────────
 
@@ -352,6 +349,8 @@ export function SettingsPage() {
     (user?.company?.defaultFramework as 'MEDDIC' | 'MEDDICC' | 'SPIN' | 'BANT' | 'CHALLENGER' | 'SNAP') || 'MEDDIC'
   );
   const [passThreshold, setPassThreshold] = useState(user?.company?.passThreshold || 70);
+  const [externalRatingsGlobal, setExternalRatingsGlobal] = useState(false);
+  const [externalShareGlobal, setExternalShareGlobal] = useState(false);
 
   const save = () => { toast.success('Settings saved'); };
 
@@ -496,6 +495,116 @@ export function SettingsPage() {
           </button>
         </div>
       </div>
+
+      {/* Sharing & External Ratings (admin only) */}
+      {isAdminOrAbove && (
+        <div className="card">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+            <Share2 size={14} className="text-accent-3" aria-hidden="true" />
+            <span className="font-display text-[14px] font-bold">Sharing &amp; External Ratings</span>
+            <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(91,111,255,0.1)', color: 'var(--accent)' }}>Admin</span>
+          </div>
+          <div className="p-5 flex flex-col gap-5">
+            <p className="text-[12px]" style={{ color: 'var(--text3)' }}>
+              These settings control sharing and external review features across all roleplay types in your company.
+              Per-roleplay overrides are available in <button type="button" onClick={() => navigate('/settings/evaluation-prompts')} className="text-accent hover:underline">Evaluation Prompts → Sharing tab</button>.
+            </p>
+
+            {/* Global external share toggle */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <Link2 size={14} className="mt-0.5 flex-shrink-0" style={{ color: 'var(--accent3)' }} aria-hidden="true" />
+                <div>
+                  <div className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>Allow External Share Links</div>
+                  <div className="text-[11.5px] mt-0.5" style={{ color: 'var(--text3)' }}>
+                    Enables managers to generate shareable feedback URLs accessible without a PitchIQ login.
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setExternalShareGlobal(v => !v)}
+                className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${externalShareGlobal ? 'bg-accent' : 'bg-white/20'}`}
+                aria-pressed={externalShareGlobal}
+                aria-label="Toggle external share links"
+              >
+                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${externalShareGlobal ? 'translate-x-5' : 'translate-x-0.5'}`} />
+              </button>
+            </div>
+
+            {/* Global external ratings toggle */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <Globe size={14} className="mt-0.5 flex-shrink-0" style={{ color: '#FFD166' }} aria-hidden="true" />
+                <div>
+                  <div className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>Allow External Ratings</div>
+                  <div className="text-[11.5px] mt-0.5" style={{ color: 'var(--text3)' }}>
+                    Lets external reviewers submit scores and comments on shared feedback pages. Their ratings appear separately from AI scores, clearly labelled as External Review.
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setExternalRatingsGlobal(v => !v)}
+                className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${externalRatingsGlobal ? 'bg-accent' : 'bg-white/20'}`}
+                aria-pressed={externalRatingsGlobal}
+                aria-label="Toggle external ratings"
+              >
+                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${externalRatingsGlobal ? 'translate-x-5' : 'translate-x-0.5'}`} />
+              </button>
+            </div>
+
+            {externalRatingsGlobal && (
+              <div className="flex items-start gap-2 p-3 rounded-[10px]" style={{ background: 'rgba(255,209,102,0.06)', border: '1px solid rgba(255,209,102,0.2)' }}>
+                <span className="text-[11px] leading-relaxed" style={{ color: 'var(--text2)' }}>
+                  External ratings are shown in the Feedback page under a separate <strong>External Review</strong> section and in Analytics as a distinct data series — never blended with internal AI scores.
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* CRM Integrations (admin only) */}
+      {isAdminOrAbove && (
+        <div className="card">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+            <Plug size={14} className="text-accent" aria-hidden="true" />
+            <span className="font-display text-[14px] font-bold">CRM Integrations</span>
+            <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(91,111,255,0.1)', color: 'var(--accent)' }}>Admin</span>
+          </div>
+          <div className="p-5 flex flex-col gap-3">
+            <p className="text-[12px] mb-1" style={{ color: 'var(--text3)' }}>
+              Connect PitchIQ to your CRM so roleplay sessions and scores are linked to leads and customer records automatically.
+            </p>
+            {([
+              { name: 'Salesforce',  logo: 'SF',  color: '#00A1E0', desc: 'Sync sessions to lead activities and update contact scores.' },
+              { name: 'HubSpot',     logo: 'HS',  color: '#FF7A59', desc: 'Log roleplay results as deal timeline events.' },
+              { name: 'Freshsales', logo: 'FS',  color: '#2ECC71', desc: 'Attach session feedback to contacts and opportunities.' },
+              { name: 'Pipedrive',   logo: 'PD',  color: '#1F4C99', desc: 'Push scores and highlights to deal notes.' },
+              { name: 'Odoo',        logo: 'OD',  color: '#875A7B', desc: 'Create CRM lead activities from completed sessions.' },
+            ] as const).map(({ name, logo, color, desc }) => (
+              <div key={name} className="flex items-center gap-3 p-3.5 rounded-[12px] border transition-all hover:border-[rgba(255,255,255,0.15)]" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
+                <div className="w-9 h-9 rounded-[9px] flex items-center justify-center text-[11px] font-black text-white flex-shrink-0" style={{ background: color }}>
+                  {logo}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>{name}</div>
+                  <div className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--text3)' }}>{desc}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/settings/integrations')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[11.5px] font-medium border transition-all hover:scale-105 flex-shrink-0"
+                  style={{ borderColor: `${color}44`, color, background: `${color}10` }}
+                >
+                  Configure <ChevronRight size={11} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Usage & Costs */}
       {isAdminOrAbove && (

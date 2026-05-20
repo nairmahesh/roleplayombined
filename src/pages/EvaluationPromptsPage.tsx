@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { ChevronDown, ChevronRight, Plus, Trash2, Save, RotateCcw, Lightbulb, CircleCheck as CheckCircle, Info, Zap, FileText, CreditCard as Edit3, X, GripVertical } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Trash2, Save, RotateCcw, Lightbulb, CircleCheck as CheckCircle, Info, Zap, FileText, X, GripVertical, Lock, Users, Globe, Share2, Copy, ExternalLink, Eye, EyeOff } from 'lucide-react';
 import { evaluationPromptsApi } from '@/lib/api';
 import type { EvaluationPrompt, EvaluationGroupDef, EvaluationCriterionDef } from '@/types';
 import clsx from 'clsx';
@@ -158,7 +158,11 @@ export function EvaluationPromptsPage() {
   const [activeId, setActiveId]         = useState<string | null>(null);
   const [editing, setEditing]           = useState<EvaluationPrompt | null>(null);
   const [saving, setSaving]             = useState(false);
-  const [activeSection, setActiveSection] = useState<'criteria' | 'prompt'>('criteria');
+  const [activeSection, setActiveSection] = useState<'criteria' | 'prompt' | 'sharing'>('criteria');
+  const [feedbackVisibility, setFeedbackVisibility] = useState<'private' | 'team' | 'public'>('team');
+  const [externalShareEnabled, setExternalShareEnabled] = useState(false);
+  const [externalRatingsEnabled, setExternalRatingsEnabled] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [dirty, setDirty]               = useState(false);
 
   useEffect(() => {
@@ -171,6 +175,14 @@ export function EvaluationPromptsPage() {
       setLoading(false);
     });
   }, []);
+
+  const copyShareLink = () => {
+    const link = `${window.location.origin}/feedback/external/${activeId ?? 'demo'}`;
+    navigator.clipboard.writeText(link).then(() => {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    });
+  };
 
   const selectPrompt = (p: EvaluationPrompt) => {
     if (dirty) {
@@ -309,21 +321,22 @@ export function EvaluationPromptsPage() {
             {/* Section toggle */}
             <div className="flex rounded-[10px] border overflow-hidden" style={{ borderColor: 'var(--border)', background: 'var(--bg2)' }}>
               {([
-                { id: 'criteria' as const, label: 'Scoring Criteria', icon: CheckCircle },
-                { id: 'prompt'   as const, label: 'AI Prompt Template', icon: FileText  },
+                { id: 'criteria' as const, label: 'Scoring Criteria',  icon: CheckCircle },
+                { id: 'prompt'   as const, label: 'AI Prompt',          icon: FileText    },
+                { id: 'sharing'  as const, label: 'Sharing & Privacy',  icon: Share2      },
               ]).map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
                   onClick={() => setActiveSection(id)}
                   className={clsx(
-                    'flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-[12.5px] font-medium transition-colors',
+                    'flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-[12px] font-medium transition-colors',
                     activeSection === id
                       ? 'text-[var(--text)]'
                       : 'text-[var(--text3)] hover:text-[var(--text2)]'
                   )}
                   style={{ background: activeSection === id ? 'rgba(91,111,255,0.1)' : 'transparent' }}
                 >
-                  <Icon size={13} />
+                  <Icon size={12} />
                   {label}
                 </button>
               ))}
@@ -437,6 +450,117 @@ export function EvaluationPromptsPage() {
                       Estimated prompt tokens (template only): ~{Math.ceil(editing.promptTemplate.split(/\s+/).length * 1.3).toLocaleString()}
                       {' '}— transcript adds ~500–2,000 tokens depending on session length
                     </span>
+                  </div>
+                </motion.div>
+              )}
+              {activeSection === 'sharing' && (
+                <motion.div
+                  key="sharing"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex flex-col gap-4"
+                >
+                  {/* Feedback visibility */}
+                  <div className="rounded-[12px] border p-4 flex flex-col gap-3" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
+                    <div className="flex items-center gap-2">
+                      <Eye size={13} style={{ color: 'var(--accent)' }} />
+                      <span className="font-display text-[13px] font-bold" style={{ color: 'var(--text)' }}>Feedback Visibility</span>
+                    </div>
+                    <p className="text-[11.5px]" style={{ color: 'var(--text3)' }}>
+                      Controls who can see the AI-generated feedback and scorecard for sessions using this evaluation type.
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {([
+                        { id: 'private' as const, icon: Lock,  label: 'Private',          desc: 'Only the session owner and admins can view feedback.' },
+                        { id: 'team'    as const, icon: Users, label: 'Team (default)',    desc: 'All team members can view each other\'s feedback and scores.' },
+                        { id: 'public'  as const, icon: Globe, label: 'Public (external)', desc: 'Feedback page is accessible via a shareable link without login.' },
+                      ]).map(({ id, icon: Icon, label, desc }) => (
+                        <button
+                          key={id}
+                          onClick={() => setFeedbackVisibility(id)}
+                          className={clsx(
+                            'flex items-start gap-3 p-3 rounded-[10px] border text-left transition-all',
+                            feedbackVisibility === id
+                              ? 'border-[rgba(91,111,255,0.4)] bg-[rgba(91,111,255,0.08)]'
+                              : 'border-[var(--border)] hover:border-[var(--border2)] hover:bg-[var(--bg3)]'
+                          )}
+                        >
+                          <div className={clsx('w-4 h-4 rounded-full border flex-shrink-0 mt-0.5 flex items-center justify-center transition-all',
+                            feedbackVisibility === id ? 'bg-accent border-accent' : 'border-white/20'
+                          )}>
+                            {feedbackVisibility === id && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          </div>
+                          <Icon size={13} className="flex-shrink-0 mt-0.5" style={{ color: feedbackVisibility === id ? 'var(--accent)' : 'var(--text3)' }} />
+                          <div>
+                            <div className="text-[12.5px] font-semibold" style={{ color: feedbackVisibility === id ? 'var(--accent)' : 'var(--text)' }}>{label}</div>
+                            <div className="text-[11px] mt-0.5" style={{ color: 'var(--text3)' }}>{desc}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* External share link */}
+                  <div className="rounded-[12px] border p-4 flex flex-col gap-3" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Share2 size={13} style={{ color: 'var(--accent3)' }} />
+                        <span className="font-display text-[13px] font-bold" style={{ color: 'var(--text)' }}>External Share Link</span>
+                      </div>
+                      <button
+                        onClick={() => setExternalShareEnabled(v => !v)}
+                        className={clsx('relative w-10 h-5 rounded-full transition-colors flex-shrink-0', externalShareEnabled ? 'bg-accent' : 'bg-white/20')}
+                      >
+                        <span className={clsx('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform', externalShareEnabled ? 'translate-x-5' : 'translate-x-0.5')} />
+                      </button>
+                    </div>
+                    <p className="text-[11.5px]" style={{ color: 'var(--text3)' }}>
+                      Generate a shareable link for external reviewers (clients, mentors, coaches) to view session feedback without needing a PitchIQ account.
+                    </p>
+                    {externalShareEnabled && (
+                      <div className="flex items-center gap-2 p-2.5 rounded-[9px]" style={{ background: 'var(--bg3)', border: '1px solid var(--border)' }}>
+                        <ExternalLink size={12} style={{ color: 'var(--text3)' }} className="flex-shrink-0" />
+                        <span className="flex-1 text-[11.5px] font-mono truncate" style={{ color: 'var(--text2)' }}>
+                          {window.location.origin}/feedback/external/{activeId ?? 'demo'}
+                        </span>
+                        <button
+                          onClick={copyShareLink}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-[7px] text-[11px] font-medium transition-all hover:scale-105 flex-shrink-0"
+                          style={{ background: copiedLink ? 'rgba(6,214,160,0.12)' : 'rgba(91,111,255,0.12)', color: copiedLink ? 'var(--accent3)' : 'var(--accent)', border: `1px solid ${copiedLink ? 'rgba(6,214,160,0.25)' : 'rgba(91,111,255,0.25)'}` }}
+                        >
+                          <Copy size={11} /> {copiedLink ? 'Copied!' : 'Copy'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* External ratings toggle */}
+                  <div className="rounded-[12px] border p-4 flex flex-col gap-3" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Globe size={13} style={{ color: '#FFD166' }} />
+                        <span className="font-display text-[13px] font-bold" style={{ color: 'var(--text)' }}>Allow External Ratings</span>
+                      </div>
+                      <button
+                        onClick={() => setExternalRatingsEnabled(v => !v)}
+                        className={clsx('relative w-10 h-5 rounded-full transition-colors flex-shrink-0', externalRatingsEnabled ? 'bg-accent' : 'bg-white/20')}
+                      >
+                        <span className={clsx('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform', externalRatingsEnabled ? 'translate-x-5' : 'translate-x-0.5')} />
+                      </button>
+                    </div>
+                    <p className="text-[11.5px]" style={{ color: 'var(--text3)' }}>
+                      When enabled, external reviewers viewing shared feedback can submit their own rating and comments. Their response will appear alongside the AI score, clearly labelled as an external review.
+                    </p>
+                    {externalRatingsEnabled && (
+                      <div className="flex items-start gap-2 p-3 rounded-[10px]" style={{ background: 'rgba(255,209,102,0.06)', border: '1px solid rgba(255,209,102,0.2)' }}>
+                        <Info size={12} className="flex-shrink-0 mt-0.5" style={{ color: '#FFD166' }} />
+                        <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text2)' }}>
+                          External ratings are shown in the Feedback page under a separate <strong>External Review</strong> section with the reviewer's score, comments, and timestamp — never mixed with AI scoring.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               )}

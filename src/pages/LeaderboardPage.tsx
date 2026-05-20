@@ -1,8 +1,9 @@
 // pitchiq/frontend/src/pages/LeaderboardPage.tsx
 
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Medal, ChevronLeft, BarChart3, Clock, Target, Star, TrendingUp } from 'lucide-react';
+import { Trophy, ChevronLeft, BarChart3, Clock, Target, Star, TrendingUp, ChevronRight, Play } from 'lucide-react';
 import { analyticsApi, sessionsApi } from '@/lib/api';
 import { LeaderboardEntry, Session } from '@/types';
 import { useAuthStore, usePageCache } from '@/lib/store';
@@ -26,6 +27,7 @@ interface UserDetailProps {
 function UserDetail({ entry, onBack }: UserDetailProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     sessionsApi.listAll({ userId: entry.user.id }).then(r => {
@@ -103,8 +105,9 @@ function UserDetail({ entry, onBack }: UserDetailProps) {
 
       {/* Session history */}
       <div className="card">
-        <div className="px-5 py-3.5 border-b" style={{ borderColor: 'var(--border)' }}>
+        <div className="px-5 py-3.5 border-b flex items-center justify-between" style={{ borderColor: 'var(--border)' }}>
           <span className="font-display text-[13px] font-bold" style={{ color: 'var(--text)' }}>Recent Sessions</span>
+          <span className="text-[10.5px]" style={{ color: 'var(--text3)' }}>Click any session to view feedback</span>
         </div>
         {loading ? (
           <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
@@ -126,13 +129,15 @@ function UserDetail({ entry, onBack }: UserDetailProps) {
             {sessions.map((s, i) => {
               const sc = s.totalScore ?? null;
               const c = sc != null ? scoreColor(sc) : 'var(--text3)';
+              const hasScore = sc != null;
               return (
-                <motion.div
+                <motion.button
                   key={s.id}
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.04 }}
-                  className="flex items-center gap-3 px-5 py-3.5"
+                  onClick={() => navigate(`/sessions/${s.id}/feedback`)}
+                  className="w-full flex items-center gap-3 px-5 py-3.5 text-left transition-colors group hover:bg-white/[0.025]"
                 >
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
@@ -155,14 +160,20 @@ function UserDetail({ entry, onBack }: UserDetailProps) {
                       </span>
                     </div>
                   </div>
-                  {sc != null && (
-                    <div className="flex-shrink-0">
-                      <div className="w-20 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                  {hasScore && (
+                    <div className="flex-shrink-0 hidden sm:block">
+                      <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
                         <div className="h-full rounded-full transition-all" style={{ width: `${sc}%`, background: c }} />
                       </div>
                     </div>
                   )}
-                </motion.div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <span className="text-[10.5px] font-medium opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--accent)' }}>
+                      View feedback
+                    </span>
+                    <ChevronRight size={12} className="opacity-30 group-hover:opacity-70 transition-opacity" style={{ color: 'var(--accent)' }} />
+                  </div>
+                </motion.button>
               );
             })}
           </div>
