@@ -8,6 +8,7 @@ import { RefreshCw, Share2, ChevronRight, CircleCheck as CheckCircle, TriangleAl
 import { sessionsApi, peerSessionsApi } from '@/lib/api';
 import { connectSocket } from '@/lib/socket';
 import { Session, ParsedFeedback, FRAMEWORK_INFO, ScorecardGroup, PeerSession } from '@/types';
+import { RECORDINGS_LS_KEY, type RecordingMeta } from '@/components/practice/OnlineMeetingRoom';
 import clsx from 'clsx';
 
 type Tab = 'scorecard' | 'transcript' | 'analytics' | 'objections' | 'leaderboard';
@@ -259,6 +260,7 @@ export function FeedbackPage() {
   const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
   const [lastJumpMs, setLastJumpMs]       = useState<number | null>(null);
   const [audioBarFlash, setAudioBarFlash] = useState(false);
+  const [localRecording, setLocalRecording] = useState<RecordingMeta | null>(null);
   const jumpLabelRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioFlashRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -280,7 +282,16 @@ export function FeedbackPage() {
         setSession(data);
         setPeerScores(peers);
         setPeerSessions(peerSess);
-        if (data.recordingUrl) setPlaybackUrl(data.recordingUrl);
+        if (data.recordingUrl) {
+          setPlaybackUrl(data.recordingUrl);
+        } else {
+          // Fall back to locally-recorded blob (online meeting recording)
+          try {
+            const stored: RecordingMeta[] = JSON.parse(localStorage.getItem(RECORDINGS_LS_KEY) || '[]');
+            const local = stored.find(r => r.sessionId === id);
+            if (local) { setLocalRecording(local); setPlaybackUrl(local.objectUrl); }
+          } catch { /* ignore */ }
+        }
         if (data.status === 'COMPLETED' && !data.totalScore) setAnalysing(true);
       } catch {
         toast.error('Session not found');
@@ -564,30 +575,29 @@ export function FeedbackPage() {
             borderRadius: audioBarFlash ? '10px' : undefined,
           }}
         >
-          {playbackUrl && (
-            <audio
-              ref={el => {
-                audioRef.current = el;
-                if (el) {
-                  el.onloadedmetadata = () => {
-                    setAudioDuration(el.duration);
-                    if (pendingSeekRef.current !== null) {
-                      el.currentTime = pendingSeekRef.current;
-                      el.play().catch(() => {});
-                      setIsPlaying(true);
-                      pendingSeekRef.current = null;
-                    }
-                  };
-                  el.ontimeupdate = () => setAudioProgress(el.currentTime);
-                  el.onplay = () => setIsPlaying(true);
-                  el.onpause = () => setIsPlaying(false);
-                  el.onended = () => { setIsPlaying(false); setAudioProgress(0); };
-                }
-              }}
-              src={playbackUrl}
-              preload="metadata"
-            />
-          )}
+          {playbackUrl && (() => {
+            const wireEl = (el: HTMLAudioElement | HTMLVideoElement | null) => {
+              audioRef.current = el as HTMLAudioElement | null;
+              if (el) {
+                el.onloadedmetadata = () => {
+                  setAudioDuration(el.duration);
+                  if (pendingSeekRef.current !== null) {
+                    el.currentTime = pendingSeekRef.current;
+                    el.play().catch(() => {});
+                    setIsPlaying(true);
+                    pendingSeekRef.current = null;
+                  }
+                };
+                el.ontimeupdate = () => setAudioProgress(el.currentTime);
+                el.onplay = () => setIsPlaying(true);
+                el.onpause = () => setIsPlaying(false);
+                el.onended = () => { setIsPlaying(false); setAudioProgress(0); };
+              }
+            };
+            return localRecording
+              ? <video ref={wireEl} src={playbackUrl} preload="metadata" style={{ display: 'none' }} />
+              : <audio ref={wireEl} src={playbackUrl} preload="metadata" />;
+          })()}
             <div className="flex items-center gap-3">
               <button
                 onClick={togglePlay}
@@ -647,17 +657,27 @@ export function FeedbackPage() {
                 )}
                 {/* No recording indicator */}
                 {!playbackUrl && (
-                  <div className="absolute inset-0 flex items-center px-2">
-                    <span className="text-[9px]" style={{ color: 'var(--text3)' }}>No recording available</span>
+                  <div className="absolute inset-0 flex items-center px-2 gap-1.5">
+                    <span className="text-[9px]" style={{ color: 'var(--text3)' }}>No recording — click a timestamp</span>
+                    <span className="text-[8px] px-1 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text3)' }}>▶ to play</span>
                   </div>
                 )}
               </div>
               <span className="text-[10px] font-mono flex-shrink-0" style={{ color: 'var(--text3)' }}>
                 {audioDuration ? fmt(audioDuration * 1000) : session.durationSeconds ? fmt(session.durationSeconds * 1000) : '--:--'}
               </span>
+              {localRecording && (
+                <span
+                  className="flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded flex-shrink-0 font-medium"
+                  style={{ background: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)' }}
+                  title="Local recording from your browser"
+                >
+                  <Mic size={8} /> Local
+                </span>
+              )}
               <button
-                onClick={() => { if (playbackUrl) { const a = document.createElement('a'); a.href = playbackUrl; a.download = `session-${id}.mp3`; a.click(); } }}
-                title="Download"
+                onClick={() => { if (playbackUrl) { const a = document.createElement('a'); a.href = playbackUrl; a.download = localRecording ? `pitchiq-session-${id}.webm` : `session-${id}.mp3`; a.click(); } }}
+                title="Download recording"
                 disabled={!playbackUrl}
                 style={{ color: 'var(--text3)' }}
                 className="hover:text-white transition-colors flex-shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
@@ -1219,11 +1239,19 @@ export function FeedbackPage() {
                               {/* Always-visible play+timestamp button */}
                               <button
                                 onClick={() => jumpToTimestamp(m.timestampMs)}
-                                className="flex items-center gap-0.5 transition-opacity hover:opacity-100"
-                                style={{ color: 'var(--text3)', opacity: 0.7 }}
-                                title={`Play from ${fmt(m.timestampMs)}`}
+                                className={clsx(
+                                  'flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] transition-all hover:scale-105 active:scale-95',
+                                  playbackUrl
+                                    ? 'hover:opacity-100 opacity-80'
+                                    : 'opacity-50 cursor-default',
+                                )}
+                                style={playbackUrl
+                                  ? { background: 'rgba(91,111,255,0.1)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.18)' }
+                                  : { color: 'var(--text3)' }
+                                }
+                                title={playbackUrl ? `Play from ${fmt(m.timestampMs)}` : `Timestamp: ${fmt(m.timestampMs)}`}
                               >
-                                <Play size={8} fill="currentColor" style={{ color: 'var(--accent)' }} />
+                                <Play size={7} fill="currentColor" />
                                 <span className="text-[9.5px] font-mono">{fmt(m.timestampMs)}</span>
                               </button>
                             </div>

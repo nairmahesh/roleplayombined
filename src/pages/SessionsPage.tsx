@@ -10,8 +10,9 @@ import { formatDistanceToNow, isWithinInterval, subDays, startOfDay } from 'date
 import {
   Phone, Monitor, Download, ClipboardList,
   Search, X, ChevronDown, MapPin, User as UserIcon,
-  SlidersHorizontal, Calendar,
+  SlidersHorizontal, Calendar, Film, Play,
 } from 'lucide-react';
+import { RECORDINGS_LS_KEY, type RecordingMeta } from '@/components/practice/OnlineMeetingRoom';
 import clsx from 'clsx';
 
 type ScoreRange = 'all' | 'pass' | 'fail' | 'high';
@@ -61,6 +62,16 @@ export function SessionsPage() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [showFilters, setShowFilters] = useState(false);
+  const [recordings, setRecordings] = useState<RecordingMeta[]>([]);
+  const [playbackMeta, setPlaybackMeta] = useState<RecordingMeta | null>(null);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(RECORDINGS_LS_KEY);
+      if (raw) setRecordings(JSON.parse(raw));
+    } catch { /* ignore */ }
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -375,6 +386,8 @@ export function SessionsPage() {
                 index={i}
                 isAdmin={isAdmin}
                 userLocationMap={userLocationMap}
+                recordingMeta={recordings.find(r => r.sessionId === session.id)}
+                onPlayRecording={meta => { setPlaybackMeta(meta); setVideoPlaying(false); }}
                 onClick={() => navigate(`/sessions/${session.id}/feedback`)}
               />
             ))}
@@ -396,6 +409,102 @@ export function SessionsPage() {
           )}
         </div>
       )}
+
+      {/* ── Recording playback modal ───────────────────────────────────────── */}
+      <AnimatePresence>
+        {playbackMeta && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
+            onClick={() => setPlaybackMeta(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.93, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.93, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="flex flex-col w-full max-w-2xl rounded-[20px] overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.8)]"
+              style={{ background: '#1c1e21' }}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-red-500/15 border border-red-500/25 flex items-center justify-center flex-shrink-0">
+                    <Film size={14} className="text-red-400" />
+                  </div>
+                  <div>
+                    <div className="text-[14px] font-bold text-white">Session Recording</div>
+                    <div className="text-[11px] text-white/50 mt-0.5">
+                      {new Date(playbackMeta.recordedAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                      {' · '}
+                      {(playbackMeta.sizeBytes / (1024 * 1024)).toFixed(1)} MB
+                      {' · '}
+                      {Math.floor(playbackMeta.durationMs / 60000)}:{String(Math.floor((playbackMeta.durationMs % 60000) / 1000)).padStart(2, '0')} duration
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const a = document.createElement('a');
+                      a.href = playbackMeta.objectUrl;
+                      a.download = `pitchiq-session-${playbackMeta.sessionId}.webm`;
+                      a.click();
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-white/10 text-[12px] text-white/70 hover:text-white hover:bg-white/[0.06] transition-colors"
+                  >
+                    <Download size={12} /> Download
+                  </button>
+                  <button
+                    onClick={() => setPlaybackMeta(null)}
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-white/50 hover:text-white hover:bg-white/[0.08] transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Video */}
+              <div className="relative bg-black" style={{ aspectRatio: '16/9' }}>
+                <video
+                  key={playbackMeta.objectUrl}
+                  src={playbackMeta.objectUrl}
+                  className="w-full h-full object-contain"
+                  onPlay={() => setVideoPlaying(true)}
+                  onPause={() => setVideoPlaying(false)}
+                  onEnded={() => setVideoPlaying(false)}
+                  controls
+                />
+                {!videoPlaying && (
+                  <div
+                    className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                    onClick={e => { e.stopPropagation(); (e.currentTarget.previousElementSibling as HTMLVideoElement)?.play(); }}
+                  >
+                    <div className="w-16 h-16 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center hover:bg-white/25 transition-colors">
+                      <Play size={26} className="text-white ml-1" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between px-5 py-3.5" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <p className="text-[11.5px] text-white/40">
+                  Recordings are stored in your browser. Download to keep permanently.
+                </p>
+                <button
+                  onClick={() => navigate(`/sessions/${playbackMeta.sessionId}/feedback`)}
+                  className="text-[12px] text-[#1a73e8] hover:text-[#4d96ef] font-medium transition-colors flex-shrink-0"
+                >
+                  View full scorecard →
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -407,12 +516,16 @@ function SessionRow({
   index,
   isAdmin,
   userLocationMap,
+  recordingMeta,
+  onPlayRecording,
   onClick,
 }: {
   session: Session;
   index: number;
   isAdmin: boolean;
   userLocationMap: Record<string, string>;
+  recordingMeta?: RecordingMeta;
+  onPlayRecording?: (meta: RecordingMeta) => void;
   onClick: () => void;
 }) {
   const score = session.totalScore;
@@ -440,7 +553,18 @@ function SessionRow({
             <TypeIcon size={14} style={{ color: 'var(--accent)' }} />
           </div>
           <div className="min-w-0">
-            <div className="text-[13.5px] font-medium truncate" style={{ color: 'var(--text)' }}>{personaName}</div>
+            <div className="flex items-center gap-2">
+              <span className="text-[13.5px] font-medium truncate" style={{ color: 'var(--text)' }}>{personaName}</span>
+              {recordingMeta && onPlayRecording && (
+                <button
+                  onClick={e => { e.stopPropagation(); onPlayRecording(recordingMeta); }}
+                  className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                  style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}
+                >
+                  <Play size={9} className="ml-px" />
+                </button>
+              )}
+            </div>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="text-[11px]" style={{ color: 'var(--text3)' }}>{FRAMEWORK_INFO[session.framework]?.label}</span>
               {repName && isAdmin && (
@@ -470,10 +594,21 @@ function SessionRow({
           <div className="w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(91,111,255,0.12)' }}>
             <TypeIcon size={14} style={{ color: 'var(--accent)' }} />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="text-[13.5px] font-medium truncate" style={{ color: 'var(--text)' }}>{personaName}</div>
             <div className="text-[11.5px] truncate" style={{ color: 'var(--text3)' }}>{personaTitle}</div>
           </div>
+          {recordingMeta && onPlayRecording && (
+            <button
+              onClick={e => { e.stopPropagation(); onPlayRecording(recordingMeta); }}
+              title="Play recording"
+              className="flex-shrink-0 flex items-center gap-1.5 px-2 py-1 rounded-[7px] border opacity-0 group-hover:opacity-100 transition-all hover:scale-105"
+              style={{ background: 'rgba(239,68,68,0.1)', borderColor: 'rgba(239,68,68,0.2)', color: '#f87171' }}
+            >
+              <Film size={11} />
+              <span className="text-[10.5px] font-medium">Rec</span>
+            </button>
+          )}
         </div>
 
         {/* Rep */}

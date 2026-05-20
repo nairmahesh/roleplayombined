@@ -7,7 +7,8 @@ import toast from 'react-hot-toast';
 import {
   Mic, MicOff, Video, VideoOff, Monitor, MonitorOff,
   Phone, BarChart3, Users, MessageSquare, X,
-  MonitorPlay, Circle, Square,
+  MonitorPlay, Circle, Square, Download, Play,
+  Film,
 } from 'lucide-react';
 import { sessionsApi, voiceApi } from '@/lib/api';
 import { ConversationProvider, useConversation } from '@elevenlabs/react';
@@ -18,6 +19,15 @@ import type { PersonaDisplay } from '@/components/practice/CallInterface';
 import clsx from 'clsx';
 
 const PERM_KEY = 'pitchiq-media-perm-granted';
+export const RECORDINGS_LS_KEY = 'pitchiq-recordings';
+
+export interface RecordingMeta {
+  sessionId: string;
+  recordedAt: string;
+  durationMs: number;
+  sizeBytes: number;
+  objectUrl: string; // blob URL — only valid in the tab where it was created
+}
 
 interface Message { role: 'user' | 'assistant'; content: string; timestampMs: number; }
 
@@ -152,11 +162,15 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
   const [isEnding, setIsEnding]             = useState(false);
   const [showAnalysisPrompt, setShowAnalysisPrompt] = useState(false);
   const [isRecording, setIsRecording]       = useState(false);
-  const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
+  const [recordingBlob, setRecordingBlob]   = useState<Blob | null>(null);
+  const [recordingObjectUrl, setRecordingObjectUrl] = useState<string | null>(null);
+  const [showRecordingReview, setShowRecordingReview] = useState(false);
+  const [videoPlaying, setVideoPlaying]     = useState(false);
   const [phase, setPhase]                   = useState<'joining' | 'active'>('joining');
 
   const localVideoRef    = useRef<HTMLVideoElement>(null);
   const screenVideoRef   = useRef<HTMLVideoElement>(null);
+  const reviewVideoRef   = useRef<HTMLVideoElement>(null);
   const transcriptRef    = useRef<HTMLDivElement>(null);
   const timerRef         = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef     = useRef(Date.now());
@@ -286,32 +300,57 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
   };
 
   // ── Local recording ───────────────────────────────────────────────────────
+  const recordingChunksRef = useRef<Blob[]>([]);
+
   const toggleRecording = () => {
     if (isRecording) {
       mediaRecorderRef.current?.stop();
       setIsRecording(false);
-      toast.success('Recording saved');
     } else {
       const tracks: MediaStreamTrack[] = [];
       if (localStream) tracks.push(...localStream.getTracks());
       if (screenStream) tracks.push(...screenStream.getTracks());
       if (tracks.length === 0) { toast.error('No media to record'); return; }
+      recordingChunksRef.current = [];
       const combined = new MediaStream(tracks);
-      const mr = new MediaRecorder(combined, { mimeType: 'video/webm' });
-      const chunks: Blob[] = [];
-      mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+        ? 'video/webm;codecs=vp9,opus'
+        : 'video/webm';
+      const mr = new MediaRecorder(combined, { mimeType });
+      mr.ondataavailable = e => { if (e.data.size > 0) recordingChunksRef.current.push(e.data); };
       mr.onstop = () => {
-        setRecordedChunks(chunks);
-        const blob = new Blob(chunks, { type: 'video/webm' });
+        const blob = new Blob(recordingChunksRef.current, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = `pitchiq-session-${sessionId}.webm`; a.click();
-        URL.revokeObjectURL(url);
+        setRecordingBlob(blob);
+        setRecordingObjectUrl(url);
+        // Persist metadata to localStorage for future reference
+        saveRecordingMeta(sessionId, blob.size, url);
+        toast.success('Recording ready — review it after the call');
       };
-      mr.start();
+      mr.start(1000); // collect in 1s chunks
       mediaRecorderRef.current = mr;
       setIsRecording(true);
       toast.success('Recording started');
     }
+  };
+
+  // Persist recording metadata (not the blob itself — too large for LS)
+  // We store the object URL (valid for this session tab) + size + timestamp
+  const saveRecordingMeta = (sid: string, size: number, url: string) => {
+    try {
+      const key = 'pitchiq-recordings';
+      const existing = JSON.parse(localStorage.getItem(key) || '[]') as RecordingMeta[];
+      const entry: RecordingMeta = {
+        sessionId: sid,
+        recordedAt: new Date().toISOString(),
+        durationMs: elapsed,
+        sizeBytes: size,
+        objectUrl: url, // valid only in this tab/session
+      };
+      // Keep latest 20 recordings
+      const updated = [entry, ...existing.filter(r => r.sessionId !== sid)].slice(0, 20);
+      localStorage.setItem(key, JSON.stringify(updated));
+    } catch { /* storage full */ }
   };
 
   // ── End call ───────────────────────────────────────────────────────────────
@@ -321,12 +360,27 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
     setIsEnding(true);
     try { endSession(); } catch {}
     if (timerRef.current) clearInterval(timerRef.current);
-    if (isRecording) mediaRecorderRef.current?.stop();
     localStream?.getTracks().forEach(t => t.stop());
     screenStream?.getTracks().forEach(t => t.stop());
     endDataRef.current = { durationSeconds: Math.round((Date.now() - startTimeRef.current) / 1000) };
-    setShowAnalysisPrompt(true);
-  }, [endSession, isRecording, localStream, screenStream]); // eslint-disable-line react-hooks/exhaustive-deps
+    // If actively recording, stop it — onstop will set recordingBlob and then we show review
+    if (isRecording && mediaRecorderRef.current) {
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(recordingChunksRef.current, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        setRecordingBlob(blob);
+        setRecordingObjectUrl(url);
+        saveRecordingMeta(sessionId, blob.size, url);
+        setShowRecordingReview(true); // show review before analysis
+      };
+      mediaRecorderRef.current.stop();
+    } else if (recordingBlob) {
+      // Recording already done — show review directly
+      setShowRecordingReview(true);
+    } else {
+      setShowAnalysisPrompt(true);
+    }
+  }, [endSession, isRecording, localStream, screenStream, recordingBlob, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { handleEndRef.current = handleEnd; });
 
@@ -636,7 +690,95 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
         </div>
       </div>
 
-      {/* Analysis prompt modal */}
+      {/* ── Recording review modal ── */}
+      <AnimatePresence>
+        {showRecordingReview && recordingObjectUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-20 flex items-center justify-center bg-black/85 backdrop-blur-md p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.93, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.93, opacity: 0 }}
+              className="flex flex-col gap-0 w-full max-w-2xl rounded-[20px] overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.8)]"
+              style={{ background: '#1c1e21' }}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-red-500/15 border border-red-500/25 flex items-center justify-center flex-shrink-0">
+                    <Film size={14} className="text-red-400" />
+                  </div>
+                  <div>
+                    <div className="text-[14px] font-bold text-white">Session Recording</div>
+                    <div className="text-[11px] text-white/50 mt-0.5">
+                      {recordingBlob ? `${(recordingBlob.size / (1024 * 1024)).toFixed(1)} MB` : ''} · {fmt(elapsed)} duration · saved locally
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* Download button */}
+                  <button
+                    onClick={() => {
+                      const a = document.createElement('a');
+                      a.href = recordingObjectUrl;
+                      a.download = `pitchiq-session-${sessionId}.webm`;
+                      a.click();
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-white/10 text-[12px] text-white/70 hover:text-white hover:bg-white/[0.06] transition-colors"
+                  >
+                    <Download size={12} /> Download
+                  </button>
+                </div>
+              </div>
+
+              {/* Video player */}
+              <div className="relative bg-black" style={{ aspectRatio: '16/9', maxHeight: '55vh' }}>
+                <video
+                  ref={reviewVideoRef}
+                  src={recordingObjectUrl}
+                  className="w-full h-full object-contain"
+                  onPlay={() => setVideoPlaying(true)}
+                  onPause={() => setVideoPlaying(false)}
+                  onEnded={() => setVideoPlaying(false)}
+                  controls
+                  style={{ maxHeight: '55vh' }}
+                />
+                {/* Play overlay (shows until first play) */}
+                {!videoPlaying && (
+                  <div
+                    className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                    onClick={() => reviewVideoRef.current?.play()}
+                  >
+                    <div className="w-16 h-16 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center hover:bg-white/25 transition-colors">
+                      <Play size={26} className="text-white ml-1" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer actions */}
+              <div className="flex items-center justify-between gap-3 px-5 py-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <p className="text-[11.5px] text-white/40 leading-relaxed">
+                  Recording is stored in your browser for this session. Download to keep it permanently.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { setShowRecordingReview(false); setShowAnalysisPrompt(true); }}
+                  className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-[10px] bg-[#1a73e8] text-white text-[13px] font-bold hover:bg-[#1557b0] transition-colors"
+                >
+                  Continue <BarChart3 size={13} />
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Analysis prompt modal ── */}
       <AnimatePresence>
         {showAnalysisPrompt && (
           <motion.div
@@ -648,7 +790,7 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-[#292a2d] border border-white/10 rounded-[20px] p-7 w-[340px] flex flex-col items-center gap-5 shadow-[0_20px_60px_rgba(0,0,0,0.7)]"
+              className="flex flex-col gap-5 items-center bg-[#292a2d] border border-white/10 rounded-[20px] p-7 w-[360px] shadow-[0_20px_60px_rgba(0,0,0,0.7)]"
             >
               <div className="w-11 h-11 rounded-full bg-[#1a73e8]/15 border border-[#1a73e8]/25 flex items-center justify-center">
                 <BarChart3 size={20} className="text-[#1a73e8]" />
@@ -656,10 +798,25 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
               <div className="text-center">
                 <div className="font-bold text-[16px] text-white mb-1.5">Analyze this session?</div>
                 <p className="text-[12.5px] text-white/60 leading-relaxed">Get AI feedback on your pitch, objection handling, and framework score.</p>
-                {recordedChunks.length > 0 && (
-                  <p className="text-[11.5px] text-green-400 mt-2">Recording saved to your device.</p>
-                )}
               </div>
+
+              {/* Recording summary chip */}
+              {recordingBlob && (
+                <div className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-[12px] border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.07)' }}>
+                  <Film size={14} className="text-red-400 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[12px] font-medium text-white/80">Recording saved</div>
+                    <div className="text-[10.5px] text-white/45">{(recordingBlob.size / (1024 * 1024)).toFixed(1)} MB · browser storage</div>
+                  </div>
+                  <button
+                    onClick={() => setShowRecordingReview(true)}
+                    className="text-[11px] text-[#1a73e8] hover:text-[#4d96ef] font-medium flex-shrink-0 transition-colors"
+                  >
+                    Review
+                  </button>
+                </div>
+              )}
+
               <div className="flex gap-3 w-full">
                 <button
                   type="button"
