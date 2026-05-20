@@ -226,7 +226,7 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   Expert: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
 };
 
-type GalleryTab = 'assigned' | 'mine';
+type GalleryTab = 'assigned' | 'mine' | 'library';
 type SetupMode = 'view' | 'edit';
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -702,30 +702,44 @@ export function PracticePage() {
 
           {/* Tab bar */}
           <div className="flex gap-0 border-b border-white/[0.07]">
-            {(['assigned', 'mine'] as const).map(tab => (
-              <button
-                key={tab}
-                onClick={() => setGalleryTab(tab)}
-                className={clsx(
-                  'flex items-center gap-2 px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors',
-                  galleryTab === tab
-                    ? 'border-accent text-white'
-                    : 'border-transparent text-white/75 hover:text-white/75'
-                )}
-              >
-                {tab === 'assigned' ? <><Lock size={12} /> Assigned to Me</> : <><User size={12} /> Created by Me</>}
-                {tab === 'assigned' && !loadingTeamRoleplays && (
-                  <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">
-                    {assignedRoleplays.length + TEMPLATES.length}
-                  </span>
-                )}
-                {tab === 'mine' && (
-                  <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">
-                    {myRoleplays.length}
-                  </span>
-                )}
-              </button>
-            ))}
+            <button
+              onClick={() => setGalleryTab('assigned')}
+              className={clsx(
+                'flex items-center gap-2 px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                galleryTab === 'assigned' ? 'border-accent text-white' : 'border-transparent text-white/75 hover:text-white',
+              )}
+            >
+              <Lock size={12} /> Assigned to Me
+              {!loadingTeamRoleplays && (
+                <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">
+                  {assignedRoleplays.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setGalleryTab('mine')}
+              className={clsx(
+                'flex items-center gap-2 px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                galleryTab === 'mine' ? 'border-accent text-white' : 'border-transparent text-white/75 hover:text-white',
+              )}
+            >
+              <User size={12} /> Created by Me
+              <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">
+                {myRoleplays.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setGalleryTab('library')}
+              className={clsx(
+                'flex items-center gap-2 px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                galleryTab === 'library' ? 'border-accent text-white' : 'border-transparent text-white/75 hover:text-white',
+              )}
+            >
+              <BookOpen size={12} /> Bot Library
+              <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-white/70">
+                {TEMPLATES.length}
+              </span>
+            </button>
           </div>
 
           {/* ── Assigned to Me ────────────────────────────────────────────── */}
@@ -773,29 +787,6 @@ export function PracticePage() {
                 )}
               </div>
 
-              {/* Built-in Templates */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <p className="text-[11px] font-semibold text-white/70 uppercase tracking-wider">Built-in Templates</p>
-                  <span className="text-[10px] text-white/65">Practice scenarios included with PitchIQ</span>
-                </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {TEMPLATES.map(t => (
-                    <GalleryCard
-                      key={t.id}
-                      avatarId={t.avatarId}
-                      name={t.label}
-                      subtitle={t.displayTitle}
-                      industry={t.industry}
-                      type={t.roleplayType}
-                      difficulty={t.difficulty}
-                      timeLimitMins={3}
-                      metaLabel="Built-in"
-                      onSelect={() => handleSelectTemplate(t)}
-                    />
-                  ))}
-                </div>
-              </div>
             </div>
           )}
 
@@ -859,6 +850,29 @@ export function PracticePage() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ── Bot Library ───────────────────────────────────────────────── */}
+          {galleryTab === 'library' && (
+            <div className="flex flex-col gap-4">
+              <p className="text-[12px] text-white/75">Ready-made practice scenarios included with PitchIQ. Jump straight in — no setup required.</p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {TEMPLATES.map(t => (
+                  <GalleryCard
+                    key={t.id}
+                    avatarId={t.avatarId}
+                    name={t.label}
+                    subtitle={t.displayTitle}
+                    industry={t.industry}
+                    type={t.roleplayType}
+                    difficulty={t.difficulty}
+                    timeLimitMins={3}
+                    metaLabel="Built-in"
+                    onSelect={() => handleSelectTemplate(t)}
+                  />
+                ))}
+              </div>
             </div>
           )}
         </div>
