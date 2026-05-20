@@ -415,6 +415,11 @@ function FrameworkSelector({ framework, setFramework, roleplayType, industry, di
           className={clsx('w-full appearance-none input-base font-medium pr-7 cursor-pointer', compact ? 'text-[12.5px]' : 'text-[13px]')}
           style={{ backgroundImage: 'none' }}
         >
+          {rec && (
+            <option key="ai-rec" value={rec.framework}>
+              ✦ AI Recommended — {FRAMEWORK_INFO[rec.framework].label} ({rec.confidence} confidence)
+            </option>
+          )}
           {(Object.keys(FRAMEWORK_INFO) as Framework[]).map(f => (
             <option key={f} value={f}>
               {FRAMEWORK_INFO[f].label} — {FRAMEWORK_INFO[f].components.slice(0, 2).join(', ')}{FRAMEWORK_INFO[f].components.length > 2 ? '…' : ''}
@@ -940,15 +945,15 @@ export function PracticePage() {
     <>
       {/* ── Gallery ──────────────────────────────────────────────────────────── */}
       {view === 'gallery' && (
-        <div className="flex flex-col gap-6 max-w-5xl">
-          <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-4 max-w-5xl">
+          <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="font-display text-xl font-bold">Practice</h2>
-              <p className="text-sm text-white/80 mt-0.5">Choose a scenario to begin</p>
+              <h2 className="font-display text-lg font-bold leading-tight">Practice</h2>
+              <p className="text-[12px] text-white/60 mt-0.5">Choose a scenario to begin</p>
             </div>
             <button
               onClick={handleCreateNew}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-[10px] text-[13px] font-semibold transition-all hover:scale-[1.03] active:scale-[0.97] flex-shrink-0"
+              className="flex items-center gap-2 px-4 py-2 rounded-[10px] text-[13px] font-semibold transition-all hover:scale-[1.03] active:scale-[0.97] flex-shrink-0"
               style={{ background: 'var(--accent)', color: '#fff', boxShadow: '0 2px 12px rgba(91,111,255,0.35)' }}
             >
               <Plus size={15} />
@@ -1408,127 +1413,9 @@ export function PracticePage() {
                 </div>
               </div>
 
-              {/* Right: step content + multi-persona panel */}
-              <div className="flex-1 min-w-0 flex flex-col xl:flex-row gap-4 items-start">
-
-                {/* Multi-Persona Mode panel (right side on xl) */}
-                <div className="w-full xl:w-72 xl:flex-shrink-0 xl:order-2 card p-4 flex flex-col gap-3">
-                  {/* Toggle header */}
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/70">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                      </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-semibold text-white">Multi-Persona Mode</div>
-                      <div className="text-[11px] text-white/60 mt-0.5 leading-snug">Add multiple AI attendees to simulate a panel or committee</div>
-                    </div>
-                    <button
-                      onClick={() => setMultiPersonaEnabled(v => !v)}
-                      role="switch"
-                      aria-checked={multiPersonaEnabled}
-                      className={clsx('relative flex-shrink-0 w-10 h-5 rounded-full transition-colors mt-0.5', multiPersonaEnabled ? 'bg-accent' : 'bg-white/[0.18]')}
-                    >
-                      <span className={clsx('absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform', multiPersonaEnabled ? 'translate-x-5' : 'translate-x-0')} />
-                    </button>
-                  </div>
-
-                  {/* Expanded content when enabled */}
-                  <AnimatePresence>
-                    {multiPersonaEnabled && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.18 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="flex flex-col gap-3 pt-1">
-                          {/* Group name */}
-                          <div>
-                            <label className="text-[9.5px] font-bold uppercase tracking-[1.2px] text-white/60 mb-1.5 block">Persona Group Name</label>
-                            <input
-                              value={personaGroupName}
-                              onChange={e => setPersonaGroupName(e.target.value)}
-                              placeholder="e.g. Sales Team, Procurement Committee"
-                              maxLength={80}
-                              className="input-base text-[12px] w-full"
-                            />
-                            <div className="text-right text-[9.5px] text-white/40 mt-0.5">{personaGroupName.length}/80</div>
-                          </div>
-
-                          {/* Attendees */}
-                          <div>
-                            <label className="text-[9.5px] font-bold uppercase tracking-[1.2px] text-white/60 mb-2 block">Attendees</label>
-                            {multiAttendees.length === 0 ? (
-                              <div className="text-[11.5px] text-white/40 italic py-2">No attendees added yet.</div>
-                            ) : (
-                              <div className="flex flex-col gap-1.5 mb-2">
-                                {multiAttendees.map(a => (
-                                  <div key={a.id} className="flex items-center gap-2 px-2.5 py-2 rounded-[9px]" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                                    <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0">
-                                      <AvatarDisplay avatarId={a.avatarId} size={28} />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="text-[12px] font-semibold truncate">{a.name}</div>
-                                      <div className="text-[10px] text-white/60 truncate">{a.title}</div>
-                                    </div>
-                                    {a.isHost && (
-                                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border border-accent/30 text-accent/80 flex-shrink-0">Host</span>
-                                    )}
-                                    <button onClick={() => removeAttendee(a.id)} className="text-white/40 hover:text-white/70 transition-colors flex-shrink-0">
-                                      <X size={11} />
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            <div className="flex gap-2">
-                              <button
-                                onClick={addAttendeeFromCurrent}
-                                disabled={!displayName || displayName === 'Custom Persona'}
-                                className="flex items-center gap-1.5 flex-1 justify-center px-3 py-2 rounded-[8px] border text-[11.5px] font-medium transition-all border-white/10 text-white/80 hover:text-white hover:bg-white/[0.05] disabled:opacity-30 disabled:cursor-not-allowed"
-                              >
-                                <BookOpen size={11} /> From Library
-                              </button>
-                              <button
-                                onClick={() => { setShowBuilder(true); }}
-                                className="flex items-center gap-1.5 flex-1 justify-center px-3 py-2 rounded-[8px] border text-[11.5px] font-medium transition-all border-white/10 text-white/80 hover:text-white hover:bg-white/[0.05]"
-                              >
-                                <Plus size={11} /> Create New
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Host avatar preview */}
-                          {multiAttendees.filter(a => a.isHost).length > 0 && (
-                            <div>
-                              <label className="text-[9.5px] font-bold uppercase tracking-[1.2px] text-white/60 mb-1.5 block">Host Avatar</label>
-                              <div className="flex gap-2 flex-wrap">
-                                {multiAttendees.map(a => (
-                                  <button
-                                    key={a.id}
-                                    onClick={() => setMultiAttendees(prev => prev.map(p => ({ ...p, isHost: p.id === a.id })))}
-                                    className={clsx('relative rounded-full overflow-hidden transition-all', a.isHost ? 'ring-2 ring-accent' : 'opacity-50 hover:opacity-80')}
-                                  >
-                                    <AvatarDisplay avatarId={a.avatarId} size={36} />
-                                    {a.isHost && (
-                                      <span className="absolute inset-0 flex items-center justify-center bg-black/30 text-[8px] font-bold text-white">HOST</span>
-                                    )}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Step content (takes remaining width) */}
-                <div className="flex-1 min-w-0 xl:order-1">
+              {/* Step content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
                 <AnimatePresence mode="wait" initial={false}>
 
                   {currentStep === 1 && (
@@ -1613,6 +1500,94 @@ export function PracticePage() {
                             ))}
                           </div>
                         )}
+                      </div>
+
+                      {/* Multi-Persona Mode */}
+                      <div className="rounded-[12px] border border-white/[0.08] overflow-hidden">
+                        <div className="flex items-center gap-3 px-4 py-3">
+                          <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/70">
+                              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[13px] font-semibold text-white">Multi-Persona Mode</div>
+                            <div className="text-[11px] text-white/55 mt-0.5">Simulate a panel or buying committee with multiple AI attendees</div>
+                          </div>
+                          <button
+                            onClick={() => setMultiPersonaEnabled(v => !v)}
+                            role="switch"
+                            aria-checked={multiPersonaEnabled}
+                            className={clsx('relative flex-shrink-0 w-10 h-5 rounded-full transition-colors', multiPersonaEnabled ? 'bg-accent' : 'bg-white/[0.18]')}
+                          >
+                            <span className={clsx('absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform', multiPersonaEnabled ? 'translate-x-5' : 'translate-x-0')} />
+                          </button>
+                        </div>
+                        <AnimatePresence>
+                          {multiPersonaEnabled && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.18 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="px-4 pb-4 border-t border-white/[0.06] flex flex-col gap-3 pt-3">
+                                <div>
+                                  <label className="text-[9.5px] font-bold uppercase tracking-[1.2px] text-white/60 mb-1.5 block">Group Name</label>
+                                  <input
+                                    value={personaGroupName}
+                                    onChange={e => setPersonaGroupName(e.target.value)}
+                                    placeholder="e.g. Sales Team, Procurement Committee"
+                                    maxLength={80}
+                                    className="input-base text-[12px] w-full"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[9.5px] font-bold uppercase tracking-[1.2px] text-white/60 mb-2 block">Attendees</label>
+                                  {multiAttendees.length === 0 ? (
+                                    <div className="text-[11.5px] text-white/40 italic py-1">No attendees added yet.</div>
+                                  ) : (
+                                    <div className="flex flex-col gap-1.5 mb-2">
+                                      {multiAttendees.map(a => (
+                                        <div key={a.id} className="flex items-center gap-2 px-2.5 py-2 rounded-[9px]" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                          <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0">
+                                            <AvatarDisplay avatarId={a.avatarId} size={28} />
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <div className="text-[12px] font-semibold truncate">{a.name}</div>
+                                            <div className="text-[10px] text-white/60 truncate">{a.title}</div>
+                                          </div>
+                                          {a.isHost && (
+                                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border border-accent/30 text-accent/80 flex-shrink-0">Host</span>
+                                          )}
+                                          <button onClick={() => removeAttendee(a.id)} className="text-white/40 hover:text-white/70 transition-colors flex-shrink-0">
+                                            <X size={11} />
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={addAttendeeFromCurrent}
+                                      disabled={!displayName || displayName === 'Custom Persona'}
+                                      className="flex items-center gap-1.5 flex-1 justify-center px-3 py-2 rounded-[8px] border text-[11.5px] font-medium transition-all border-white/10 text-white/80 hover:text-white hover:bg-white/[0.05] disabled:opacity-30 disabled:cursor-not-allowed"
+                                    >
+                                      <BookOpen size={11} /> From Library
+                                    </button>
+                                    <button
+                                      onClick={() => { setShowBuilder(true); }}
+                                      className="flex items-center gap-1.5 flex-1 justify-center px-3 py-2 rounded-[8px] border text-[11.5px] font-medium transition-all border-white/10 text-white/80 hover:text-white hover:bg-white/[0.05]"
+                                    >
+                                      <Plus size={11} /> Create New
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
 
                       <div className="flex justify-end pt-1 border-t border-white/[0.06]">
@@ -2322,8 +2297,8 @@ export function PracticePage() {
                     </motion.div>
                   )}
                 </AnimatePresence>
-                </div>{/* end step content inner */}
-              </div>{/* end step+panel flex row */}
+                </div>
+              </div>
             </div>
           )}
         </div>

@@ -283,7 +283,7 @@ export function AppShell() {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-7">
+        <main className="flex-1 overflow-y-auto px-4 pt-4 pb-4 md:px-7 md:pt-5 md:pb-7">
           <AnimatePresence initial={false}>
             <motion.div
               key={location.pathname}
