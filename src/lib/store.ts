@@ -106,6 +106,62 @@ export const usePlanStore = create<PlanState>()(
   )
 );
 
+// ─── Page Data Cache ──────────────────────────────────────────────────────────
+// Simple in-memory cache keyed by page. Data persists across navigations so
+// pages can render immediately with stale data while refreshing in background.
+type CacheEntry<T> = { data: T; at: number };
+
+interface PageCacheState {
+  dashboard: CacheEntry<unknown> | null;
+  sessions: CacheEntry<unknown> | null;
+  analytics: CacheEntry<unknown> | null;
+  leaderboard: Record<string, CacheEntry<unknown>>;
+  personas: CacheEntry<unknown> | null;
+  setCache: <K extends 'dashboard' | 'sessions' | 'analytics' | 'personas'>(key: K, data: unknown) => void;
+  setLeaderboardCache: (period: string, data: unknown) => void;
+  getCache: <T>(key: 'dashboard' | 'sessions' | 'analytics' | 'personas') => T | null;
+  getLeaderboardCache: <T>(period: string) => T | null;
+  invalidate: (key?: 'dashboard' | 'sessions' | 'analytics' | 'personas' | 'leaderboard') => void;
+}
+
+const CACHE_TTL_MS = 60_000; // 60 seconds — stale-while-revalidate window
+
+export const usePageCache = create<PageCacheState>((set, get) => ({
+  dashboard: null,
+  sessions: null,
+  analytics: null,
+  leaderboard: {},
+  personas: null,
+
+  setCache: (key, data) => set({ [key]: { data, at: Date.now() } }),
+  setLeaderboardCache: (period, data) =>
+    set(s => ({ leaderboard: { ...s.leaderboard, [period]: { data, at: Date.now() } } })),
+
+  getCache: <T>(key: 'dashboard' | 'sessions' | 'analytics' | 'personas') => {
+    const entry = get()[key] as CacheEntry<T> | null;
+    if (!entry) return null;
+    if (Date.now() - entry.at > CACHE_TTL_MS) return null;
+    return entry.data as T;
+  },
+
+  getLeaderboardCache: <T>(period: string) => {
+    const entry = get().leaderboard[period] as CacheEntry<T> | undefined;
+    if (!entry) return null;
+    if (Date.now() - entry.at > CACHE_TTL_MS) return null;
+    return entry.data as T;
+  },
+
+  invalidate: (key) => {
+    if (!key) {
+      set({ dashboard: null, sessions: null, analytics: null, leaderboard: {}, personas: null });
+    } else if (key === 'leaderboard') {
+      set({ leaderboard: {} });
+    } else {
+      set({ [key]: null });
+    }
+  },
+}));
+
 // ─── Session UI State ─────────────────────────────────────────────────────────
 interface SessionState {
   activeSessionId: string | null;

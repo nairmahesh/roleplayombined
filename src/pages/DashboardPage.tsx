@@ -12,7 +12,7 @@ import {
   TeamMemberSummary,
 } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
-import { useAuthStore } from '@/lib/store';
+import { useAuthStore, usePageCache } from '@/lib/store';
 import clsx from 'clsx';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -572,11 +572,17 @@ function AdminView({ stats, navigate }: { stats: DashboardStats; navigate: (p: s
 export function DashboardPage() {
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { getCache, setCache } = usePageCache();
+
+  const cached = getCache<DashboardStats>('dashboard');
+  const [stats, setStats] = useState<DashboardStats | null>(cached);
+  const [loading, setLoading] = useState(!cached);
 
   useEffect(() => {
-    analyticsApi.dashboard().then(setStats).finally(() => setLoading(false));
+    analyticsApi.dashboard().then(d => {
+      setStats(d);
+      setCache('dashboard', d);
+    }).finally(() => setLoading(false));
   }, []);
 
   if (loading) return <LoadingSkeleton />;

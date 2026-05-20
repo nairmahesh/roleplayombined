@@ -5,17 +5,25 @@ import { motion } from 'framer-motion';
 import { Trophy, Medal } from 'lucide-react';
 import { analyticsApi } from '@/lib/api';
 import { LeaderboardEntry } from '@/types';
-import { useAuthStore } from '@/lib/store';
+import { useAuthStore, usePageCache } from '@/lib/store';
 
 export function LeaderboardPage() {
   const user = useAuthStore(s => s.user);
-  const [leaders, setLeaders] = useState<LeaderboardEntry[]>([]);
+  const { getLeaderboardCache, setLeaderboardCache } = usePageCache();
   const [period, setPeriod] = useState<'all' | 'month'>('all');
-  const [loading, setLoading] = useState(true);
+
+  const cachedInit = getLeaderboardCache<LeaderboardEntry[]>(period);
+  const [leaders, setLeaders] = useState<LeaderboardEntry[]>(cachedInit ?? []);
+  const [loading, setLoading] = useState(!cachedInit);
 
   useEffect(() => {
-    setLoading(true);
-    analyticsApi.leaderboard(period).then(setLeaders).finally(() => setLoading(false));
+    const cached = getLeaderboardCache<LeaderboardEntry[]>(period);
+    if (cached) { setLeaders(cached); setLoading(false); }
+    else setLoading(true);
+    analyticsApi.leaderboard(period).then(d => {
+      setLeaders(d);
+      setLeaderboardCache(period, d);
+    }).finally(() => setLoading(false));
   }, [period]);
 
   const myRank = leaders.findIndex(l => l.user.id === user?.id) + 1;

@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { sessionsApi, usersApi } from '@/lib/api';
-import { useAuthStore } from '@/lib/store';
+import { useAuthStore, usePageCache } from '@/lib/store';
 import { Session, User, FRAMEWORK_INFO } from '@/types';
 import { formatDistanceToNow, isWithinInterval, subDays, startOfDay } from 'date-fns';
 import {
@@ -52,14 +52,18 @@ function scoreBadgeStyle(score?: number): React.CSSProperties {
   return { background: 'rgba(255,107,107,0.1)', color: 'var(--accent4)', border: '1px solid rgba(255,107,107,0.2)' };
 }
 
+interface SessionsCache { sessions: Session[]; teamUsers: User[] }
+
 export function SessionsPage() {
   const navigate = useNavigate();
   const { user: currentUser } = useAuthStore(s => ({ user: s.user }));
   const isAdmin = currentUser?.role === 'COMPANY_ADMIN' || currentUser?.role === 'MANAGER' || currentUser?.role === 'SUPER_ADMIN';
+  const { getCache, setCache } = usePageCache();
 
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [teamUsers, setTeamUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = getCache<SessionsCache>('sessions');
+  const [sessions, setSessions] = useState<Session[]>(cached?.sessions ?? []);
+  const [teamUsers, setTeamUsers] = useState<User[]>(cached?.teamUsers ?? []);
+  const [loading, setLoading] = useState(!cached);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [showFilters, setShowFilters] = useState(false);
   const [recordings, setRecordings] = useState<RecordingMeta[]>([]);
@@ -82,8 +86,11 @@ export function SessionsPage() {
             : sessionsApi.list({ status: 'COMPLETED', limit: 200 }),
           isAdmin ? usersApi.list() : Promise.resolve([]),
         ]);
-        setSessions(sessionData.sessions);
-        if (Array.isArray(userData)) setTeamUsers(userData);
+        const s = sessionData.sessions;
+        const u = Array.isArray(userData) ? userData : [];
+        setSessions(s);
+        setTeamUsers(u);
+        setCache('sessions', { sessions: s, teamUsers: u });
       } finally {
         setLoading(false);
       }

@@ -5,7 +5,7 @@ import { Plus, Search, Pencil, Trash2, Copy, BarChart3, X, Check, Sparkles, User
 import { personasApi } from '@/lib/api';
 import { PersonaBuilder } from '@/components/practice/PersonaBuilder';
 import { Persona, Framework } from '@/types';
-import { useAuthStore } from '@/lib/store';
+import { useAuthStore, usePageCache } from '@/lib/store';
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -598,9 +598,11 @@ function DeleteModal({ persona, onConfirm, onCancel, deleting }: {
 export function PersonasPage() {
   const { user } = useAuthStore(s => ({ user: s.user }));
   const isReadOnly = user?.role === 'AGENT';
+  const { getCache, setCache } = usePageCache();
 
-  const [personas, setPersonas] = useState<Persona[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = getCache<Persona[]>('personas');
+  const [personas, setPersonas] = useState<Persona[]>(cached ?? []);
+  const [loading, setLoading] = useState(!cached);
   const [search, setSearch] = useState('');
   const [filterDifficulty, setFilterDifficulty] = useState<string>('');
   const [filterType, setFilterType] = useState<'all' | 'preset' | 'custom'>('all');
@@ -615,7 +617,7 @@ export function PersonasPage() {
   const load = useCallback(() => {
     setLoading(true);
     personasApi.list()
-      .then(setPersonas)
+      .then(d => { setPersonas(d); setCache('personas', d); })
       .catch(() => toast.error('Failed to load personas'))
       .finally(() => setLoading(false));
   }, []);

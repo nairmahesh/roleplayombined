@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { useAuthStore } from '@/lib/store';
+import { useAuthStore, usePageCache } from '@/lib/store';
 import { sessionsApi, usersApi } from '@/lib/api';
 import { Session, User, FRAMEWORK_INFO } from '@/types';
 import { TrendingUp, Target, Clock, Trophy, Users, BarChart3, Activity } from 'lucide-react';
@@ -69,14 +69,18 @@ function ChartTooltip({ active, payload, label }: any) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
+interface AnalyticsCache { sessions: Session[]; users: User[] }
+
 export function AnalyticsPage() {
   const { user } = useAuthStore(s => ({ user: s.user }));
   const navigate = useNavigate();
   const isAdmin = user?.role === 'COMPANY_ADMIN' || user?.role === 'MANAGER' || user?.role === 'SUPER_ADMIN';
+  const { getCache, setCache } = usePageCache();
 
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = getCache<AnalyticsCache>('analytics');
+  const [sessions, setSessions] = useState<Session[]>(cached?.sessions ?? []);
+  const [users, setUsers] = useState<User[]>(cached?.users ?? []);
+  const [loading, setLoading] = useState(!cached);
   const [period, setPeriod] = useState<'7d' | '30d' | '90d'>('30d');
 
   useEffect(() => {
@@ -84,8 +88,11 @@ export function AnalyticsPage() {
       isAdmin ? sessionsApi.listAll({ status: 'COMPLETED', limit: 500 }) : sessionsApi.list({ status: 'COMPLETED', limit: 500 }),
       isAdmin ? usersApi.list() : Promise.resolve([]),
     ]).then(([sd, ud]) => {
-      setSessions(sd.sessions);
-      if (Array.isArray(ud)) setUsers(ud);
+      const s = sd.sessions;
+      const u = Array.isArray(ud) ? ud : [];
+      setSessions(s);
+      setUsers(u);
+      setCache('analytics', { sessions: s, users: u });
     }).finally(() => setLoading(false));
   }, [isAdmin]);
 
