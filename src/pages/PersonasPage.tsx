@@ -5,6 +5,7 @@ import { Plus, Search, Pencil, Trash2, Copy, BarChart3, X, Check, Sparkles, User
 import { personasApi } from '@/lib/api';
 import { PersonaBuilder } from '@/components/practice/PersonaBuilder';
 import { Persona, Framework } from '@/types';
+import { useAuthStore } from '@/lib/store';
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -422,9 +423,9 @@ function PersonaCard({
   persona, onEdit, onClone, onDelete, onAnalytics,
 }: {
   persona: Persona;
-  onEdit: (p: Persona) => void;
-  onClone: (p: Persona) => void;
-  onDelete: (p: Persona) => void;
+  onEdit?: (p: Persona) => void;
+  onClone?: (p: Persona) => void;
+  onDelete?: (p: Persona) => void;
   onAnalytics: (p: Persona) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -472,12 +473,12 @@ function PersonaCard({
         {/* Action buttons */}
         <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
           <ActionBtn icon={BarChart3} label="Analytics" onClick={() => onAnalytics(persona)} color="text-accent" />
-          <ActionBtn icon={Copy}     label="Clone"     onClick={() => onClone(persona)} />
-          {!persona.isPreset && (
-            <ActionBtn icon={Pencil}  label="Edit"      onClick={() => onEdit(persona)} />
+          {onClone && <ActionBtn icon={Copy} label="Clone" onClick={() => onClone(persona)} />}
+          {onEdit && !persona.isPreset && (
+            <ActionBtn icon={Pencil} label="Edit" onClick={() => onEdit(persona)} />
           )}
-          {!persona.isPreset && (
-            <ActionBtn icon={Trash2}  label="Delete"    onClick={() => onDelete(persona)} color="text-red-400/70 hover:text-red-400" />
+          {onDelete && !persona.isPreset && (
+            <ActionBtn icon={Trash2} label="Delete" onClick={() => onDelete(persona)} color="text-red-400/70 hover:text-red-400" />
           )}
         </div>
       </div>
@@ -595,6 +596,9 @@ function DeleteModal({ persona, onConfirm, onCancel, deleting }: {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export function PersonasPage() {
+  const { user } = useAuthStore(s => ({ user: s.user }));
+  const isReadOnly = user?.role === 'AGENT';
+
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -722,13 +726,15 @@ export function PersonasPage() {
             {DIFFICULTIES.map(d => <option key={d} value={d}>{d.toLowerCase()}</option>)}
           </select>
 
-          {/* Create button */}
-          <button
-            onClick={() => setShowBuilder(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-[10px] bg-accent text-white text-[13px] font-semibold hover:bg-accent/85 transition-all shadow-[0_4px_16px_rgba(91,111,255,0.25)] flex-shrink-0"
-          >
-            <Plus size={14} /> New Persona
-          </button>
+          {/* Create button — managers/admins only */}
+          {!isReadOnly && (
+            <button
+              onClick={() => setShowBuilder(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-[10px] bg-accent text-white text-[13px] font-semibold hover:bg-accent/85 transition-all shadow-[0_4px_16px_rgba(91,111,255,0.25)] flex-shrink-0"
+            >
+              <Plus size={14} /> New Persona
+            </button>
+          )}
         </div>
       </div>
 
@@ -743,7 +749,7 @@ export function PersonasPage() {
           <p className="text-[14px] text-white/45 font-medium">
             {search || filterDifficulty || filterType !== 'all' ? 'No personas match your filters' : 'No personas yet'}
           </p>
-          {!search && filterType !== 'preset' && (
+          {!isReadOnly && !search && filterType !== 'preset' && (
             <button onClick={() => setShowBuilder(true)} className="flex items-center gap-1.5 text-[12.5px] text-accent hover:text-accent/80 font-medium mt-1">
               <Plus size={13} /> Create your first persona
             </button>
@@ -755,9 +761,9 @@ export function PersonasPage() {
             <PersonaCard
               key={p.id}
               persona={p}
-              onEdit={setEditingPersona}
-              onClone={handleClone}
-              onDelete={setDeletingPersona}
+              onEdit={isReadOnly ? undefined : setEditingPersona}
+              onClone={isReadOnly ? undefined : handleClone}
+              onDelete={isReadOnly ? undefined : setDeletingPersona}
               onAnalytics={p => setAnalyticsPersonaId(p.id)}
             />
           ))}

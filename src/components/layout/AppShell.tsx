@@ -5,11 +5,7 @@ import { useAuthStore, useThemeStore } from '@/lib/store';
 import { authApi } from '@/lib/api';
 import { resetSocket } from '@/lib/socket';
 import toast from 'react-hot-toast';
-import {
-  LayoutDashboard, Play, ClipboardList,
-  Trophy, Users, Settings, LogOut, Target,
-  Building2, Globe, Menu, X, Sun, Moon, Zap, Bot,
-} from 'lucide-react';
+import { LayoutDashboard, Play, ClipboardList, Trophy, Users, Settings, LogOut, Target, Building2, Globe, Menu, X, Sun, Moon, Zap, Bot, BarChart3, CircleUser as UserCircle } from 'lucide-react';
 import clsx from 'clsx';
 
 type NavItem = {
@@ -28,7 +24,9 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard',   to: '/dashboard',  icon: LayoutDashboard, section: 'Overview', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
   { label: 'Practice',    to: '/practice',   icon: Play,            section: 'Overview', badge: 'New', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
   { label: 'Sessions',    to: '/sessions',   icon: ClipboardList,   section: 'Overview', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
+  { label: 'Analytics',   to: '/analytics',  icon: BarChart3,       section: 'Coaching', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
   { label: 'Leaderboard', to: '/leaderboard',icon: Trophy,          section: 'Coaching', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
+  { label: 'Personas',    to: '/personas',   icon: UserCircle,      section: 'Coaching', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
   { label: 'Team',        to: '/team',       icon: Users,           section: 'Admin', roles: ['COMPANY_ADMIN', 'MANAGER', 'SUPER_ADMIN'] },
   { label: 'Plan & Modules', to: '/settings/plan', icon: Zap,       section: 'Admin', roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'] },
   { label: 'Settings',    to: '/settings',   icon: Settings,        section: 'Admin', roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'] },
@@ -247,7 +245,9 @@ function PageTitle({ path }: { path: string }) {
     '/dashboard':               ['Dashboard',         'Welcome back'],
     '/practice':                ['Practice',          'Choose a scenario to begin'],
     '/sessions':                ['My Sessions',       'Your roleplay history'],
+    '/analytics':               ['Analytics',         'Performance insights and trends'],
     '/leaderboard':             ['Leaderboard',       'Company rankings'],
+    '/personas':                ['Personas',          'Browse and manage AI roleplay personas'],
     '/team':                    ['Team',              'Manage your agents'],
     '/settings/plan':           ['Plan & Modules',     'Manage your subscription and feature modules'],
     '/settings':                ['Settings',          'Platform configuration'],

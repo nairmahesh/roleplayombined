@@ -22,6 +22,7 @@ const CompanyDetailPage = lazy(() => import('@/pages/CompanyDetailPage').then(m 
 const SuperAdminStatsPage = lazy(() => import('@/pages/SuperAdminStatsPage').then(m => ({ default: m.SuperAdminStatsPage })));
 const PlanSettingsPage    = lazy(() => import('@/pages/PlanSettingsPage').then(m => ({ default: m.PlanSettingsPage })));
 const PersonasPage        = lazy(() => import('@/pages/PersonasPage').then(m => ({ default: m.PersonasPage })));
+const AnalyticsPage       = lazy(() => import('@/pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
 
 function PageLoader() {
   return (
@@ -101,6 +102,7 @@ export default function App() {
               <Route path="sessions"              element={<ErrorBoundary><SessionsPage /></ErrorBoundary>} />
               <Route path="sessions/:id/feedback" element={<ErrorBoundary><FeedbackPage /></ErrorBoundary>} />
               <Route path="leaderboard"           element={<ErrorBoundary><LeaderboardPage /></ErrorBoundary>} />
+              <Route path="analytics"             element={<ErrorBoundary><AnalyticsPage /></ErrorBoundary>} />
 
               {/* ── Team & Settings (admin) ──────────────────────────────── */}
               <Route
@@ -138,7 +140,7 @@ export default function App() {
               <Route
                 path="personas"
                 element={
-                  <RequireRole roles={['COMPANY_ADMIN', 'MANAGER']}>
+                  <RequireRole roles={['COMPANY_ADMIN', 'MANAGER', 'AGENT']}>
                     <ErrorBoundary><PersonasPage /></ErrorBoundary>
                   </RequireRole>
                 }
