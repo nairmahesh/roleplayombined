@@ -346,6 +346,91 @@ Tip: Reference her Bank Director talk early. She mentioned real-time payments be
   },
 ];
 
+// ── QuickLaunchTabs — tabbed context/knowledge/questions inside the launch modal ──
+
+function QuickLaunchTabs({
+  tabs,
+  personaContext,
+  userBriefing,
+  suggestedQuestions,
+}: {
+  tabs: { id: string; label: string }[];
+  personaContext: string;
+  userBriefing: KnowledgeBaseEntry[];
+  suggestedQuestions: string[];
+}) {
+  const [activeTab, setActiveTab] = useState(tabs[0]?.id ?? 'context');
+  const [expandedKb, setExpandedKb] = useState<string | null>(null);
+
+  return (
+    <div className="rounded-[12px] border border-white/[0.08] overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)' }}>
+      {/* Tab bar */}
+      <div className="flex border-b border-white/[0.07]">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={clsx(
+              'flex-1 px-3 py-2.5 text-[11.5px] font-semibold transition-all relative',
+              activeTab === tab.id
+                ? 'text-white'
+                : 'text-white/40 hover:text-white/70'
+            )}
+          >
+            {tab.label}
+            {activeTab === tab.id && (
+              <span className="absolute bottom-0 left-0 right-0 h-[2px] rounded-t" style={{ background: 'var(--accent)' }} />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab content */}
+      <div className="overflow-y-auto" style={{ maxHeight: '220px' }}>
+        {activeTab === 'context' && personaContext && (
+          <p className="text-[12.5px] text-white/80 leading-relaxed whitespace-pre-wrap p-4 pr-3">{personaContext}</p>
+        )}
+
+        {activeTab === 'knowledge' && (
+          <div className="flex flex-col divide-y divide-white/[0.05]">
+            {userBriefing.map((entry, i) => {
+              const isOpen = expandedKb === entry.id;
+              return (
+                <div key={entry.id}>
+                  <button
+                    onClick={() => setExpandedKb(isOpen ? null : entry.id)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-white/[0.03] transition-colors"
+                  >
+                    <span className="text-[10px] font-mono text-white/25 flex-shrink-0">{String(i + 1).padStart(2, '0')}</span>
+                    <span className="flex-1 text-[12.5px] font-medium text-white/80 truncate">{entry.label}</span>
+                    <ChevronDown size={12} className={clsx('flex-shrink-0 text-white/30 transition-transform', isOpen && 'rotate-180')} />
+                  </button>
+                  {isOpen && (
+                    <div className="px-4 pb-3 pt-0.5">
+                      <p className="text-[12px] text-white/65 leading-relaxed whitespace-pre-wrap">{entry.content}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {activeTab === 'questions' && (
+          <div className="flex flex-col gap-1.5 p-4">
+            {suggestedQuestions.map((q, i) => (
+              <div key={i} className="flex items-start gap-2 px-3 py-2 rounded-[9px] bg-white/[0.03] border border-white/[0.05]">
+                <span className="text-[10px] font-mono text-white/25 flex-shrink-0 mt-0.5">{String(i + 1).padStart(2, '0')}</span>
+                <span className="text-[12px] text-white/65 leading-snug">{q}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function pickFramework(roleplayType: string): Framework {
   const t = roleplayType.toLowerCase();
   if (t.includes('cold call') || t.includes('discovery')) return 'SPIN';
@@ -2783,33 +2868,26 @@ export function PracticePage() {
                   </div>
                 </div>
 
-                {/* Scenario context — scrollable when long */}
-                {personaContext && (
-                  <div className="bg-white/[0.03] border border-white/[0.07] rounded-[12px] p-4">
-                    <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wider mb-2">Scenario Context</p>
-                    <div className="overflow-y-auto" style={{ maxHeight: '180px' }}>
-                      <p className="text-[12.5px] text-white/80 leading-relaxed whitespace-pre-wrap pr-1">{personaContext}</p>
-                    </div>
-                  </div>
-                )}
+                {/* Tabbed: Scenario Context / Knowledge / Questions */}
+                {(() => {
+                  const hasKnowledge = userBriefing.length > 0;
+                  const hasQuestions = suggestedQuestions.length > 0;
+                  const tabs = [
+                    ...(personaContext ? [{ id: 'context', label: 'Scenario Context' }] : []),
+                    ...(hasKnowledge   ? [{ id: 'knowledge', label: `Knowledge (${userBriefing.length})` }] : []),
+                    ...(hasQuestions   ? [{ id: 'questions', label: 'Expect Questions' }] : []),
+                  ];
+                  if (tabs.length === 0) return null;
 
-                {/* Expect questions from the persona */}
-                {suggestedQuestions.length > 0 && (
-                  <div>
-                    <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wider mb-2">Expect questions like</p>
-                    <div className="flex flex-col gap-1.5">
-                      {suggestedQuestions.map((q, i) => (
-                        <div
-                          key={i}
-                          className="flex items-start gap-2 px-3 py-2 rounded-[9px] bg-white/[0.03] border border-white/[0.05]"
-                        >
-                          <span className="text-[10px] font-mono text-white/25 flex-shrink-0 mt-0.5">{String(i + 1).padStart(2, '0')}</span>
-                          <span className="text-[12px] text-white/65 leading-snug">{q}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                  return (
+                    <QuickLaunchTabs
+                      tabs={tabs}
+                      personaContext={personaContext}
+                      userBriefing={userBriefing}
+                      suggestedQuestions={suggestedQuestions}
+                    />
+                  );
+                })()}
               </div>
 
               {/* Sticky footer */}
