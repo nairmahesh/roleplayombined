@@ -74,28 +74,28 @@ export function VoicePickerModal({
   const pendingVoice  = pending ? voices.find(v => v.id === pending) : undefined;
 
   // ── Load account voice library on mount ─────────────────────────────────────
-  const loadLibrary = useCallback(async (force = false) => {
+  const loadLibrary = useCallback(async (_force = false) => {
     setLoadingLib(true);
     try {
       const res = await api.get('/voice/voices');
-      const raw: any[] = (res.data as any)?.voices ?? [];
+      const raw: any[] = Array.isArray(res.data) ? res.data : ((res.data as any)?.voices ?? []);
+      if (!raw.length) return; // nothing to merge — keep curated voices as-is
       const mapped: VoiceEntry[] = raw.map(v => ({
-        id:          v.voice_id,
+        id:          v.voice_id ?? v.id,
         name:        v.name ?? '',
-        gender:      norm(v.labels?.gender ?? ''),
-        accent:      v.labels?.accent ?? '',
+        gender:      norm(v.labels?.gender ?? v.gender ?? ''),
+        accent:      v.labels?.accent ?? v.accent ?? '',
         style:       v.labels?.use_case ?? v.labels?.description ?? '',
         preview_url: v.preview_url ?? undefined,
         source:      'library' as const,
       }));
       setVoices(prev => {
         const libIds = new Set(mapped.map(v => v.id));
-        // Replace curated entries that exist in library, add new library-only voices
         const kept = prev.filter(v => v.source !== 'library' && !libIds.has(v.id));
         return [...mapped, ...kept];
       });
     } catch {
-      // No API key or backend offline — curated list stays
+      // No API key or backend offline — curated list stays untouched
     } finally {
       setLoadingLib(false);
     }
@@ -271,7 +271,7 @@ export function VoicePickerModal({
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => { fetchedRegional.current.clear(); loadLibrary(true); }}
+              onClick={() => { fetchedRegional.current.clear(); setVoices(CURATED_VOICES.map(v => ({ ...v, source: 'curated' as const }))); loadLibrary(); }}
               disabled={isLoading}
               title="Reload voices"
               className="w-7 h-7 rounded-full border flex items-center justify-center transition-colors disabled:opacity-40"
@@ -427,8 +427,7 @@ export function VoicePickerModal({
             </button>
             <button
               onClick={saveSelection}
-              disabled={pending === value}
-              className="btn-primary text-[12px] px-4 py-1.5 gap-1.5 disabled:opacity-50"
+              className="btn-primary text-[12px] px-4 py-1.5 gap-1.5"
             >
               <Check size={11} strokeWidth={2.5} />
               {pending ? 'Save Voice' : 'Save (no voice)'}
