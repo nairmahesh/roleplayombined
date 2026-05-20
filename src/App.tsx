@@ -24,6 +24,7 @@ const SuperAdminAgentsPage = lazy(() => import('@/pages/SuperAdminAgentsPage').t
 const PlanSettingsPage    = lazy(() => import('@/pages/PlanSettingsPage').then(m => ({ default: m.PlanSettingsPage })));
 const PersonasPage        = lazy(() => import('@/pages/PersonasPage').then(m => ({ default: m.PersonasPage })));
 const AnalyticsPage       = lazy(() => import('@/pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
+const UsagePage           = lazy(() => import('@/pages/UsagePage').then(m => ({ default: m.UsagePage })));
 
 // Eagerly preload all main nav pages so subsequent navigations are instant
 startTransition(() => {
@@ -154,6 +155,16 @@ export default function App() {
                 element={
                   <RequireRole roles={['COMPANY_ADMIN', 'MANAGER', 'AGENT']}>
                     <ErrorBoundary><PersonasPage /></ErrorBoundary>
+                  </RequireRole>
+                }
+              />
+
+              {/* ── Usage (admin + superadmin) ──────────────────────────── */}
+              <Route
+                path="usage"
+                element={
+                  <RequireRole roles={['COMPANY_ADMIN', 'SUPER_ADMIN']}>
+                    <ErrorBoundary><UsagePage /></ErrorBoundary>
                   </RequireRole>
                 }
               />

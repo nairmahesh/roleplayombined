@@ -1272,20 +1272,114 @@ export interface UsageSummary {
   period: { days: number; since: string };
   totals: { totalCostUsd: number; geminiPromptTokens: number; geminiOutputTokens: number; ttsCharacters: number; convaiMinutes: number; callCount: number; requestCount: number };
   byService: { _id: string; costUsd: number; requestCount: number }[];
-  dailyTrend: { _id: string; costUsd: number }[];
+  dailyTrend: { _id: string; costUsd: number; sessions: number }[];
   recent: { service: string; operation: string; model?: string; promptTokens?: number; completionTokens?: number; characters?: number; durationSeconds?: number; estimatedCostUsd: number; createdAt: string }[];
   pricing: { geminiInputPerMToken: number; geminiOutputPerMToken: number; ttsPerKChars: number; convaiPerMinute: number };
 }
 
+export interface UserUsageStat {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  sessions: number;
+  callMinutes: number;
+  tokensUsed: number;
+  costUsd: number;
+  // admin-set caps
+  sessionCap: number | null;   // null = unlimited
+  minutesCap: number | null;
+  tokensCap: number | null;
+}
+
+export interface PlatformUsageSummary extends UsageSummary {
+  // superadmin-only fields
+  actualCostUsd: number;          // what we actually pay the APIs
+  billedCostUsd: number;          // what we charge companies (plan pricing)
+  marginUsd: number;
+  marginPct: number;
+  byCompany: { companyId: string; companyName: string; sessions: number; costUsd: number; billedUsd: number }[];
+}
+
+const LS_USER_CAPS = 'pitchiq-user-caps';
+
+function loadUserCaps(): Record<string, { sessionCap: number | null; minutesCap: number | null; tokensCap: number | null }> {
+  try { return JSON.parse(localStorage.getItem(LS_USER_CAPS) || '{}'); } catch { return {}; }
+}
+function saveUserCaps(caps: Record<string, { sessionCap: number | null; minutesCap: number | null; tokensCap: number | null }>) {
+  localStorage.setItem(LS_USER_CAPS, JSON.stringify(caps));
+}
+
+// Generate stable daily trend for last N days
+function makeDailyTrend(days: number) {
+  return Array.from({ length: days }, (_, i) => {
+    const d = new Date(Date.now() - (days - 1 - i) * 86400000);
+    const seed = d.getDate() + d.getMonth();
+    return {
+      _id: d.toISOString().slice(0, 10),
+      costUsd: +(0.05 + (seed % 7) * 0.04 + Math.sin(i * 0.6) * 0.03).toFixed(4),
+      sessions: 1 + (seed % 5),
+    };
+  });
+}
+
+const MOCK_USER_USAGE: Omit<UserUsageStat, 'sessionCap' | 'minutesCap' | 'tokensCap'>[] = [
+  { userId: '10000000-0000-0000-0000-000000000002', firstName: 'Company', lastName: 'Admin', email: 'admin@demo.com', role: 'COMPANY_ADMIN', sessions: 12, callMinutes: 48, tokensUsed: 24000, costUsd: 0.84 },
+  { userId: '10000000-0000-0000-0000-000000000003', firstName: 'Demo', lastName: 'Manager', email: 'manager@demo.com', role: 'MANAGER', sessions: 8, callMinutes: 32, tokensUsed: 16000, costUsd: 0.56 },
+  { userId: '10000000-0000-0000-0000-000000000004', firstName: 'Demo', lastName: 'Agent', email: 'agent@demo.com', role: 'AGENT', sessions: 24, callMinutes: 96, tokensUsed: 48000, costUsd: 1.68 },
+  { userId: 'agent-002', firstName: 'Sarah', lastName: 'Chen', email: 'sarah@demo.com', role: 'AGENT', sessions: 18, callMinutes: 72, tokensUsed: 36000, costUsd: 1.26 },
+  { userId: 'agent-003', firstName: 'Marcus', lastName: 'Lee', email: 'marcus@demo.com', role: 'AGENT', sessions: 6, callMinutes: 24, tokensUsed: 12000, costUsd: 0.42 },
+  { userId: 'agent-004', firstName: 'Priya', lastName: 'Nair', email: 'priya@demo.com', role: 'AGENT', sessions: 3, callMinutes: 12, tokensUsed: 6000, costUsd: 0.21 },
+];
+
 export const usageApi = {
-  getSummary: async (_days = 30, _companyId?: string): Promise<UsageSummary> => delay({
-    period: { days: 30, since: new Date(Date.now() - 30 * 86400000).toISOString() },
-    totals: { totalCostUsd: 4.82, geminiPromptTokens: 120000, geminiOutputTokens: 45000, ttsCharacters: 18000, convaiMinutes: 22, callCount: 44, requestCount: 88 },
-    byService: [{ _id: 'gemini', costUsd: 3.10, requestCount: 44 }, { _id: 'elevenlabs', costUsd: 1.72, requestCount: 44 }],
-    dailyTrend: [],
+  getSummary: async (days = 30, _companyId?: string): Promise<UsageSummary> => delay({
+    period: { days, since: new Date(Date.now() - days * 86400000).toISOString() },
+    totals: { totalCostUsd: 4.97, geminiPromptTokens: 142000, geminiOutputTokens: 52000, ttsCharacters: 21000, convaiMinutes: 284, callCount: 71, requestCount: 142 },
+    byService: [
+      { _id: 'gemini', costUsd: 3.10, requestCount: 71 },
+      { _id: 'elevenlabs_tts', costUsd: 0.95, requestCount: 71 },
+      { _id: 'elevenlabs_convai', costUsd: 0.92, requestCount: 71 },
+    ],
+    dailyTrend: makeDailyTrend(days),
     recent: [],
     pricing: { geminiInputPerMToken: 0.35, geminiOutputPerMToken: 1.05, ttsPerKChars: 0.18, convaiPerMinute: 0.10 },
   }),
+
+  getUserStats: async (_days = 30, _companyId?: string): Promise<UserUsageStat[]> => {
+    const caps = loadUserCaps();
+    return delay(MOCK_USER_USAGE.map(u => ({
+      ...u,
+      sessionCap: caps[u.userId]?.sessionCap ?? null,
+      minutesCap: caps[u.userId]?.minutesCap ?? null,
+      tokensCap:  caps[u.userId]?.tokensCap  ?? null,
+    })));
+  },
+
+  updateUserCap: async (userId: string, caps: { sessionCap: number | null; minutesCap: number | null; tokensCap: number | null }): Promise<void> => {
+    const all = loadUserCaps();
+    all[userId] = caps;
+    saveUserCaps(all);
+    return delay(undefined);
+  },
+
+  getPlatformSummary: async (days = 30): Promise<PlatformUsageSummary> => {
+    const base = await usageApi.getSummary(days);
+    return delay({
+      ...base,
+      actualCostUsd: 4.97,
+      billedCostUsd: 14.90,  // plan pricing charged to companies
+      marginUsd: 9.93,
+      marginPct: 66.6,
+      byCompany: [
+        { companyId: DEMO_COMPANY.id, companyName: 'Demo Company', sessions: 71, costUsd: 4.97, billedUsd: 14.90 },
+        { companyId: 'comp-2', companyName: 'Acme Corp', sessions: 43, costUsd: 2.89, billedUsd: 8.70 },
+        { companyId: 'comp-3', companyName: 'Nexus Sales', sessions: 29, costUsd: 1.94, billedUsd: 5.80 },
+        { companyId: 'comp-4', companyName: 'TechFlow Inc', sessions: 12, costUsd: 0.76, billedUsd: 2.30 },
+      ],
+    });
+  },
 };
 
 export const api = http;

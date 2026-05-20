@@ -5,7 +5,7 @@ import { useAuthStore, useThemeStore } from '@/lib/store';
 import { authApi } from '@/lib/api';
 import { resetSocket } from '@/lib/socket';
 import toast from 'react-hot-toast';
-import { LayoutDashboard, Play, ClipboardList, Trophy, Users, Settings, LogOut, Target, Building2, Globe, Menu, X, Sun, Moon, Zap, Bot, BarChart3, CircleUser as UserCircle, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, Play, ClipboardList, Trophy, Users, Settings, LogOut, Target, Building2, Globe, Menu, X, Sun, Moon, Zap, Bot, BarChart3, CircleUser as UserCircle, ChevronDown, Activity } from 'lucide-react';
 import clsx from 'clsx';
 
 type NavItem = {
@@ -28,6 +28,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Analytics',   to: '/analytics',  icon: BarChart3,       section: 'Insights', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
   { label: 'Leaderboard', to: '/leaderboard',icon: Trophy,          section: 'Insights', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
   { label: 'Team',        to: '/team',       icon: Users,           section: 'Admin', roles: ['COMPANY_ADMIN', 'MANAGER', 'SUPER_ADMIN'] },
+  { label: 'Usage',       to: '/usage',      icon: Activity,        section: 'Admin', roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'] },
   { label: 'Plan & Modules', to: '/settings/plan', icon: Zap,       section: 'Admin', roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'] },
   { label: 'Settings',    to: '/settings',   icon: Settings,        section: 'Admin', roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'] },
 ];
@@ -309,6 +310,7 @@ function PageTitle({ path }: { path: string }) {
     '/leaderboard':             ['Leaderboard',       'Company rankings'],
     '/personas':                ['Personas',          'Browse and manage AI roleplay personas'],
     '/team':                    ['Team',              'Manage your agents'],
+    '/usage':                   ['Usage & Costs',     'Token consumption, API costs, and user caps'],
     '/settings/plan':           ['Plan & Modules',     'Manage your subscription and feature modules'],
     '/settings':                ['Settings',          'Platform configuration'],
     '/superadmin/companies':    ['Companies',         'Platform-wide company management'],
