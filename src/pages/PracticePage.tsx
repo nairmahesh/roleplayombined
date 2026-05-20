@@ -271,7 +271,7 @@ export function PracticePage() {
   const [sessionType, setSessionType]   = useState<SessionType>('PHONE_CALL');
   const [aiCanEnd, setAiCanEnd]         = useState(true);
   const [endCondition, setEndCondition] = useState('');
-  const [timeLimitMins, setTimeLimitMins] = useState('');
+  const [timeLimitMins, setTimeLimitMins] = useState('3');
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   // ── AI generate panel ──────────────────────────────────────────────────────
@@ -382,7 +382,7 @@ export function PracticePage() {
     setObjections([]);
     setAiCanEnd(true);
     setEndCondition('');
-    setTimeLimitMins('');
+    setTimeLimitMins('3');
     setActiveTeamRoleplayId(null);
     autoGenRef.current = `${t.industry}::${t.roleplayType}`;
   };
@@ -404,7 +404,7 @@ export function PracticePage() {
     setObjections(sc.objections ?? []);
     setAiCanEnd(sc.aiCanEnd ?? true);
     setEndCondition(sc.endCondition ?? '');
-    setTimeLimitMins(sc.timeLimitMins ? String(sc.timeLimitMins) : '');
+    setTimeLimitMins(sc.timeLimitMins ? String(sc.timeLimitMins) : '3');
     setActiveTeamRoleplayId(tr.id);
     autoGenRef.current = `${sc.industry}::${sc.roleplayType}`;
   };
@@ -447,7 +447,7 @@ export function PracticePage() {
     setObjections([]);
     setAiCanEnd(true);
     setEndCondition('');
-    setTimeLimitMins('');
+    setTimeLimitMins('3');
     setActiveTeamRoleplayId(null);
     autoGenRef.current = '';
     openSetup('edit', 'New Roleplay', '', '');
@@ -686,6 +686,7 @@ export function PracticePage() {
                         industry={tr.scenarioConfig.industry}
                         type={tr.scenarioConfig.roleplayType}
                         difficulty={tr.scenarioConfig.difficulty}
+                        timeLimitMins={tr.scenarioConfig.timeLimitMins ?? 3}
                         metaLabel={`by ${tr.createdBy.firstName} ${tr.createdBy.lastName}`}
                         description={tr.description}
                         badge="Assigned"
@@ -712,6 +713,7 @@ export function PracticePage() {
                       industry={t.industry}
                       type={t.roleplayType}
                       difficulty={t.difficulty}
+                      timeLimitMins={3}
                       metaLabel="Built-in"
                       onSelect={() => handleSelectTemplate(t)}
                     />
@@ -763,6 +765,7 @@ export function PracticePage() {
                       industry={tr.scenarioConfig.industry}
                       type={tr.scenarioConfig.roleplayType}
                       difficulty={tr.scenarioConfig.difficulty}
+                      timeLimitMins={tr.scenarioConfig.timeLimitMins ?? 3}
                       metaLabel={`by ${tr.createdBy.firstName} ${tr.createdBy.lastName}`}
                       description={tr.description}
                       badge="Mine"
@@ -870,10 +873,19 @@ export function PracticePage() {
               {/* Right: session config + start */}
               <div className="flex flex-col gap-3 w-full md:w-72 md:flex-shrink-0">
                 <div className="card p-4">
-                  <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2.5">Sales Framework</p>
-                  <div className="flex items-center gap-2 mb-1.5">
+                  <div className="flex items-center justify-between mb-2.5">
+                    <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Sales Framework</p>
+                    {isManagerOrAdmin && (
+                      <button
+                        onClick={() => setSetupMode('edit')}
+                        className="text-[9.5px] text-accent/60 hover:text-accent transition-colors flex items-center gap-0.5"
+                      >
+                        <Pencil size={8} /> Change
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 mb-2">
                     <span className="text-[13px] font-bold text-white">{FRAMEWORK_INFO[framework].label}</span>
-                    <span className="text-[9px] font-semibold uppercase tracking-wide text-accent/70 bg-accent/[0.08] border border-accent/15 px-1.5 py-0.5 rounded">Auto</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {FRAMEWORK_INFO[framework].components.map((c, i) => (
@@ -916,8 +928,14 @@ export function PracticePage() {
                           <textarea value={endCondition} onChange={e => setEndCondition(e.target.value)} placeholder="When should AI end? (optional)" disabled={!aiCanEnd} className={clsx('input-base resize-none min-h-[60px] text-[12px]', !aiCanEnd && 'opacity-35 pointer-events-none')} />
                           <div className="flex items-center gap-2">
                             <span className="text-[12.5px] text-white/80 flex-1">Time limit</span>
-                            <input type="number" min={1} max={120} value={timeLimitMins} onChange={e => setTimeLimitMins(e.target.value)} placeholder="—" className="input-base w-16 text-[12.5px] text-center" />
-                            <span className="text-[12px] text-white/75">min</span>
+                            {isManagerOrAdmin ? (
+                              <>
+                                <input type="number" min={1} max={120} value={timeLimitMins} onChange={e => setTimeLimitMins(e.target.value)} placeholder="—" className="input-base w-16 text-[12.5px] text-center" />
+                                <span className="text-[12px] text-white/75">min</span>
+                              </>
+                            ) : (
+                              <span className="text-[12.5px] font-semibold text-white/80">{timeLimitMins || '3'} min</span>
+                            )}
                           </div>
                         </div>
                       </motion.div>
@@ -1395,32 +1413,76 @@ export function PracticePage() {
                         </div>
                       </div>
 
-                      {/* Framework + call format side by side */}
-                      <div className="grid grid-cols-2 gap-3">
+                      {/* Framework selector + call format */}
+                      <div className="flex flex-col gap-3">
                         <div>
                           <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Sales Framework</p>
-                          <div className="p-3 rounded-[10px] bg-white/[0.03] border border-white/[0.07]">
-                            <div className="flex items-center gap-2 mb-1.5">
-                              <span className="text-[12.5px] font-bold">{FRAMEWORK_INFO[framework].label}</span>
-                              <span className="text-[9px] font-semibold uppercase tracking-wide text-accent/70 bg-accent/[0.08] border border-accent/15 px-1.5 py-0.5 rounded">Auto</span>
-                            </div>
-                            <div className="flex flex-wrap gap-1">
-                              {FRAMEWORK_INFO[framework].components.map((c, i) => (
-                                <span key={i} className="text-[9.5px] px-1.5 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.07] text-white/75">{i + 1}. {c}</span>
-                              ))}
-                            </div>
+                          <div className="grid grid-cols-3 gap-1.5">
+                            {(Object.keys(FRAMEWORK_INFO) as Framework[]).map(f => (
+                              <button
+                                key={f}
+                                onClick={() => setFramework(f)}
+                                className={clsx(
+                                  'flex flex-col items-center gap-0.5 px-2 py-2 rounded-[9px] border text-center transition-all',
+                                  framework === f
+                                    ? 'border-accent bg-accent/[0.10] text-accent'
+                                    : 'border-white/[0.08] bg-white/[0.02] text-white/70 hover:border-white/20 hover:text-white'
+                                )}
+                              >
+                                <span className="text-[11.5px] font-bold leading-tight">{FRAMEWORK_INFO[f].label}</span>
+                                <span className="text-[8.5px] text-white/45 leading-tight line-clamp-1">
+                                  {FRAMEWORK_INFO[f].components.slice(0, 2).join(', ')}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                          {/* Component pills for selected */}
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {FRAMEWORK_INFO[framework].components.map((c, i) => (
+                              <span key={i} className="text-[9px] px-1.5 py-0.5 rounded-full bg-accent/[0.06] border border-accent/15 text-accent/70">{i + 1}. {c}</span>
+                            ))}
                           </div>
                         </div>
+
                         <div>
                           <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Call Format</p>
-                          <div className="flex flex-col gap-2">
-                            <button onClick={() => setSessionType('PHONE_CALL')} className={clsx('flex items-center gap-2 px-3 py-2 rounded-[8px] border text-[12px] font-medium transition-all', sessionType === 'PHONE_CALL' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/80 hover:text-white hover:bg-white/[0.05]')}>
-                              <Phone size={12} /> Phone Call
+                          <div className="flex gap-2">
+                            <button onClick={() => setSessionType('PHONE_CALL')} className={clsx('flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-[8px] border text-[12px] font-medium transition-all', sessionType === 'PHONE_CALL' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/80 hover:text-white hover:bg-white/[0.05]')}>
+                              <Phone size={12} /> Phone
                             </button>
-                            <button onClick={() => setSessionType('ONLINE_MEETING')} className={clsx('flex items-center gap-2 px-3 py-2 rounded-[8px] border text-[12px] font-medium transition-all', sessionType === 'ONLINE_MEETING' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/80 hover:text-white hover:bg-white/[0.05]')}>
-                              <Monitor size={12} /> Online Meeting
+                            <button onClick={() => setSessionType('ONLINE_MEETING')} className={clsx('flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-[8px] border text-[12px] font-medium transition-all', sessionType === 'ONLINE_MEETING' ? 'bg-accent/10 border-accent text-accent' : 'border-white/10 text-white/80 hover:text-white hover:bg-white/[0.05]')}>
+                              <Monitor size={12} /> Online
                             </button>
                           </div>
+                        </div>
+                      </div>
+
+                      {/* Time limit — always visible, manager-editable */}
+                      <div className="flex items-center justify-between px-3 py-2.5 rounded-[10px] border border-white/[0.07] bg-white/[0.02]">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[12px] font-medium text-white/80">Time Limit</span>
+                          {!isManagerOrAdmin && (
+                            <span className="flex items-center gap-0.5 text-[9px] text-white/40 border border-white/[0.08] px-1.5 py-0.5 rounded">
+                              <Lock size={7} /> Manager only
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isManagerOrAdmin ? (
+                            <>
+                              <input
+                                type="number"
+                                min={1}
+                                max={120}
+                                value={timeLimitMins}
+                                onChange={e => setTimeLimitMins(e.target.value)}
+                                className="input-base w-14 text-[12.5px] text-center"
+                              />
+                              <span className="text-[12px] text-white/60">min</span>
+                            </>
+                          ) : (
+                            <span className="text-[13px] font-bold text-white/80">{timeLimitMins || '3'} min</span>
+                          )}
                         </div>
                       </div>
 
@@ -1447,11 +1509,6 @@ export function PracticePage() {
                                   </button>
                                 </div>
                                 <textarea value={endCondition} onChange={e => setEndCondition(e.target.value)} placeholder="Describe when AI should end call (optional)…" disabled={!aiCanEnd} className={clsx('input-base resize-none min-h-[60px] text-[12px]', !aiCanEnd && 'opacity-35 pointer-events-none')} />
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[12.5px] text-white/80 flex-1">Time limit</span>
-                                  <input type="number" min={1} max={120} value={timeLimitMins} onChange={e => setTimeLimitMins(e.target.value)} placeholder="—" className="input-base w-16 text-[12.5px] text-center" />
-                                  <span className="text-[12px] text-white/75">min</span>
-                                </div>
                               </div>
                             </motion.div>
                           )}
@@ -1706,7 +1763,7 @@ export function PracticePage() {
 
 function GalleryCard({
   avatarId, name, subtitle, industry, type, difficulty,
-  metaLabel, description, badge, canEdit,
+  timeLimitMins, metaLabel, description, badge, canEdit,
   onSelect, onEdit, onDelete,
 }: {
   avatarId?: string;
@@ -1715,6 +1772,7 @@ function GalleryCard({
   industry: string;
   type: string;
   difficulty: string;
+  timeLimitMins?: number | null;
   metaLabel?: string;
   description?: string;
   badge?: string;
@@ -1729,6 +1787,8 @@ function GalleryCard({
     Hard:   'text-accent-4 bg-accent-4/10 border-accent-4/20',
     Expert: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
   } as Record<string, string>)[difficulty] ?? 'text-white/80 bg-white/5 border-white/10';
+
+  const displayMins = timeLimitMins ?? 3;
 
   return (
     <div
@@ -1745,7 +1805,11 @@ function GalleryCard({
             <div className="font-semibold text-[13.5px] leading-snug truncate">{name}</div>
             {subtitle && <div className="text-[12px] text-white/70 mt-0.5 truncate">{subtitle}</div>}
           </div>
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* Time limit badge */}
+            <span className="flex items-center gap-0.5 text-[9.5px] px-1.5 py-0.5 rounded-full border border-white/[0.1] bg-white/[0.04] text-white/55 font-medium flex-shrink-0">
+              {displayMins}m
+            </span>
             {canEdit && (
               <>
                 {onEdit && (

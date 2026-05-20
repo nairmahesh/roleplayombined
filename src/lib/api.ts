@@ -8,6 +8,7 @@ import type {
   TeamRoleplay,
   Framework,
   CompanyDetail,
+  EvaluationPrompt,
 } from '@/types';
 
 const delay = (ms = 300) => new Promise(r => setTimeout(r, ms));
@@ -152,6 +153,52 @@ const MOCK_SESSIONS: Session[] = [
         'Qualify decision criteria before jumping to the demo request',
       ],
       proTip: 'Use the "impact gap" close: after uncovering pain, ask "What happens if this is still unsolved in 6 months?" — it creates urgency without pressure and lets the prospect sell themselves on the timeline.',
+      scorecardGroups: [
+        {
+          group: 'Introduction & Agenda',
+          maxPoints: 2,
+          earnedPoints: 1,
+          criteria: [
+            { question: 'Did the seller discuss the agenda and ask for prospect\'s input?', passed: false, reasoning: 'Rep jumped straight into pitch without setting a mutual agenda or asking what Sarah wanted to cover.' },
+            { question: 'Did the seller introduce an Upfront Contract?', passed: true, reasoning: 'Rep established the purpose and asked for 30 seconds before proceeding — implicit upfront contract.' },
+          ],
+        },
+        {
+          group: 'Pain & Metrics Discovery',
+          maxPoints: 2,
+          earnedPoints: 2,
+          criteria: [
+            { question: 'Did the seller uncover specific pain points?', passed: true, reasoning: 'Three distinct pains uncovered: slow ramp, CRM tracking vs skill gaps, and 3hrs/week coaching waste.' },
+            { question: 'Did the seller uncover relevant metrics?', passed: true, reasoning: 'Rep quantified the 20% attainment lift and helped prospect calculate the weekly coaching cost.' },
+          ],
+        },
+        {
+          group: 'Objection Handling',
+          maxPoints: 1,
+          earnedPoints: 0,
+          criteria: [
+            { question: 'Did the seller handle objections effectively using the FFF framework?', passed: false, reasoning: '"Pricing seems steep" was deflected with a pivot rather than acknowledged and reframed with ROI evidence.' },
+          ],
+        },
+        {
+          group: 'Customer Reference & Value',
+          maxPoints: 2,
+          earnedPoints: 1,
+          criteria: [
+            { question: 'Did the seller present a customer reference?', passed: true, reasoning: 'Rep cited companies achieving 20% quota attainment lift as social proof.' },
+            { question: 'Did the seller explore the prospect\'s goal-setting framework?', passed: false, reasoning: 'Rep did not ask how the CRO or Sarah measures team success or sets targets.' },
+          ],
+        },
+        {
+          group: 'Closing',
+          maxPoints: 2,
+          earnedPoints: 1,
+          criteria: [
+            { question: 'Did the seller revisit the upfront contract and define next steps?', passed: true, reasoning: 'Closed with a specific 30-minute meeting ask with named stakeholders and a benchmark report offer.' },
+            { question: 'Did the seller qualify out or in effectively?', passed: false, reasoning: 'Rep did not explicitly confirm this is a qualified opportunity or establish a go/no-go milestone.' },
+          ],
+        },
+      ],
     }),
     timelineEvents: [
       { id: 'te1', type: 'GOOD', timestampMs: 5000, title: 'Permission-based opener', description: 'Opened with a specific research reference (Series B, enterprise expansion) and asked for 30 seconds. This signals preparation and respects the prospect\'s time.', suggestion: undefined, transcriptRef: 'I was looking at TechCorp\'s recent expansion into the enterprise segment' },
@@ -456,6 +503,362 @@ export const teamRoleplaysApi = {
   create: async (data: any) => { await delay(300); return { ...data, id: `tr-${Date.now()}`, isActive: true, createdById: 'u1', createdBy: { id: 'u1', firstName: 'Alex', lastName: 'Rivera' }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }; },
   update: async (id: string, data: any) => { await delay(200); return { id, ...data }; },
   delete: async (_id: string) => { await delay(200); },
+};
+
+// ── Evaluation Prompts API ────────────────────────────────────────────────────
+
+const DEFAULT_EVALUATION_PROMPTS: EvaluationPrompt[] = [
+  {
+    id: 'ep-cold-call',
+    companyId: undefined,
+    roleplayType: 'cold_call',
+    displayName: 'Cold Call',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    scoringCriteria: [
+      {
+        group: 'Opener',
+        criteria: [
+          { question: 'Permission-based opener?', hint: 'Did the rep ask for a brief moment before pitching? e.g. "Do you have 30 seconds?"' },
+          { question: 'Used research on prospect?', hint: 'Referenced something specific about the prospect or company to personalise the opener.' },
+        ],
+      },
+      {
+        group: 'Discovery',
+        criteria: [
+          { question: 'SDR asked for preconceptions of product?', hint: 'Did the rep ask about the prospect\'s current awareness or opinion before pitching?' },
+        ],
+      },
+      {
+        group: 'Social Proof',
+        criteria: [
+          { question: 'Provided social proof?', hint: 'Cited a relevant customer reference, metric, or case study.' },
+          { question: 'Asked if social proof was relevant?', hint: 'Checked whether the social proof was relevant to this specific prospect.' },
+        ],
+      },
+      {
+        group: 'Takeaway',
+        criteria: [
+          { question: 'Re-confirmed that the time works for the prospect?', hint: 'Checked the timing still works before closing the conversation.' },
+          { question: 'Asked for success criteria for next call?', hint: 'Asked what a successful next call or meeting would look like.' },
+        ],
+      },
+      {
+        group: 'Closing',
+        criteria: [
+          { question: 'Next steps agreed upon?', hint: 'Both parties agreed on a clear, specific next step.' },
+          { question: 'Follow-up meeting booked?', hint: 'A specific date/time for a follow-up was confirmed.' },
+        ],
+      },
+    ],
+    promptTemplate: `You are an expert SDR coach evaluating a cold call roleplay.
+
+SCORECARD — for each criterion, determine if it was done (passed: true) or not (passed: false) and provide one sentence of evidence from the transcript.
+
+Criterion Groups:
+- Opener (2 pts): Permission-based opener? | Used research on prospect?
+- Discovery (1 pt): Asked for preconceptions of product?
+- Social Proof (2 pts): Provided social proof? | Asked if social proof was relevant?
+- Takeaway (2 pts): Re-confirmed timing works? | Asked for success criteria for next call?
+- Closing (2 pts): Next steps agreed upon? | Follow-up meeting booked?
+
+TRANSCRIPT:
+{transcript}
+
+Return ONLY valid JSON:
+{
+  "overallScore": <0-100>,
+  "overallFeedback": "<2-3 sentence summary>",
+  "scorecardGroups": [
+    {
+      "group": "<group name>",
+      "maxPoints": <int>,
+      "earnedPoints": <int>,
+      "criteria": [
+        { "question": "<criterion question>", "passed": <true|false>, "reasoning": "<1 sentence from transcript>" }
+      ]
+    }
+  ],
+  "timelineEvents": [
+    { "type": "<ISSUE|GOOD|WARNING|NEUTRAL>", "timestampMs": <ms>, "title": "<short>", "description": "<what happened>", "suggestion": "<coaching tip>", "transcriptRef": "<exact quote>", "betterResponse": "<alternative or null>" }
+  ],
+  "strengths": ["<strength>"],
+  "improvements": ["<improvement>"],
+  "coachingTip": "<single most impactful tip>"
+}`,
+  },
+  {
+    id: 'ep-discovery-call',
+    companyId: undefined,
+    roleplayType: 'discovery_call',
+    displayName: 'Discovery Call',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    scoringCriteria: [
+      {
+        group: 'Introduction & Agenda',
+        criteria: [
+          { question: 'Did the seller discuss the agenda and ask for prospect\'s input?', hint: 'Set an agenda AND asked the prospect if there\'s anything they want to cover.' },
+          { question: 'Did the seller introduce an Upfront Contract?', hint: 'Established mutual expectations: what will happen, what the outcome will be.' },
+        ],
+      },
+      {
+        group: 'Pain & Metrics Discovery',
+        criteria: [
+          { question: 'Did the seller uncover specific pain points?', hint: 'At least one concrete, specific problem uncovered.' },
+          { question: 'Did the seller uncover relevant metrics?', hint: 'Quantified impact — time lost, revenue lost, cost, or other measurable metric.' },
+        ],
+      },
+      {
+        group: 'Objection Handling',
+        criteria: [
+          { question: 'Did the seller handle objections effectively using the FFF framework?', hint: 'Acknowledged, empathised (Feel-Felt-Found), then reframed any objection raised.' },
+        ],
+      },
+      {
+        group: 'Customer Reference & Value',
+        criteria: [
+          { question: 'Did the seller present a customer reference?', hint: 'Referenced a similar customer and their outcome.' },
+          { question: 'Did the seller explore the prospect\'s goal-setting framework?', hint: 'Asked how the prospect measures success or sets targets.' },
+        ],
+      },
+      {
+        group: 'Closing',
+        criteria: [
+          { question: 'Did the seller revisit the upfront contract and define next steps?', hint: 'Closed by referencing what was agreed at the start and confirming concrete next steps.' },
+          { question: 'Did the seller qualify out or in effectively?', hint: 'Reached a clear conclusion about whether this is a qualified opportunity.' },
+        ],
+      },
+    ],
+    promptTemplate: `You are an expert AE coach evaluating a discovery call roleplay.
+
+SCORECARD — for each criterion, determine if it was done (passed: true) or not (passed: false) and provide one sentence of evidence.
+
+Criterion Groups:
+- Introduction & Agenda (2 pts): Discussed agenda and asked for prospect input? | Introduced an Upfront Contract?
+- Pain & Metrics Discovery (2 pts): Uncovered specific pain points? | Uncovered relevant metrics?
+- Objection Handling (1 pt): Handled objections using FFF (Feel-Felt-Found) or equivalent?
+- Customer Reference & Value (2 pts): Presented a customer reference? | Explored prospect's goal-setting framework?
+- Closing (2 pts): Revisited upfront contract and defined next steps? | Qualified in or out effectively?
+
+TRANSCRIPT:
+{transcript}
+
+Return ONLY valid JSON:
+{
+  "overallScore": <0-100>,
+  "overallFeedback": "<2-3 sentence summary>",
+  "scorecardGroups": [...],
+  "timelineEvents": [...],
+  "strengths": ["..."],
+  "improvements": ["..."],
+  "coachingTip": "<single most impactful tip>"
+}`,
+  },
+  {
+    id: 'ep-sales-pitch',
+    companyId: undefined,
+    roleplayType: 'sales_pitch',
+    displayName: 'Sales Pitch',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    scoringCriteria: [
+      {
+        group: 'Value Proposition',
+        criteria: [
+          { question: 'Did the seller open with a clear, specific value proposition?', hint: 'Value stated in prospect\'s language, not feature-speak.' },
+          { question: 'Did the seller differentiate from competition?', hint: 'Explicitly addressed why they are different from alternatives.' },
+        ],
+      },
+      {
+        group: 'Business Case',
+        criteria: [
+          { question: 'Did the seller build a ROI / business case?', hint: 'Quantified the return or cost of inaction in prospect\'s terms.' },
+          { question: 'Did the seller use a customer reference or proof point?', hint: 'Referenced a relevant case study or social proof.' },
+        ],
+      },
+      {
+        group: 'Objection Handling',
+        criteria: [
+          { question: 'Did the seller handle questions and objections confidently?', hint: 'Acknowledged, explored, and reframed without becoming defensive.' },
+        ],
+      },
+      {
+        group: 'Closing',
+        criteria: [
+          { question: 'Did the seller define a clear next step?', hint: 'Specific, time-bound next action agreed.' },
+          { question: 'Did the seller confirm prospect\'s commitment to next step?', hint: 'Prospect verbally agreed to the proposed next step.' },
+        ],
+      },
+    ],
+    promptTemplate: `You are an expert sales coach evaluating a sales pitch roleplay.
+
+SCORECARD — judge each criterion pass/fail with one sentence of evidence.
+
+Criterion Groups:
+- Value Proposition (2 pts): Clear specific value prop? | Differentiated from competition?
+- Business Case (2 pts): Built ROI/business case? | Used customer reference?
+- Objection Handling (1 pt): Handled objections confidently?
+- Closing (2 pts): Defined clear next step? | Confirmed prospect commitment?
+
+TRANSCRIPT:
+{transcript}
+
+Return valid JSON with overallScore, overallFeedback, scorecardGroups, timelineEvents, strengths, improvements, coachingTip.`,
+  },
+  {
+    id: 'ep-objection-handling',
+    companyId: undefined,
+    roleplayType: 'objection_handling',
+    displayName: 'Objection Handling',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    scoringCriteria: [
+      {
+        group: 'Objection Response',
+        criteria: [
+          { question: 'Did the seller acknowledge the objection without defending?', hint: 'Validated the concern before responding.' },
+          { question: 'Did the seller explore the root cause with a question?', hint: 'Asked a clarifying question to understand what\'s driving the objection.' },
+          { question: 'Did the seller provide relevant evidence or reframe?', hint: 'Addressed the objection with a specific fact, story, or reframe.' },
+          { question: 'Did the seller confirm the objection was resolved?', hint: 'Checked that the prospect was satisfied with the response.' },
+          { question: 'Did the seller maintain momentum toward next step?', hint: 'Moved the conversation forward after resolving the objection.' },
+        ],
+      },
+    ],
+    promptTemplate: `You are an expert sales coach evaluating an objection handling roleplay.
+
+SCORECARD — judge each criterion pass/fail with one sentence of evidence.
+
+Criterion Group:
+- Objection Response (5 pts): Acknowledged without defending? | Explored root cause? | Provided relevant evidence/reframe? | Confirmed objection resolved? | Maintained momentum?
+
+TRANSCRIPT:
+{transcript}
+
+Return valid JSON with overallScore, overallFeedback, scorecardGroups, timelineEvents, strengths, improvements, coachingTip.`,
+  },
+  {
+    id: 'ep-negotiation',
+    companyId: undefined,
+    roleplayType: 'negotiation',
+    displayName: 'Negotiation',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    scoringCriteria: [
+      {
+        group: 'Negotiation Technique',
+        criteria: [
+          { question: 'Did the seller anchor high before conceding?', hint: 'Started from a strong position before making any concessions.' },
+          { question: 'Did the seller trade concessions (not give without getting)?', hint: 'Every concession was paired with a request in return.' },
+          { question: 'Did the seller protect margin and key terms?', hint: 'Avoided giving away price or terms without protecting core value.' },
+          { question: 'Did the seller reach a mutually agreed outcome?', hint: 'Both parties reached explicit agreement on terms.' },
+          { question: 'Did the seller maintain relationship throughout?', hint: 'Tone stayed professional and collaborative despite pressure.' },
+        ],
+      },
+    ],
+    promptTemplate: `You are an expert sales coach evaluating a negotiation roleplay.
+
+SCORECARD — judge each criterion pass/fail.
+
+Criterion Group:
+- Negotiation Technique (5 pts): Anchored high first? | Traded concessions? | Protected margin/terms? | Reached mutual outcome? | Maintained relationship?
+
+TRANSCRIPT:
+{transcript}
+
+Return valid JSON with overallScore, overallFeedback, scorecardGroups, timelineEvents, strengths, improvements, coachingTip.`,
+  },
+  {
+    id: 'ep-account-expansion',
+    companyId: undefined,
+    roleplayType: 'account_expansion',
+    displayName: 'Account Expansion',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    scoringCriteria: [
+      {
+        group: 'Expansion Discovery',
+        criteria: [
+          { question: 'Did the seller reference existing relationship or wins?', hint: 'Grounded the conversation in proven value already delivered.' },
+          { question: 'Did the seller identify a new business need or expansion trigger?', hint: 'Found a new pain point or growth opportunity in the account.' },
+        ],
+      },
+      {
+        group: 'Expansion Business Case',
+        criteria: [
+          { question: 'Did the seller map to additional stakeholders?', hint: 'Identified new decision-makers or champions for the expansion.' },
+          { question: 'Did the seller present an expansion business case with ROI?', hint: 'Quantified the value of expanding the engagement.' },
+          { question: 'Did the seller define next steps for the expansion?', hint: 'Agreed on a specific next step to move the expansion forward.' },
+        ],
+      },
+    ],
+    promptTemplate: `You are an expert account manager coach evaluating an account expansion roleplay.
+
+SCORECARD — judge each criterion pass/fail.
+
+Criterion Groups:
+- Expansion Discovery (2 pts): Referenced existing wins? | Identified expansion trigger?
+- Expansion Business Case (3 pts): Mapped to additional stakeholders? | Presented ROI business case? | Defined expansion next steps?
+
+TRANSCRIPT:
+{transcript}
+
+Return valid JSON with overallScore, overallFeedback, scorecardGroups, timelineEvents, strengths, improvements, coachingTip.`,
+  },
+  {
+    id: 'ep-customer-support',
+    companyId: undefined,
+    roleplayType: 'customer_support',
+    displayName: 'Customer Support',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    scoringCriteria: [
+      {
+        group: 'Issue Resolution',
+        criteria: [
+          { question: 'Did the rep acknowledge and empathise with the customer?', hint: 'Showed genuine understanding of the customer\'s frustration.' },
+          { question: 'Did the rep correctly diagnose the issue?', hint: 'Asked clarifying questions to understand the root cause.' },
+          { question: 'Did the rep offer a clear solution or next step?', hint: 'Provided a specific resolution path, not just "I\'ll look into it".' },
+          { question: 'Did the rep set accurate expectations?', hint: 'Was honest about timelines and what can/cannot be done.' },
+          { question: 'Did the rep confirm customer satisfaction before closing?', hint: 'Checked the customer was happy with the resolution.' },
+        ],
+      },
+    ],
+    promptTemplate: `You are an expert customer support coach evaluating a support call roleplay.
+
+SCORECARD — judge each criterion pass/fail.
+
+Criterion Group:
+- Issue Resolution (5 pts): Acknowledged and empathised? | Diagnosed issue correctly? | Offered clear solution? | Set accurate expectations? | Confirmed satisfaction?
+
+TRANSCRIPT:
+{transcript}
+
+Return valid JSON with overallScore, overallFeedback, scorecardGroups, timelineEvents, strengths, improvements, coachingTip.`,
+  },
+];
+
+export const evaluationPromptsApi = {
+  list: async (): Promise<EvaluationPrompt[]> => {
+    await delay(200);
+    return DEFAULT_EVALUATION_PROMPTS;
+  },
+  get: async (roleplayType: string): Promise<EvaluationPrompt | null> => {
+    await delay(100);
+    return DEFAULT_EVALUATION_PROMPTS.find(p => p.roleplayType === roleplayType) ?? null;
+  },
+  update: async (id: string, data: Partial<EvaluationPrompt>): Promise<EvaluationPrompt> => {
+    await delay(300);
+    const existing = DEFAULT_EVALUATION_PROMPTS.find(p => p.id === id) ?? DEFAULT_EVALUATION_PROMPTS[0];
+    return { ...existing, ...data, updatedAt: new Date().toISOString() };
+  },
 };
 
 // Stub axios instance used by a few pages directly (VoicePicker, FeedbackPage)
