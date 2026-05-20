@@ -118,7 +118,8 @@ export function AvatarDisplay({
         ? <img
             src={photoUrl}
             alt={found.name}
-            className="w-full h-full object-contain"
+            className="w-full h-full object-cover"
+            style={{ objectPosition: 'center 15%' }}
             draggable={false}
             onError={() => setImgError(true)}
           />
@@ -171,7 +172,7 @@ function AvatarPickerCard({
         selected ? 'ring-accent' : 'ring-transparent'
       )}>
         {photoUrl && !imgError
-          ? <img src={photoUrl} alt={av.name} className="w-full h-full object-contain" draggable={false} onError={() => setImgError(true)} />
+          ? <img src={photoUrl} alt={av.name} className="w-full h-full object-cover" style={{ objectPosition: 'center 15%' }} draggable={false} onError={() => setImgError(true)} />
           : <div className="w-full h-full bg-gradient-to-br from-white/20 to-white/5 flex items-center justify-center">
               <span className="text-white/75 text-[14px] font-semibold select-none">{av.name.charAt(0)}</span>
             </div>
