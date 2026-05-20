@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { X, Plus, Trash2, Sparkles, Check, Loader as Loader2, Mic } from 'lucide-react';
 import { personasApi } from '@/lib/api';
-import { Persona, Framework } from '@/types';
+import { Persona, Framework, FRAMEWORK_INFO } from '@/types';
 import { EthnicityAvatarPicker, AvatarDisplay, AVATARS } from '@/components/practice/PersonaAvatars';
 import { VoicePickerModal } from '@/components/practice/VoicePickerModal';
 import { CURATED_VOICES } from '@/components/practice/VoicePicker';
@@ -12,6 +12,27 @@ import clsx from 'clsx';
 
 const FRAMEWORKS: Framework[] = ['MEDDIC', 'MEDDICC', 'SPIN', 'BANT', 'CHALLENGER', 'SNAP'];
 const DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD', 'EXPERT'] as const;
+
+const FRAMEWORK_DESCRIPTIONS: Record<Framework, string> = {
+  MEDDIC:    'Enterprise-grade qualification for complex, multi-stakeholder deals. Tests your ability to uncover metrics, find the champion, and map the decision process.',
+  MEDDICC:   'MEDDIC with a Competition layer — ideal for competitive markets where differentiation and displacement of incumbents are central.',
+  SPIN:      'Discovery-focused framework built on four question types. Best for consultative selling where uncovering deep pain drives the deal.',
+  BANT:      'Classic qualification against Budget, Authority, Need and Timeline. Quick, transactional deals where fast qualification matters.',
+  CHALLENGER: 'Insight-led selling that teaches, tailors, and takes control. Great for personas who need to be challenged before they commit.',
+  SNAP:      'Buyer-centric framework for busy, information-overloaded prospects. Tests whether you can be Simple, iNvaluable, Aligned, and a Priority.',
+};
+
+function getRecommendedFramework(industry: string, difficulty: string): Framework {
+  const ind = industry.toLowerCase();
+  const diff = difficulty.toUpperCase();
+  if (ind.includes('finance') || ind.includes('bank') || ind.includes('insurance')) return 'MEDDIC';
+  if (diff === 'EXPERT' || diff === 'HARD') return 'MEDDICC';
+  if (ind.includes('health') || ind.includes('medical') || ind.includes('consult')) return 'SPIN';
+  if (ind.includes('real estate') || ind.includes('manufacturing')) return 'CHALLENGER';
+  if (ind.includes('saas') || ind.includes('tech') || ind.includes('software')) return 'MEDDIC';
+  if (diff === 'EASY') return 'BANT';
+  return 'SPIN';
+}
 
 // Curated AI-generated objections per personality type
 const SUGGESTED_OBJECTIONS: Record<string, string[]> = {
@@ -419,26 +440,85 @@ export function PersonaBuilder({ onCreated, onClose, initialAvatarId }: Props) {
             )}
 
             {step === 3 && (
-              <motion.div key="s3" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex flex-col gap-5">
+              <motion.div key="s3" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex flex-col gap-4">
+                {/* AI recommendation banner */}
+                {(() => {
+                  const rec = getRecommendedFramework(form.industry, form.difficulty);
+                  return (
+                    <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-[11px]" style={{ background: 'rgba(91,111,255,0.08)', border: '1px solid rgba(91,111,255,0.2)' }}>
+                      <Sparkles size={13} className="flex-shrink-0 mt-0.5 text-accent" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12px] font-semibold text-white/90">
+                          AI recommends <span className="text-accent">{FRAMEWORK_INFO[rec].label}</span> for this persona
+                        </p>
+                        <p className="text-[11px] text-white/50 mt-0.5 leading-snug">
+                          Based on {form.industry ? `${form.industry} industry` : 'the persona profile'} and {form.difficulty.toLowerCase()} difficulty. You can select multiple frameworks.
+                        </p>
+                      </div>
+                      {!form.frameworks.includes(rec) && (
+                        <button
+                          onClick={() => toggleFramework(rec)}
+                          className="text-[11px] font-semibold px-2.5 py-1 rounded-[7px] flex-shrink-0 transition-all hover:scale-105"
+                          style={{ background: 'rgba(91,111,255,0.15)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.3)' }}
+                        >
+                          Add
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 <div>
-                  <label className="text-xs font-medium text-white/70 block mb-2">
+                  <label className="text-xs font-medium text-white/60 block mb-2.5">
                     Which frameworks does this persona test?
                   </label>
-                  <div className="flex flex-wrap gap-2">
-                    {FRAMEWORKS.map(fw => (
-                      <button
-                        key={fw}
-                        onClick={() => toggleFramework(fw)}
-                        className={clsx(
-                          'px-4 py-2 rounded-[9px] text-[12.5px] font-semibold border transition-all',
-                          form.frameworks.includes(fw)
-                            ? 'border-accent bg-accent text-white'
-                            : 'border-white/10 text-white/70 hover:text-white hover:bg-white/[0.06]'
-                        )}
-                      >
-                        {fw}
-                      </button>
-                    ))}
+                  <div className="flex flex-col gap-2">
+                    {FRAMEWORKS.map(fw => {
+                      const info = FRAMEWORK_INFO[fw];
+                      const selected = form.frameworks.includes(fw);
+                      const isRec = fw === getRecommendedFramework(form.industry, form.difficulty);
+                      return (
+                        <button
+                          key={fw}
+                          onClick={() => toggleFramework(fw)}
+                          className={clsx(
+                            'w-full flex items-start gap-3 p-3 rounded-[11px] border text-left transition-all',
+                            selected
+                              ? 'border-accent/60 bg-accent/[0.08]'
+                              : 'border-white/[0.07] hover:border-white/15 hover:bg-white/[0.03]'
+                          )}
+                        >
+                          {/* Checkbox */}
+                          <div className={clsx(
+                            'w-4 h-4 rounded border flex-shrink-0 mt-0.5 flex items-center justify-center transition-all',
+                            selected ? 'bg-accent border-accent' : 'border-white/25'
+                          )}>
+                            {selected && <Check size={10} color="white" />}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={clsx('text-[13px] font-bold', selected ? 'text-white' : 'text-white/80')}>
+                                {info.label}
+                              </span>
+                              {isRec && (
+                                <span className="flex items-center gap-1 text-[9.5px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(91,111,255,0.18)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.3)' }}>
+                                  <Sparkles size={8} /> AI Pick
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-white/50 mt-0.5 leading-snug">{FRAMEWORK_DESCRIPTIONS[fw]}</p>
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {info.components.map(c => (
+                                <span key={c} className="text-[9.5px] px-1.5 py-0.5 rounded" style={{ background: `${info.color}14`, color: info.color, border: `1px solid ${info.color}30` }}>
+                                  {c}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
