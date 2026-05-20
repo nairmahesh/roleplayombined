@@ -2,10 +2,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { X, Plus, Trash2, Sparkles, Check, Loader as Loader2, RefreshCw } from 'lucide-react';
+import { X, Plus, Trash2, Sparkles, Check, Loader as Loader2, Mic } from 'lucide-react';
 import { personasApi } from '@/lib/api';
 import { Persona, Framework } from '@/types';
 import { EthnicityAvatarPicker, AvatarDisplay, AVATARS } from '@/components/practice/PersonaAvatars';
+import { VoicePickerModal } from '@/components/practice/VoicePickerModal';
+import { CURATED_VOICES } from '@/components/practice/VoicePicker';
 import clsx from 'clsx';
 
 const FRAMEWORKS: Framework[] = ['MEDDIC', 'MEDDICC', 'SPIN', 'BANT', 'CHALLENGER', 'SNAP'];
@@ -107,6 +109,61 @@ function AvatarPickerField({ avatarId, onChange }: { avatarId: string; onChange:
   );
 }
 
+// ── Collapsed voice picker field ──────────────────────────────────────────────
+
+function VoicePickerField({
+  avatarId,
+  voiceId,
+  onChange,
+}: {
+  avatarId: string;
+  voiceId: string | undefined;
+  onChange: (id: string | undefined) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const voice = CURATED_VOICES.find(v => v.id === voiceId);
+
+  return (
+    <>
+      <div>
+        <label className="text-xs font-medium text-white/70 block mb-1.5">Voice</label>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="w-full flex items-center gap-3 p-2.5 rounded-[10px] bg-white/[0.03] border border-white/[0.08] hover:border-white/20 transition-all text-left"
+        >
+          <div className="w-9 h-9 rounded-full bg-white/[0.06] flex items-center justify-center flex-shrink-0">
+            <Mic size={14} className="text-white/50" />
+          </div>
+          <div className="flex-1 min-w-0">
+            {voice ? (
+              <>
+                <p className="text-[12.5px] font-semibold text-white truncate">{voice.name}</p>
+                <p className="text-[10.5px] text-white/40 capitalize">{voice.accent} · {voice.style}</p>
+              </>
+            ) : (
+              <>
+                <p className="text-[12.5px] font-semibold text-white/50">No voice selected</p>
+                <p className="text-[10.5px] text-white/30">Uses default for this persona</p>
+              </>
+            )}
+          </div>
+          <span className="text-[10px] text-accent flex-shrink-0">Change</span>
+        </button>
+      </div>
+
+      {open && (
+        <VoicePickerModal
+          avatarId={avatarId}
+          value={voiceId}
+          onSelect={id => { onChange(id); setOpen(false); }}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -120,6 +177,7 @@ export function PersonaBuilder({ onCreated, onClose, initialAvatarId }: Props) {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     avatarId: initialAvatarId ?? AVATARS[0].id,
+    voiceId: undefined as string | undefined,
     name: '',
     title: '',
     company: '',
@@ -157,6 +215,7 @@ export function PersonaBuilder({ onCreated, onClose, initialAvatarId }: Props) {
         ...form,
         emoji: form.avatarId,
         avatarId: form.avatarId,
+        voiceId: form.voiceId,
         objections: form.objections.filter(Boolean),
         buyingSignals: form.buyingSignals.filter(Boolean),
         personality: JSON.stringify({ description: form.personality }),
@@ -225,6 +284,13 @@ export function PersonaBuilder({ onCreated, onClose, initialAvatarId }: Props) {
                 <AvatarPickerField
                   avatarId={form.avatarId}
                   onChange={id => set('avatarId', id)}
+                />
+
+                {/* Voice picker — collapsed by default, opens modal on click */}
+                <VoicePickerField
+                  avatarId={form.avatarId}
+                  voiceId={form.voiceId}
+                  onChange={id => set('voiceId', id)}
                 />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
