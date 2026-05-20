@@ -805,11 +805,154 @@ export const practiceApi = {
 
 const LS_ROLEPLAYS = 'pitchiq-roleplays';
 
+const DEMO_USER_ID  = '10000000-0000-0000-0000-000000000004'; // agent (me)
+const ADMIN_USER_ID = '10000000-0000-0000-0000-000000000002'; // company admin (manager)
+
+const SEED_ROLEPLAYS: TeamRoleplay[] = [
+  // ── Assigned to me (createdById = admin / manager) ────────────────────────
+  {
+    id: 'seed-tr-1',
+    name: 'Enterprise SaaS Discovery',
+    description: 'Practice uncovering pain, budget, and decision process with a skeptical VP of Sales.',
+    isActive: true,
+    createdById: ADMIN_USER_ID,
+    createdBy: { id: ADMIN_USER_ID, firstName: 'Jamie', lastName: 'Scott' },
+    createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+    updatedAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+    completionCount: 14,
+    assignmentTarget: { scope: 'all' },
+    scenarioConfig: {
+      industry: 'SaaS', roleplayType: 'Discovery Call', difficulty: 'Hard',
+      sessionType: 'ONLINE_MEETING',
+      displayName: 'Sarah Mitchell', displayTitle: 'VP of Sales, NovaCorp', displayEmoji: '',
+      avatarId: 'sarah',
+      personaContext: 'You are the VP of Sales at NovaCorp, a 300-person SaaS company.',
+      suggestedQuestions: ['Why should we switch?', 'What ROI have others achieved?'],
+      objections: ['We already use Gong', 'Budget is frozen until Q3'],
+      timeLimitMins: 5,
+    },
+  },
+  {
+    id: 'seed-tr-2',
+    name: 'CFO Price Objection Drill',
+    description: 'Handle a tough CFO who leads with cost objections and demands ROI evidence.',
+    isActive: true,
+    createdById: ADMIN_USER_ID,
+    createdBy: { id: ADMIN_USER_ID, firstName: 'Jamie', lastName: 'Scott' },
+    createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+    updatedAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+    completionCount: 9,
+    assignmentTarget: { scope: 'all' },
+    scenarioConfig: {
+      industry: 'Banking', roleplayType: 'Objection Handling', difficulty: 'Expert',
+      sessionType: 'PHONE_CALL',
+      displayName: 'Marcus Johnson', displayTitle: 'CFO, RetailCo', displayEmoji: '',
+      avatarId: 'marcus',
+      personaContext: 'You are the CFO of RetailCo. You focus on financial impact and risk.',
+      suggestedQuestions: ['What is the TCO?', 'What does payback period look like?'],
+      objections: ['Your competitor is 30% cheaper', 'We need to see ROI first', 'Budget is allocated'],
+      timeLimitMins: 4,
+    },
+  },
+  {
+    id: 'seed-tr-3',
+    name: 'Healthcare Compliance Discovery',
+    description: 'Navigate a CMO who is deeply focused on HIPAA compliance and EHR integration.',
+    isActive: true,
+    createdById: ADMIN_USER_ID,
+    createdBy: { id: ADMIN_USER_ID, firstName: 'Jamie', lastName: 'Scott' },
+    createdAt: new Date(Date.now() - 8 * 86400000).toISOString(),
+    updatedAt: new Date(Date.now() - 8 * 86400000).toISOString(),
+    completionCount: 6,
+    assignmentTarget: { scope: 'all' },
+    scenarioConfig: {
+      industry: 'Healthcare', roleplayType: 'Discovery Call', difficulty: 'Medium',
+      sessionType: 'ONLINE_MEETING',
+      displayName: 'Dr. Elena Reyes', displayTitle: 'CMO, Regional Health System', displayEmoji: '',
+      avatarId: 'emma',
+      personaContext: 'You are the CMO of a regional health system with 8 hospitals. Compliance is your top priority.',
+      suggestedQuestions: ['How does your solution handle HIPAA?', 'What EHR systems do you integrate with?'],
+      objections: ['We had a bad vendor experience last year', 'IT will block this if it\'s not HIPAA certified'],
+      timeLimitMins: 5,
+    },
+  },
+  {
+    id: 'seed-tr-4',
+    name: 'Cold Call — Fintech CRO',
+    description: 'A 3-minute cold call with a FinTech CRO who hates unsolicited pitches.',
+    isActive: true,
+    createdById: ADMIN_USER_ID,
+    createdBy: { id: ADMIN_USER_ID, firstName: 'Jamie', lastName: 'Scott' },
+    createdAt: new Date(Date.now() - 10 * 86400000).toISOString(),
+    updatedAt: new Date(Date.now() - 10 * 86400000).toISOString(),
+    completionCount: 22,
+    assignmentTarget: { scope: 'all' },
+    scenarioConfig: {
+      industry: 'FinTech', roleplayType: 'Cold Call', difficulty: 'Hard',
+      sessionType: 'PHONE_CALL',
+      displayName: 'Jordan Kim', displayTitle: 'CRO, FlexPay', displayEmoji: '',
+      avatarId: 'jordan',
+      personaContext: 'You are the CRO of a fast-growing FinTech startup. You are busy and skeptical of cold callers.',
+      suggestedQuestions: ['How did you get my number?', 'Give me the 20-second version.'],
+      objections: ['I have 3 similar vendors pitching me this week', 'Not the right time — end of quarter'],
+      timeLimitMins: 3,
+    },
+  },
+
+  // ── Created by me (createdById = DEMO_USER_ID) ────────────────────────────
+  {
+    id: 'seed-tr-5',
+    name: 'My Account Expansion Script',
+    description: 'Upsell from Growth to Enterprise plan with an existing customer who loves the product but hates paying more.',
+    isActive: true,
+    createdById: DEMO_USER_ID,
+    createdBy: { id: DEMO_USER_ID, firstName: 'Demo', lastName: 'Agent' },
+    createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+    updatedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+    completionCount: 3,
+    scenarioConfig: {
+      industry: 'SaaS', roleplayType: 'Account Expansion', difficulty: 'Medium',
+      sessionType: 'ONLINE_MEETING',
+      displayName: 'Priya Kapoor', displayTitle: 'Head of Operations, ScaleUp Inc', displayEmoji: '',
+      avatarId: 'priya',
+      personaContext: 'You are the Head of Operations at a fast-growing startup on the Growth plan for 18 months.',
+      suggestedQuestions: ['Show me utilization data', 'What\'s the ROI on the upgrade?'],
+      objections: ['We already pay enough', 'Can we trial the new features first?'],
+      timeLimitMins: 5,
+    },
+  },
+  {
+    id: 'seed-tr-6',
+    name: 'Insurance Renewal — Tough CFO',
+    description: 'Retain an insurance client whose premiums rose 12% with a competing broker offering lower rates.',
+    isActive: true,
+    createdById: DEMO_USER_ID,
+    createdBy: { id: DEMO_USER_ID, firstName: 'Demo', lastName: 'Agent' },
+    createdAt: new Date(Date.now() - 6 * 86400000).toISOString(),
+    updatedAt: new Date(Date.now() - 6 * 86400000).toISOString(),
+    completionCount: 1,
+    scenarioConfig: {
+      industry: 'Insurance', roleplayType: 'Negotiation', difficulty: 'Hard',
+      sessionType: 'PHONE_CALL',
+      displayName: 'Layla Hassan', displayTitle: 'CFO, MidWest Logistics', displayEmoji: '',
+      avatarId: 'layla',
+      personaContext: 'You are the CFO of a mid-size logistics company. Your premiums rose 12% and a competitor broker is pitching you.',
+      suggestedQuestions: ['What savings can you show me?', 'Why should I stay?'],
+      objections: ['The other broker is 15% cheaper', 'We\'ve been loyal for 5 years — where\'s our loyalty discount?'],
+      timeLimitMins: 4,
+    },
+  },
+];
+
 function loadRoleplays(): TeamRoleplay[] {
   try {
     const raw = localStorage.getItem(LS_ROLEPLAYS);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
+    const stored: TeamRoleplay[] = raw ? JSON.parse(raw) : [];
+    // Merge seed data with stored — stored items override seed items with same id
+    const storedIds = new Set(stored.map(r => r.id));
+    const seedOnly = SEED_ROLEPLAYS.filter(r => !storedIds.has(r.id));
+    return [...seedOnly, ...stored];
+  } catch { return SEED_ROLEPLAYS; }
 }
 
 export const teamRoleplaysApi = {

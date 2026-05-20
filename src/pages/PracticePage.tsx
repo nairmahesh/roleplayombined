@@ -37,12 +37,12 @@ const LANGUAGES = [
 ];
 
 
-const TEMPLATES: Array<ScenarioConfig & { id: string; label: string; avatarId: string }> = [
+const TEMPLATES: Array<ScenarioConfig & { id: string; label: string; avatarId: string; sessionType?: SessionType }> = [
   {
     id: 't1', label: 'Enterprise CRM Pitch', avatarId: 'alex',
     industry: 'SaaS', roleplayType: 'Sales Pitch', displayEmoji: '',
     displayName: 'Alex Chen', displayTitle: 'Head of Sales, Accenture',
-    difficulty: 'Hard',
+    difficulty: 'Hard', sessionType: 'ONLINE_MEETING',
     suggestedQuestions: [
       'Why should we switch from Salesforce?', 'What ROI have your existing clients achieved?',
       'How long does implementation take?', 'How disruptive will migration be for my team?',
@@ -58,7 +58,7 @@ How to behave: Start by briefly welcoming the rep and asking them to walk you th
     id: 't2', label: 'SaaS Cold Call', avatarId: 'james',
     industry: 'SaaS', roleplayType: 'Cold Call', displayEmoji: '',
     displayName: "James O'Brien", displayTitle: 'VP of Engineering, TechCorp',
-    difficulty: 'Hard',
+    difficulty: 'Hard', sessionType: 'PHONE_CALL',
     suggestedQuestions: [
       'How did you get this number?', 'What makes you different from the 10 tools we already use?',
       "I'm busy — give me the 30-second version.", 'Do you have case studies from companies our size?',
@@ -74,7 +74,7 @@ How to behave: Be initially dismissive and short. Give the caller 60 seconds. If
     id: 't3', label: 'Healthcare Discovery Call', avatarId: 'sarah',
     industry: 'Healthcare', roleplayType: 'Discovery Call', displayEmoji: '',
     displayName: 'Sarah Mitchell', displayTitle: 'CMO, Regional Health System',
-    difficulty: 'Medium',
+    difficulty: 'Medium', sessionType: 'ONLINE_MEETING',
     suggestedQuestions: [
       'How does your solution handle HIPAA compliance?', 'What EHR systems does this integrate with?',
       'What does the implementation timeline look like?', 'How have other health systems measured outcomes?',
@@ -90,7 +90,7 @@ How to behave: Probe deeply on compliance, integration, and implementation risk.
     id: 't4', label: 'Objection Handling — Price', avatarId: 'robert',
     industry: 'Consulting', roleplayType: 'Objection Handling', displayEmoji: '',
     displayName: 'Robert Hayes', displayTitle: 'Procurement Director, Global Corp',
-    difficulty: 'Expert',
+    difficulty: 'Expert', sessionType: 'PHONE_CALL',
     suggestedQuestions: [
       "Your competitor is 30% cheaper — why should we pay more?",
       'Can you justify that price with concrete ROI data?',
@@ -107,7 +107,7 @@ How to behave: Lead with price objections immediately. Push hard on discounts, p
     id: 't5', label: 'Banking Negotiation', avatarId: 'emma',
     industry: 'Banking', roleplayType: 'Negotiation', displayEmoji: '',
     displayName: 'Emma Wilson', displayTitle: 'Head of Treasury, First National Bank',
-    difficulty: 'Hard',
+    difficulty: 'Hard', sessionType: 'ONLINE_MEETING',
     suggestedQuestions: [
       'What are your regulatory compliance certifications?', 'How does your risk model handle market volatility?',
       'What service SLAs can you commit to?', 'What does the integration with our core banking system look like?',
@@ -121,7 +121,7 @@ How to behave: Clarify key terms you need addressed: SLAs, regulatory compliance
     id: 't6', label: 'Account Expansion', avatarId: 'priya',
     industry: 'SaaS', roleplayType: 'Account Expansion', displayEmoji: '',
     displayName: 'Priya Kapoor', displayTitle: 'Head of Operations, ScaleUp Inc',
-    difficulty: 'Medium',
+    difficulty: 'Medium', sessionType: 'ONLINE_MEETING',
     suggestedQuestions: [
       "We're already paying for your product — why should we pay more?",
       "What value haven't we gotten from the current plan?",
@@ -138,7 +138,7 @@ How to behave: Be friendly — you have a good relationship. But be analytically
     id: 't7', label: 'Insurance Cold Call', avatarId: 'layla',
     industry: 'Insurance', roleplayType: 'Cold Call', displayEmoji: '',
     displayName: 'Layla Hassan', displayTitle: 'CFO, MidWest Logistics',
-    difficulty: 'Hard',
+    difficulty: 'Hard', sessionType: 'PHONE_CALL',
     suggestedQuestions: [
       'We already have a broker — why would we switch?',
       'What savings have you actually delivered for similar companies?',
@@ -157,7 +157,7 @@ How to behave: Be initially dismissive. If the rep leads with cost savings and r
     id: 't8', label: 'Real Estate Pitch', avatarId: 'carlos',
     industry: 'Real Estate', roleplayType: 'Sales Pitch', displayEmoji: '',
     displayName: 'Carlos Rivera', displayTitle: 'Head of Acquisitions, Apex Properties',
-    difficulty: 'Medium',
+    difficulty: 'Medium', sessionType: 'ONLINE_MEETING',
     suggestedQuestions: [
       'What comparable deals have you closed in this market?',
       'How are you valuing this property — what assumptions are you making?',
@@ -174,7 +174,7 @@ How to behave: Ask tough questions about valuation methodology, market comparabl
     id: 't9', label: 'HR / Talent Platform', avatarId: 'aisha',
     industry: 'Consulting', roleplayType: 'Discovery Call', displayEmoji: '',
     displayName: 'Aisha Brown', displayTitle: 'Chief People Officer, GrowthCo',
-    difficulty: 'Easy',
+    difficulty: 'Easy', sessionType: 'ONLINE_MEETING',
     suggestedQuestions: [
       "We already use LinkedIn Recruiter — what does yours do differently?",
       'How does your platform reduce time-to-hire?',
@@ -193,7 +193,7 @@ How to behave: Be warm and engaged. Ask practical questions about implementation
     id: 't10', label: 'Manufacturing Demo', avatarId: 'marcus',
     industry: 'Manufacturing', roleplayType: 'Sales Pitch', displayEmoji: '',
     displayName: 'Marcus Johnson', displayTitle: 'VP of Operations, PrecisionMfg',
-    difficulty: 'Hard',
+    difficulty: 'Hard', sessionType: 'PHONE_CALL',
     suggestedQuestions: [
       'How does this integrate with our existing MES and ERP systems?',
       "We've tried automation before — it broke our line for 3 weeks. Why is this different?",
@@ -449,6 +449,9 @@ export function PracticePage() {
     setAiCanEnd(true);
     setEndCondition('');
     setTimeLimitMins('3');
+    if ((t as typeof TEMPLATES[number] & { sessionType?: SessionType }).sessionType) {
+      setSessionType((t as typeof TEMPLATES[number] & { sessionType?: SessionType }).sessionType!);
+    }
     setActiveTeamRoleplayId(null);
     setBotKnowledge([]);
     setUserBriefing([]);
@@ -473,6 +476,7 @@ export function PracticePage() {
     setAiCanEnd(sc.aiCanEnd ?? true);
     setEndCondition(sc.endCondition ?? '');
     setTimeLimitMins(sc.timeLimitMins ? String(sc.timeLimitMins) : '3');
+    if (sc.sessionType) setSessionType(sc.sessionType);
     setActiveTeamRoleplayId(tr.id);
     setBotKnowledge(sc.botKnowledge ?? []);
     setUserBriefing(sc.userBriefing ?? []);
@@ -805,6 +809,7 @@ export function PracticePage() {
                         type={tr.scenarioConfig.roleplayType}
                         difficulty={tr.scenarioConfig.difficulty}
                         timeLimitMins={tr.scenarioConfig.timeLimitMins ?? 3}
+                        sessionType={tr.scenarioConfig.sessionType}
                         metaLabel={`by ${tr.createdBy.firstName} ${tr.createdBy.lastName}`}
                         description={tr.description}
                         badge="Assigned"
@@ -861,9 +866,9 @@ export function PracticePage() {
                       type={tr.scenarioConfig.roleplayType}
                       difficulty={tr.scenarioConfig.difficulty}
                       timeLimitMins={tr.scenarioConfig.timeLimitMins ?? 3}
+                      sessionType={tr.scenarioConfig.sessionType}
                       metaLabel={`by ${tr.createdBy.firstName} ${tr.createdBy.lastName}`}
                       description={tr.description}
-                      badge="Mine"
                       canEdit
                       onSelect={() => handleSelectMine(tr)}
                       onEdit={e => {
@@ -896,6 +901,7 @@ export function PracticePage() {
                     type={t.roleplayType}
                     difficulty={t.difficulty}
                     timeLimitMins={3}
+                    sessionType={(t as ScenarioConfig & { id: string; label: string; avatarId: string; sessionType?: SessionType }).sessionType}
                     metaLabel="Built-in"
                     onSelect={() => handleSelectTemplate(t)}
                   />
@@ -2490,7 +2496,7 @@ export function PracticePage() {
 
 function GalleryCard({
   avatarId, name, subtitle, industry, type, difficulty,
-  timeLimitMins, metaLabel, description, badge, canEdit,
+  timeLimitMins, metaLabel, description, badge, canEdit, sessionType,
   onSelect, onEdit, onDelete,
 }: {
   avatarId?: string;
@@ -2504,6 +2510,7 @@ function GalleryCard({
   description?: string;
   badge?: string;
   canEdit?: boolean;
+  sessionType?: SessionType;
   onSelect: () => void;
   onEdit?: (e: React.MouseEvent) => void;
   onDelete?: (e: React.MouseEvent) => void;
@@ -2512,10 +2519,11 @@ function GalleryCard({
     Easy:   'text-accent-3 bg-accent-3/10 border-accent-3/20',
     Medium: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
     Hard:   'text-accent-4 bg-accent-4/10 border-accent-4/20',
-    Expert: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
+    Expert: 'text-rose-400 bg-rose-400/10 border-rose-400/20',
   } as Record<string, string>)[difficulty] ?? 'text-white/80 bg-white/5 border-white/10';
 
   const displayMins = timeLimitMins ?? 3;
+  const isOnline = sessionType === 'ONLINE_MEETING';
 
   return (
     <div
@@ -2533,6 +2541,18 @@ function GalleryCard({
             {subtitle && <div className="text-[12px] text-white/70 mt-0.5 truncate">{subtitle}</div>}
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* Session type pill */}
+            {sessionType && (
+              <span className={clsx(
+                'flex items-center gap-1 text-[9.5px] px-2 py-0.5 rounded-full border font-medium flex-shrink-0',
+                isOnline
+                  ? 'text-sky-400 bg-sky-400/10 border-sky-400/20'
+                  : 'text-white/60 bg-white/[0.04] border-white/[0.1]',
+              )}>
+                {isOnline ? <Monitor size={8} /> : <Phone size={8} />}
+                {isOnline ? 'Online' : 'Phone'}
+              </span>
+            )}
             {/* Time limit badge */}
             <span className="flex items-center gap-0.5 text-[9.5px] px-1.5 py-0.5 rounded-full border border-white/[0.1] bg-white/[0.04] text-white/55 font-medium flex-shrink-0">
               {displayMins}m
@@ -2554,13 +2574,16 @@ function GalleryCard({
           </div>
         </div>
 
-        {description && <p className="text-[11.5px] text-white/65 mt-1 line-clamp-1">{description}</p>}
+        {description && <p className="text-[11.5px] text-white/65 mt-1.5 line-clamp-2 leading-relaxed">{description}</p>}
 
         <div className="flex flex-wrap items-center gap-1.5 mt-2">
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] border border-white/[0.07] text-white/70">{industry}</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] border border-white/[0.07] text-white/70">{type}</span>
           <span className={clsx('text-[10px] px-1.5 py-0.5 rounded border', diffColor)}>{difficulty}</span>
-          {metaLabel && <span className="text-[10px] text-white/80 ml-auto">{metaLabel}</span>}
+          {badge && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/[0.08] border border-accent/15 text-accent/80">{badge}</span>
+          )}
+          {metaLabel && <span className="text-[10px] text-white/50 ml-auto">{metaLabel}</span>}
         </div>
       </div>
     </div>

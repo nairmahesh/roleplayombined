@@ -211,6 +211,7 @@ export interface ScenarioConfig {
   avatarId?: string;
   elevenlabsVoiceId?: string;
   language?: string;
+  sessionType?: SessionType;
   // Knowledge base
   botKnowledge?: KnowledgeBaseEntry[];    // context fed to the AI bot
   userBriefing?: KnowledgeBaseEntry[];    // content shown to user before call
