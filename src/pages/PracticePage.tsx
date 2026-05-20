@@ -7,6 +7,7 @@ import { practiceApi, sessionsApi, personasApi, teamRoleplaysApi, evaluationProm
 import type { AssignmentScope, AssignmentTarget, EvaluationGroupDef } from '@/types';
 import { Framework, SessionType, FRAMEWORK_INFO, ScenarioConfig, Persona, TeamRoleplay, KnowledgeBaseEntry } from '@/types';
 import { CallInterface, PersonaDisplay } from '@/components/practice/CallInterface';
+import { OnlineMeetingRoom } from '@/components/practice/OnlineMeetingRoom';
 import { PersonaBuilder } from '@/components/practice/PersonaBuilder';
 import { AvatarDisplay, EthnicityAvatarPicker, AVATAR_VOICE_CONFIG, AVATARS, type AvatarId } from '@/components/practice/PersonaAvatars';
 import { VoicePickerModal } from '@/components/practice/VoicePickerModal';
@@ -2146,16 +2147,31 @@ export function PracticePage() {
         )}
       </AnimatePresence>
 
-      {/* ── Call interface ─────────────────────────────────────────────────────── */}
+      {/* ── Call / Meeting interface ───────────────────────────────────────────── */}
       <AnimatePresence>
-        {activeSession && (
+        {activeSession && sessionType === 'PHONE_CALL' && (
           <CallInterface
             sessionId={activeSession.id}
             persona={activeSession.personaDisplay}
             sessionType={sessionType}
             framework={framework}
             timeLimitMins={timeLimitMins ? parseInt(timeLimitMins, 10) || null : null}
-            onEnd={sessionId => { setActiveSession(null); navigate(`/sessions/${sessionId}/feedback`); }}
+            onEnd={sid => { setActiveSession(null); navigate(`/sessions/${sid}/feedback`); }}
+          />
+        )}
+        {activeSession && sessionType === 'ONLINE_MEETING' && (
+          <OnlineMeetingRoom
+            sessionId={activeSession.id}
+            persona={activeSession.personaDisplay}
+            sessionType={sessionType}
+            framework={framework}
+            timeLimitMins={timeLimitMins ? parseInt(timeLimitMins, 10) || null : null}
+            multiPersonas={multiPersonaEnabled && multiAttendees.length > 0
+              ? multiAttendees.slice(1).map(a => ({
+                  name: a.name, title: a.title, emoji: '', avatarId: a.avatarId,
+                }))
+              : []}
+            onEnd={sid => { setActiveSession(null); navigate(`/sessions/${sid}/feedback`); }}
           />
         )}
       </AnimatePresence>
