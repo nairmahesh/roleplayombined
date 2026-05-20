@@ -170,6 +170,12 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
         return;
       }
 
+      if (!signedUrl) {
+        toast.error('Voice AI is not available in demo mode. Connect a backend with a valid ElevenLabs API key to enable live calls.', { duration: 8000 });
+        onEnd(sessionId);
+        return;
+      }
+
       // No client-side prompt override — each agent has its system prompt baked in at creation.
       // Voice override only if persona specifies a different ElevenLabs voice.
       const overrides = persona.elevenlabsVoiceId

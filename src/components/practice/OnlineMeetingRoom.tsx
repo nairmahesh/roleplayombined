@@ -218,6 +218,12 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
       return;
     }
 
+    if (!signedUrl) {
+      toast.error('Voice AI is not available in demo mode. Connect a backend with a valid ElevenLabs API key to enable live calls.', { duration: 8000 });
+      onEnd(sessionId);
+      return;
+    }
+
     const overrides = persona.elevenlabsVoiceId ? { tts: { voiceId: persona.elevenlabsVoiceId } } : undefined;
     sessionStartedRef.current = true;
     startSession({

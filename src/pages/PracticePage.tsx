@@ -2854,8 +2854,8 @@ export function PracticePage() {
               {/* Scrollable body */}
               <div className="overflow-y-auto flex-1 px-4 py-4 sm:p-6 flex flex-col gap-4">
                 {/* Persona header */}
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="rounded-full overflow-hidden ring-2 ring-white/10 flex-shrink-0">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className="rounded-full overflow-hidden ring-2 ring-white/10 flex-shrink-0 mt-0.5">
                     <AvatarDisplay avatarId={avatarId} size={56} />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -2870,6 +2870,13 @@ export function PracticePage() {
                       </span>
                     </div>
                   </div>
+                  <button
+                    onClick={() => setQuickLaunchData(null)}
+                    className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-white/50 hover:text-white transition-all"
+                    aria-label="Close"
+                  >
+                    <X size={14} />
+                  </button>
                 </div>
 
                 {/* Tabbed: Scenario Context / Knowledge / Questions */}
