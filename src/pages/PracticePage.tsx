@@ -1205,55 +1205,79 @@ export function PracticePage() {
             )}
           </div>
 
-          {/* ── VIEW-ONLY: two-column summary + launch ─────────────────────────── */}
+          {/* ── VIEW-ONLY: scenario briefing + launch ──────────────────────────── */}
           {setupMode === 'view' && (
-            <div className="flex flex-col md:flex-row gap-4 items-start">
-              {/* Left: persona card */}
-              <div className="flex-1 min-w-0 card p-5 flex flex-col gap-4">
-                <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-5 max-w-2xl">
+
+              {/* Scenario header card */}
+              <div className="card p-5 relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: 'linear-gradient(90deg, var(--accent), var(--accent3))' }} />
+                <div className="flex items-start gap-4">
                   <div className="rounded-full overflow-hidden ring-2 ring-white/10 flex-shrink-0">
-                    <AvatarDisplay avatarId={avatarId} size={60} />
+                    <AvatarDisplay avatarId={avatarId} size={64} />
                   </div>
-                  <div className="min-w-0">
-                    <div className="font-display text-[16px] font-bold leading-tight truncate">{displayName}</div>
-                    <div className="text-[12.5px] text-white/65 mt-0.5 truncate">{displayTitle}</div>
-                    <div className="flex flex-wrap gap-1.5 mt-1.5">
-                      <span className={clsx('text-[10.5px] px-2 py-0.5 rounded border', DIFFICULTY_COLORS[difficulty] || 'text-white/80 bg-white/5 border-white/10')}>{difficulty}</span>
-                      {industry && <span className="text-[10.5px] px-2 py-0.5 rounded bg-white/[0.05] border border-white/[0.07] text-white/80">{industry}</span>}
-                      {roleplayType && <span className="text-[10.5px] px-2 py-0.5 rounded bg-white/[0.05] border border-white/[0.07] text-white/80">{roleplayType}</span>}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-display text-[18px] font-bold leading-tight">{displayName}</div>
+                    {displayTitle && <div className="text-[13px] text-white/65 mt-0.5">{displayTitle}</div>}
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      <span className={clsx('text-[11px] px-2 py-0.5 rounded border font-medium', DIFFICULTY_COLORS[difficulty] || 'text-white/80 bg-white/5 border-white/10')}>{difficulty}</span>
+                      {industry && <span className="text-[11px] px-2 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/80">{industry}</span>}
+                      {roleplayType && <span className="text-[11px] px-2 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/80">{roleplayType}</span>}
+                      {language && language !== 'English' && <span className="text-[11px] px-2 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/80">{language}</span>}
                     </div>
                   </div>
+                  {selectedCreator && (
+                    <span className="text-[10.5px] text-white/40 flex-shrink-0 mt-0.5">by {selectedCreator}</span>
+                  )}
                 </div>
-                <div className="border-t border-white/[0.06] pt-4">
-                  <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Persona Instructions</p>
-                  <div className="bg-white/[0.03] border border-white/[0.07] rounded-[10px] p-3 text-[12px] text-white/70 leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap font-mono">
-                    {personaContext || <span className="text-white/65 italic">No context provided.</span>}
+              </div>
+
+              {/* Your mission — what the user needs to do */}
+              <div className="card p-5 flex flex-col gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-[6px] bg-accent/10 flex items-center justify-center flex-shrink-0">
+                    <Info size={12} className="text-accent/70" />
                   </div>
+                  <span className="text-[13px] font-semibold">Your Mission</span>
                 </div>
-                {suggestedQuestions.length > 0 && (
+                <p className="text-[13px] text-white/80 leading-relaxed">
+                  You are going to practice a <strong className="text-white">{roleplayType || 'roleplay'}</strong> with{' '}
+                  <strong className="text-white">{displayName}</strong>
+                  {displayTitle ? <span className="text-white/70">, {displayTitle}</span> : ''}.
+                  {industry ? <span> The scenario is set in the <strong className="text-white">{industry}</strong> industry.</span> : ''}
+                  {' '}Your goal is to apply your sales skills and handle the conversation professionally.
+                </p>
+
+                {/* Objections the user should prepare for */}
+                {objections.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Expected Questions</p>
+                    <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wider mb-2">Expect These Objections</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {suggestedQuestions.map((q, i) => (
-                        <span key={i} className="text-[11px] px-2 py-1 rounded-[7px] border border-white/[0.08] bg-white/[0.03] text-white/65">{q}</span>
+                      {objections.map((obj, i) => (
+                        <span key={i} className="flex items-center gap-1 text-[11.5px] px-2.5 py-1 rounded-[8px] border border-amber-400/20 bg-amber-400/[0.05] text-amber-400/80">
+                          <span className="text-[9px] font-bold uppercase tracking-wide text-amber-400/50 mr-0.5">!</span>
+                          {obj}
+                        </span>
                       ))}
                     </div>
                   </div>
                 )}
-                {objections.length > 0 && (
+
+                {/* Suggested questions to expect */}
+                {suggestedQuestions.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Objections</p>
+                    <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wider mb-2">Questions You May Face</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {objections.map((obj, i) => (
-                        <span key={i} className="text-[11px] px-2 py-1 rounded-[7px] border border-white/[0.1] bg-white/[0.03] text-white/65">{obj}</span>
+                      {suggestedQuestions.map((q, i) => (
+                        <span key={i} className="text-[11.5px] px-2.5 py-1 rounded-[8px] border border-white/[0.08] bg-white/[0.03] text-white/65">{q}</span>
                       ))}
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Right: session config + start */}
-              <div className="flex flex-col gap-3 w-full md:w-72 md:flex-shrink-0">
+              {/* Session config + start */}
+              <div className="flex flex-col gap-3 w-full">
                 <div className="card p-4">
                   <FrameworkSelector
                     framework={framework}
@@ -2337,6 +2361,11 @@ export function PracticePage() {
             <PreCallBriefing
               personaName={pendingSession.personaDisplay.name}
               personaTitle={pendingSession.personaDisplay.title}
+              avatarId={avatarId}
+              industry={industry}
+              roleplayType={roleplayType}
+              difficulty={difficulty}
+              sessionType={sessionType}
               briefing={userBriefing}
               onReady={() => {
                 setShowBriefing(false);
