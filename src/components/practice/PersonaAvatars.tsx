@@ -14,6 +14,7 @@ export interface VoiceConfig {
 // ── Registry ──────────────────────────────────────────────────────────────────
 
 export const AVATARS = [
+  // ── Original set (local files) ──────────────────────────────────────────────
   { id: 'alex',   name: 'Alex Chen',      ethnicity: 'east-asian'     as Ethnicity, gender: 'male'   },
   { id: 'sarah',  name: 'Sarah Mitchell', ethnicity: 'white'          as Ethnicity, gender: 'female' },
   { id: 'james',  name: "James O'Brien",  ethnicity: 'white'          as Ethnicity, gender: 'male'   },
@@ -28,6 +29,19 @@ export const AVATARS = [
   { id: 'yuki',   name: 'Yuki Tanaka',    ethnicity: 'east-asian'     as Ethnicity, gender: 'female' },
   { id: 'aisha',  name: 'Aisha Brown',    ethnicity: 'black'          as Ethnicity, gender: 'female' },
   { id: 'carlos', name: 'Carlos Rivera',  ethnicity: 'hispanic'       as Ethnicity, gender: 'male'   },
+  // ── Extended set (AI-generated faces via thispersondoesnotexist.com, stored locally) ──
+  { id: 'noah',    name: 'Noah Williams',    ethnicity: 'white'          as Ethnicity, gender: 'male'   },
+  { id: 'sofia',   name: 'Sofia Reyes',      ethnicity: 'hispanic'       as Ethnicity, gender: 'female' },
+  { id: 'kwame',   name: 'Kwame Asante',     ethnicity: 'black'          as Ethnicity, gender: 'male'   },
+  { id: 'nina',    name: 'Nina Petrova',     ethnicity: 'white'          as Ethnicity, gender: 'female' },
+  { id: 'wei',     name: 'Wei Zhang',        ethnicity: 'east-asian'     as Ethnicity, gender: 'male'   },
+  { id: 'amara',   name: 'Amara Okafor',     ethnicity: 'black'          as Ethnicity, gender: 'female' },
+  { id: 'hassan',  name: 'Hassan Al-Rashid', ethnicity: 'middle-eastern' as Ethnicity, gender: 'male'   },
+  { id: 'mei',     name: 'Mei Lin',           ethnicity: 'east-asian'     as Ethnicity, gender: 'female' },
+  { id: 'diego',   name: 'Diego Morales',    ethnicity: 'hispanic'       as Ethnicity, gender: 'male'   },
+  { id: 'fatima',  name: 'Fatima Al-Sayed',  ethnicity: 'middle-eastern' as Ethnicity, gender: 'female' },
+  { id: 'dev',     name: 'Dev Sharma',       ethnicity: 'south-asian'    as Ethnicity, gender: 'male'   },
+  { id: 'zara',    name: 'Zara Khan',        ethnicity: 'south-asian'    as Ethnicity, gender: 'female' },
 ] as const;
 
 export type AvatarId = typeof AVATARS[number]['id'];
@@ -48,10 +62,22 @@ export const AVATAR_VOICE_CONFIG: Record<AvatarId, VoiceConfig> = {
   ravi:   { elevenlabsId: 'onwK4e9ZLuTAKqWW03F9', lang: 'en-GB', nameHints: ['Daniel', 'Google UK English Male'],               pitch: 0.97, rate: 0.95 },
   yuki:   { elevenlabsId: 'XB0fDUnXU5powFXDhCwa', lang: 'en-GB', nameHints: ['Kate', 'Google UK English Female'],               pitch: 1.08, rate: 1.0  },
   aisha:  { elevenlabsId: 'jBpfuIE2acCO8z3wKNLl', lang: 'en-US', nameHints: ['Samantha', 'Google US English Female'],          pitch: 1.12, rate: 1.05 },
-  carlos: { elevenlabsId: 'bIHbv24MWmeRgasZH58o', lang: 'en-US', nameHints: ['Alex', 'Google US English'],                     pitch: 0.98, rate: 0.97 },
+  carlos:  { elevenlabsId: 'bIHbv24MWmeRgasZH58o', lang: 'en-US', nameHints: ['Alex', 'Google US English'],                     pitch: 0.98, rate: 0.97 },
+  noah:    { elevenlabsId: 'VR6AewLTigWG4xSOukaG', lang: 'en-US', nameHints: ['Alex', 'David', 'Google US English'],             pitch: 1.0,  rate: 1.0  },
+  sofia:   { elevenlabsId: 'AZnzlk1XvdvUeBnXmlld', lang: 'en-US', nameHints: ['Samantha', 'Google US English Female'],          pitch: 1.1,  rate: 1.02 },
+  kwame:   { elevenlabsId: 'TxGEqnHWrfWFTfGW9XjX', lang: 'en-US', nameHints: ['Alex', 'Google US English'],                     pitch: 0.90, rate: 0.95 },
+  nina:    { elevenlabsId: 'ThT5KcBeYPX3keUQqHPh', lang: 'en-GB', nameHints: ['Kate', 'Google UK English Female'],              pitch: 1.08, rate: 1.0  },
+  wei:     { elevenlabsId: 'ErXwobaYiN019PkySvjV', lang: 'en-US', nameHints: ['Daniel', 'Google US English'],                   pitch: 1.02, rate: 0.97 },
+  amara:   { elevenlabsId: 'jBpfuIE2acCO8z3wKNLl', lang: 'en-US', nameHints: ['Samantha', 'Google US English Female'],          pitch: 1.08, rate: 1.0  },
+  hassan:  { elevenlabsId: 'pNInz6obpgDQGcFmaJgB', lang: 'en-US', nameHints: ['Fred', 'Google US English'],                     pitch: 0.88, rate: 0.93 },
+  mei:     { elevenlabsId: 'XB0fDUnXU5powFXDhCwa', lang: 'en-GB', nameHints: ['Kate', 'Google UK English Female'],              pitch: 1.12, rate: 1.0  },
+  diego:   { elevenlabsId: 'bIHbv24MWmeRgasZH58o', lang: 'en-US', nameHints: ['Alex', 'Google US English'],                     pitch: 0.96, rate: 1.0  },
+  fatima:  { elevenlabsId: '21m00Tcm4TlvDq8ikWAM', lang: 'en-US', nameHints: ['Samantha', 'Google US English Female'],          pitch: 1.06, rate: 1.0  },
+  dev:     { elevenlabsId: 'onwK4e9ZLuTAKqWW03F9', lang: 'en-GB', nameHints: ['Daniel', 'Google UK English Male'],              pitch: 0.98, rate: 0.97 },
+  zara:    { elevenlabsId: 'EXAVITQu4vr4xnSDxMaL', lang: 'en-US', nameHints: ['Serena', 'Google US English Female'],            pitch: 1.1,  rate: 1.0  },
 };
 
-// ── Static AI-generated avatar photos (frontend/public/avatars/*.jpg) ────────
+// ── Static AI-generated avatar photos (public/avatars/*.jpg) ─────────────────
 
 const AVATAR_PHOTOS: Record<string, string> = Object.fromEntries(
   AVATARS.map(a => [a.id, `/avatars/${a.id}.jpg`])
