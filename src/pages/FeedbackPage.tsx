@@ -764,34 +764,52 @@ export function FeedbackPage() {
                               {group.earnedPoints} / {group.maxPoints}
                             </span>
                           </div>
-                          {group.criteria.map((criterion, ci) => (
-                            <button
+                          {group.criteria.map((criterion, ci) => {
+                            const tsInReasoning = criterion.reasoning?.match(/\b(\d+):(\d{2})\b/);
+                            const criterionTsMs = tsInReasoning ? (parseInt(tsInReasoning[1]) * 60 + parseInt(tsInReasoning[2])) * 1000 : null;
+                            return (
+                            <div
                               key={ci}
-                              onClick={() => {
-                                const groupId = `sg-${gi}`;
-                                setExpandedId(expandedId === groupId ? null : groupId);
-                                // Scroll to accordion section below
-                                setTimeout(() => {
-                                  const el = document.getElementById(`scorecard-group-${gi}`);
-                                  el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                                }, 80);
-                              }}
-                              className="flex items-center gap-2 py-2 border-b text-left w-full group/crit hover:bg-white/[0.02] transition-colors"
+                              className="flex items-center gap-2 py-2 border-b group/crit hover:bg-white/[0.02] transition-colors"
                               style={{ borderColor: 'var(--border)' }}
                             >
                               {criterion.passed
                                 ? <CheckCircle size={13} className="flex-shrink-0" style={{ color: '#06D6A0' }} />
                                 : <X size={13} className="flex-shrink-0" style={{ color: '#FF6B6B' }} />
                               }
-                              <span className="text-[11.5px] leading-snug flex-1 min-w-0 truncate" style={{ color: 'var(--text2)' }}>
+                              <button
+                                className="text-[11.5px] leading-snug flex-1 min-w-0 truncate text-left"
+                                style={{ color: 'var(--text2)' }}
+                                onClick={() => {
+                                  const groupId = `sg-${gi}`;
+                                  setExpandedId(expandedId === groupId ? null : groupId);
+                                  setTimeout(() => {
+                                    const el = document.getElementById(`scorecard-group-${gi}`);
+                                    el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                  }, 80);
+                                }}
+                              >
                                 {criterion.question}
-                              </span>
-                              <span className="text-[9px] flex-shrink-0 font-medium opacity-0 group-hover/crit:opacity-60 transition-opacity" style={{ color: 'var(--text3)' }}>
-                                {criterion.passed ? '1/1' : '0/1'}
-                              </span>
-                              <ChevronRight size={10} className="flex-shrink-0 opacity-0 group-hover/crit:opacity-40 transition-opacity" style={{ color: 'var(--text3)' }} />
-                            </button>
-                          ))}
+                              </button>
+                              {criterionTsMs !== null ? (
+                                <button
+                                  onClick={() => jumpToTimestamp(criterionTsMs)}
+                                  className="flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] text-[10px] font-medium flex-shrink-0 transition-all hover:scale-105"
+                                  style={{ background: 'rgba(91,111,255,0.1)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.2)' }}
+                                  title={`Seek to ${fmt(criterionTsMs)}`}
+                                >
+                                  <Play size={7} fill="currentColor" /> {fmt(criterionTsMs)}
+                                </button>
+                              ) : (
+                                <>
+                                  <span className="text-[9px] flex-shrink-0 font-medium opacity-0 group-hover/crit:opacity-60 transition-opacity" style={{ color: 'var(--text3)' }}>
+                                    {criterion.passed ? '1/1' : '0/1'}
+                                  </span>
+                                  <ChevronRight size={10} className="flex-shrink-0 opacity-0 group-hover/crit:opacity-40 transition-opacity cursor-pointer" style={{ color: 'var(--text3)' }} onClick={() => { const groupId = `sg-${gi}`; setExpandedId(expandedId === groupId ? null : groupId); setTimeout(() => { document.getElementById(`scorecard-group-${gi}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 80); }} />
+                                </>
+                              )}
+                            </div>
+                          );})}
                         </div>
                       ))}
                     </div>
@@ -1007,7 +1025,7 @@ export function FeedbackPage() {
                                               <span className="text-[12px] leading-relaxed flex-1" style={{ color: 'var(--text2)' }}>{ev}</span>
                                               {tsMs != null && (
                                                 <button
-                                                  onClick={() => jumpToTimestamp(tsMs, true)}
+                                                  onClick={() => jumpToTimestamp(tsMs)}
                                                   className="flex items-center gap-1 px-2 py-0.5 rounded-[6px] text-[10.5px] font-medium flex-shrink-0 opacity-70 group-hover/ev:opacity-100 transition-all hover:scale-105"
                                                   style={{ background: 'rgba(91,111,255,0.12)', color: 'var(--accent)', border: '1px solid rgba(91,111,255,0.2)' }}
                                                 >
