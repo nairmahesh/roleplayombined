@@ -5,7 +5,7 @@ import { useAuthStore, useThemeStore } from '@/lib/store';
 import { authApi } from '@/lib/api';
 import { resetSocket } from '@/lib/socket';
 import toast from 'react-hot-toast';
-import { LayoutDashboard, Play, ClipboardList, Trophy, Users, Settings, LogOut, Target, Building2, Globe, Menu, X, Sun, Moon, Zap, Bot, BarChart3, CircleUser as UserCircle, ChevronDown, Activity } from 'lucide-react';
+import { LayoutDashboard, Play, ClipboardList, Trophy, Users, Settings, LogOut, Target, Building2, Globe, Menu, X, Sun, Moon, Zap, Bot, BarChart3, CircleUser as UserCircle, ChevronDown, Activity, Plug } from 'lucide-react';
 import clsx from 'clsx';
 
 type NavItem = {
@@ -15,6 +15,7 @@ type NavItem = {
   section: string;
   badge?: string;
   roles?: string[];
+  indent?: boolean;
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -30,7 +31,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Team',        to: '/team',       icon: Users,           section: 'Admin', roles: ['COMPANY_ADMIN', 'MANAGER', 'SUPER_ADMIN'] },
   { label: 'Usage',       to: '/usage',      icon: Activity,        section: 'Admin', roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'] },
   { label: 'Plan & Modules', to: '/settings/plan', icon: Zap,       section: 'Admin', roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'] },
-  { label: 'Settings',    to: '/settings',   icon: Settings,        section: 'Admin', roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'] },
+  { label: 'Settings',     to: '/settings',              icon: Settings, section: 'Admin', roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'] },
+  { label: 'Integrations', to: '/settings/integrations', icon: Plug,     section: 'Admin', roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'], indent: true },
 ];
 
 // sections that start collapsed by default
@@ -90,12 +92,18 @@ function NavSection({
                 <NavLink
                   key={item.to + item.label}
                   to={item.to}
+                  end={item.to === '/settings'}
                   onClick={onClose}
                   className={({ isActive }) =>
-                    clsx('nav-item', isActive && 'nav-item-active font-medium')
+                    clsx('nav-item', item.indent && 'pl-8', isActive && 'nav-item-active font-medium')
                   }
                 >
-                  <item.icon size={15} className="opacity-75 flex-shrink-0" />
+                  {item.indent && (
+                    <span className="w-3 flex-shrink-0 flex items-center justify-center opacity-30">
+                      <span className="w-1 h-1 rounded-full bg-current" />
+                    </span>
+                  )}
+                  <item.icon size={item.indent ? 13 : 15} className="opacity-75 flex-shrink-0" />
                   <span className="flex-1">{item.label}</span>
                   {item.badge && (
                     <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-accent text-white">
@@ -312,6 +320,7 @@ function PageTitle({ path }: { path: string }) {
     '/team':                    ['Team',              'Manage your agents'],
     '/usage':                   ['Usage & Costs',     'Token consumption, API costs, and user caps'],
     '/settings/plan':           ['Plan & Modules',     'Manage your subscription and feature modules'],
+    '/settings/integrations':   ['Integrations',      'Connect PitchIQ to your CRM and sales stack'],
     '/settings':                ['Settings',          'Platform configuration'],
     '/superadmin/companies':    ['Companies',         'Platform-wide company management'],
     '/superadmin/stats':        ['Platform Overview', 'System-wide statistics'],

@@ -573,35 +573,24 @@ export function SettingsPage() {
             <span className="font-display text-[14px] font-bold">CRM Integrations</span>
             <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(91,111,255,0.1)', color: 'var(--accent)' }}>Admin</span>
           </div>
-          <div className="p-5 flex flex-col gap-3">
-            <p className="text-[12px] mb-1" style={{ color: 'var(--text3)' }}>
-              Connect PitchIQ to your CRM so roleplay sessions and scores are linked to leads and customer records automatically.
+          <div className="p-5">
+            <p className="text-[12.5px] mb-4" style={{ color: 'var(--text3)' }}>
+              Connect PitchIQ to Salesforce, HubSpot, Freshsales, Pipedrive, or Odoo. Sessions and scores sync automatically to lead and contact records.
             </p>
-            {([
-              { name: 'Salesforce',  logo: 'SF',  color: '#00A1E0', desc: 'Sync sessions to lead activities and update contact scores.' },
-              { name: 'HubSpot',     logo: 'HS',  color: '#FF7A59', desc: 'Log roleplay results as deal timeline events.' },
-              { name: 'Freshsales', logo: 'FS',  color: '#2ECC71', desc: 'Attach session feedback to contacts and opportunities.' },
-              { name: 'Pipedrive',   logo: 'PD',  color: '#1F4C99', desc: 'Push scores and highlights to deal notes.' },
-              { name: 'Odoo',        logo: 'OD',  color: '#875A7B', desc: 'Create CRM lead activities from completed sessions.' },
-            ] as const).map(({ name, logo, color, desc }) => (
-              <div key={name} className="flex items-center gap-3 p-3.5 rounded-[12px] border transition-all hover:border-[rgba(255,255,255,0.15)]" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
-                <div className="w-9 h-9 rounded-[9px] flex items-center justify-center text-[11px] font-black text-white flex-shrink-0" style={{ background: color }}>
-                  {logo}
+            <button
+              type="button"
+              onClick={() => navigate('/settings/integrations')}
+              className="flex items-center justify-between w-full p-3.5 rounded-[12px] border border-border-2 bg-bg-2 transition-all hover:border-[rgba(91,111,255,0.4)] hover:bg-[rgba(91,111,255,0.04)] group"
+            >
+              <div className="flex items-center gap-3">
+                <Plug size={14} className="text-accent" aria-hidden="true" />
+                <div className="text-left">
+                  <div className="text-[13px] font-semibold">Manage CRM Integrations</div>
+                  <div className="text-[11px] mt-0.5" style={{ color: 'var(--text3)' }}>Salesforce · HubSpot · Freshsales · Pipedrive · Odoo</div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>{name}</div>
-                  <div className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--text3)' }}>{desc}</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => navigate('/settings/integrations')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[11.5px] font-medium border transition-all hover:scale-105 flex-shrink-0"
-                  style={{ borderColor: `${color}44`, color, background: `${color}10` }}
-                >
-                  Configure <ChevronRight size={11} />
-                </button>
               </div>
-            ))}
+              <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" style={{ color: 'var(--text3)' }} aria-hidden="true" />
+            </button>
           </div>
         </div>
       )}

@@ -25,6 +25,7 @@ const PlanSettingsPage    = lazy(() => import('@/pages/PlanSettingsPage').then(m
 const PersonasPage        = lazy(() => import('@/pages/PersonasPage').then(m => ({ default: m.PersonasPage })));
 const AnalyticsPage       = lazy(() => import('@/pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
 const UsagePage           = lazy(() => import('@/pages/UsagePage').then(m => ({ default: m.UsagePage })));
+const IntegrationsPage    = lazy(() => import('@/pages/IntegrationsPage').then(m => ({ default: m.IntegrationsPage })));
 
 // Eagerly preload all main nav pages so subsequent navigations are instant
 startTransition(() => {
@@ -147,6 +148,14 @@ export default function App() {
                 element={
                   <RequireRole roles={['COMPANY_ADMIN', 'SUPER_ADMIN']}>
                     <ErrorBoundary><EvaluationPromptsPage /></ErrorBoundary>
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="settings/integrations"
+                element={
+                  <RequireRole roles={['COMPANY_ADMIN', 'SUPER_ADMIN']}>
+                    <ErrorBoundary><IntegrationsPage /></ErrorBoundary>
                   </RequireRole>
                 }
               />
