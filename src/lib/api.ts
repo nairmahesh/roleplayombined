@@ -25,10 +25,73 @@ http.interceptors.request.use((cfg) => {
   return cfg;
 });
 
+// ── Demo users (no backend required) ─────────────────────────────────────────
+
+const DEMO_COMPANY = {
+  id: '00000000-0000-0000-0000-000000000001',
+  name: 'Demo Company',
+  slug: 'demo',
+  defaultFramework: 'MEDDIC' as const,
+  passThreshold: 70,
+  industry: 'Technology',
+};
+
+const DEMO_USERS: Record<string, User & { password: string }> = {
+  'superadmin@demo.com': {
+    id: '10000000-0000-0000-0000-000000000001',
+    email: 'superadmin@demo.com',
+    firstName: 'Super',
+    lastName: 'Admin',
+    role: 'SUPER_ADMIN',
+    companyId: DEMO_COMPANY.id,
+    company: DEMO_COMPANY,
+    isActive: true,
+    password: 'Demo1234!',
+  },
+  'admin@demo.com': {
+    id: '10000000-0000-0000-0000-000000000002',
+    email: 'admin@demo.com',
+    firstName: 'Company',
+    lastName: 'Admin',
+    role: 'COMPANY_ADMIN',
+    companyId: DEMO_COMPANY.id,
+    company: DEMO_COMPANY,
+    isActive: true,
+    password: 'Demo1234!',
+  },
+  'manager@demo.com': {
+    id: '10000000-0000-0000-0000-000000000003',
+    email: 'manager@demo.com',
+    firstName: 'Demo',
+    lastName: 'Manager',
+    role: 'MANAGER',
+    companyId: DEMO_COMPANY.id,
+    company: DEMO_COMPANY,
+    isActive: true,
+    password: 'Demo1234!',
+  },
+  'agent@demo.com': {
+    id: '10000000-0000-0000-0000-000000000004',
+    email: 'agent@demo.com',
+    firstName: 'Demo',
+    lastName: 'Agent',
+    role: 'AGENT',
+    companyId: DEMO_COMPANY.id,
+    company: DEMO_COMPANY,
+    isActive: true,
+    password: 'Demo1234!',
+  },
+};
+
 // ── Auth API ──────────────────────────────────────────────────────────────────
 
 export const authApi = {
   login: async (email: string, password: string) => {
+    const demo = DEMO_USERS[email.toLowerCase()];
+    if (demo && demo.password === password) {
+      const { password: _pw, ...user } = demo;
+      return { user, accessToken: 'demo-token', refreshToken: 'demo-refresh' };
+    }
     const { data } = await http.post('/auth/login', { email, password });
     return data as { user: User; accessToken: string; refreshToken: string };
   },
