@@ -2997,22 +2997,24 @@ function GalleryCard({
       </div>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-start gap-2 justify-between">
-          <div className="min-w-0">
+        <div className="flex items-start gap-1.5 justify-between">
+          <div className="min-w-0 flex-1 pr-1">
             <div className="font-semibold text-[13px] leading-snug truncate">{name}</div>
             {subtitle && <div className="text-[11.5px] text-white/70 mt-0.5 truncate">{subtitle}</div>}
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
-            {/* Session type pill */}
+            {/* Session type — icon+label on md+, icon-only on small */}
             {sessionType && (
-              <span className={clsx(
-                'hidden xs:flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full border font-medium flex-shrink-0',
-                isOnline
-                  ? 'text-sky-400 bg-sky-400/10 border-sky-400/20'
-                  : 'text-white/60 bg-white/[0.04] border-white/[0.1]',
-              )}>
-                {isOnline ? <Monitor size={8} /> : <Phone size={8} />}
-                {isOnline ? 'Online' : 'Phone'}
+              <span
+                title={isOnline ? 'Online Meeting' : 'Phone Call'}
+                className={clsx(
+                  'flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full border font-medium flex-shrink-0',
+                  isOnline
+                    ? 'text-sky-400 bg-sky-400/10 border-sky-400/20'
+                    : 'text-white/60 bg-white/[0.04] border-white/[0.1]',
+                )}>
+                {isOnline ? <Monitor size={9} /> : <Phone size={9} />}
+                <span className="hidden sm:inline">{isOnline ? 'Online' : 'Phone'}</span>
               </span>
             )}
             {/* Time limit badge */}
@@ -3023,9 +3025,9 @@ function GalleryCard({
             {hasKnowledge && (
               <span
                 title="Has knowledge base content"
-                className="flex items-center justify-center w-5 h-5 rounded-full border border-accent/25 bg-accent/10 text-accent/70 flex-shrink-0"
+                className="flex items-center justify-center w-[18px] h-[18px] rounded-full border border-accent/30 bg-accent/10 text-accent/70 flex-shrink-0"
               >
-                <Database size={9} />
+                <BookOpen size={9} />
               </span>
             )}
             {canEdit && (
