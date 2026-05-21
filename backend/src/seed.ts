@@ -13,6 +13,7 @@ import { Persona } from './models/Persona';
 import { Session } from './models/Session';
 import { TeamRoleplay } from './models/TeamRoleplay';
 import { EvaluationPrompt } from './models/EvaluationPrompt';
+import { UsageLog } from './models/UsageLog';
 import { createAgent, checkHealth, getOrCreateAgentId } from './services/elevenlabs';
 
 async function seed() {
@@ -27,6 +28,7 @@ async function seed() {
     Session.deleteMany({}),
     TeamRoleplay.deleteMany({}),
     EvaluationPrompt.deleteMany({}),
+    UsageLog.deleteMany({}),
   ]);
   console.log('Cleared existing data');
 
@@ -124,7 +126,34 @@ async function seed() {
     { email: 'drew@demo.com', passwordHash: pw('Demo1234!'), firstName: 'Drew', lastName: 'Okonkwo', role: 'MANAGER', companyId: company._id, isActive: true, location: 'London', region: 'EMEA', team: 'Enterprise', territory: 'UK & Europe', zone: 'Northern Europe' },
   ]);
 
-  console.log('Created', 4 + agents.length, 'users');
+  const drewUser = agents.find((a) => a.email === 'drew@demo.com')!;
+
+  await User.updateMany(
+    { email: { $in: ['jordan@demo.com', 'taylor@demo.com', 'morgan@demo.com'] } },
+    { $set: { managerId: manager._id } }
+  );
+  await User.updateMany(
+    { email: { $in: ['sam@demo.com', 'casey@demo.com', 'riley@demo.com'] } },
+    { $set: { managerId: drewUser._id } }
+  );
+
+  // ── FinanceFlow users ──────────────────────────────────────────────────────
+  const financeAdmin = await User.create({
+    email: 'financeadmin@demo.com',
+    passwordHash: pw('Demo1234!'),
+    firstName: 'Lisa',
+    lastName: 'Park',
+    role: 'COMPANY_ADMIN',
+    companyId: company2._id,
+    isActive: true,
+  });
+
+  const financeAgents = await User.insertMany([
+    { email: 'financeagent1@demo.com', passwordHash: pw('Demo1234!'), firstName: 'Noah', lastName: 'Webb', role: 'AGENT', companyId: company2._id, isActive: true, location: 'New York', region: 'North America', team: 'Sales' },
+    { email: 'financeagent2@demo.com', passwordHash: pw('Demo1234!'), firstName: 'Mia', lastName: 'Torres', role: 'AGENT', companyId: company2._id, isActive: true, location: 'London', region: 'EMEA', team: 'Sales' },
+  ]);
+
+  console.log('Created', 4 + agents.length + 3, 'users');
 
   // ── Personas ───────────────────────────────────────────────────────────────
   const personas = await Persona.insertMany([
@@ -817,11 +846,461 @@ async function seed() {
     },
   ]);
 
+  // ── Sessions 8–13: Additional TechCorp agent coverage ────────────────────
+  await Session.insertMany([
+    {
+      type: 'PHONE_CALL', status: 'COMPLETED', framework: 'MEDDIC', totalScore: 78,
+      durationSeconds: 423,
+      startedAt: new Date(now - 1 * 86_400_000 - 423_000),
+      endedAt: new Date(now - 1 * 86_400_000),
+      userId: agents[4]._id, personaId: personas[0]._id, companyId: company._id,
+      scenarioConfig: { industry: 'SaaS', roleplayType: 'Discovery Call', personaContext: personas[0].systemPrompt, displayName: personas[0].name, displayTitle: personas[0].title, displayEmoji: '', difficulty: 'MEDIUM', suggestedQuestions: [], avatarId: 'sarah' },
+      messages: [
+        { role: 'user', content: "Sarah, I know you're in the middle of Q3 close. One quick question — what's your biggest challenge right now with rep performance?", timestampMs: 5000 },
+        { role: 'assistant', content: "Ramp time. New reps take 9 months to be productive. Industry average is 6. That's 3 months of quota I'm giving up on every hire.", timestampMs: 22000 },
+        { role: 'user', content: "Three months of lost quota per hire — how many AEs are you ramping right now?", timestampMs: 40000 },
+        { role: 'assistant', content: "Four. And we're about to open three more headcount in Q4.", timestampMs: 58000 },
+        { role: 'user', content: "Seven reps at 3 months' lost quota. If their average quota is $1M, you're looking at $1.75M in forgone revenue this year. Is cutting ramp time on your H2 priority list?", timestampMs: 75000 },
+        { role: 'assistant', content: "Yes, but we've tried coaching platforms before. They don't stick.", timestampMs: 102000 },
+        { role: 'user', content: "What if I could show you how three companies your size cut ramp from 9 months to 5 without adding headcount? Would 20 minutes be worth your time?", timestampMs: 120000 },
+        { role: 'assistant', content: "If those are real numbers, yes. Send me something concrete.", timestampMs: 145000 },
+      ],
+      frameworkScores: [
+        { component: 'Metrics', score: 85, feedback: 'Excellent quantification — converted 3 months of ramp into $1.75M forgone revenue using prospect\'s own headcount. Anchors the pain in financial terms.', evidence: ['$1.75M forgone revenue calculated at 1:15', 'Used prospect\'s own 9-month ramp figure'] },
+        { component: 'Economic Buyer', score: 62, feedback: 'Sarah is likely the EB but you didn\'t confirm whether the decision involves her CFO or board. Should have asked: "Is this something you can sign off on independently?"', evidence: ['Did not map decision authority at any point in the call'] },
+        { component: 'Identify Pain', score: 88, feedback: 'Ramp time uncovered immediately, quantified well, and connected to Q4 expansion making it urgent. Strong multilayer pain discovery.', evidence: ['9-month ramp vs 6-month benchmark at 0:22', 'Q4 expansion of 3 more reps increases urgency at 0:58'] },
+        { component: 'Champion', score: 58, feedback: 'You got a conditional next step but didn\'t arm Sarah — no internal pitch offer, no "how do you sell this internally" question.', evidence: ['Did not ask Sarah what she needs to present this internally at 2:25'] },
+      ],
+      timelineEvents: [
+        { type: 'GOOD', timestampMs: 5000, title: 'Context-aware opener', description: 'Acknowledged Q3 close — shows respect for prospect time and earns goodwill before the first question.', transcriptRef: "I know you're in the middle of Q3 close" },
+        { type: 'GOOD', timestampMs: 75000, title: 'ROI in prospect\'s own terms', description: 'Converted abstract ramp delay into $1.75M forgone revenue using the prospect\'s own headcount numbers.', transcriptRef: "you're looking at $1.75M in forgone revenue this year" },
+        { type: 'WARNING', timestampMs: 102000, title: 'Past platform failure not explored', description: 'Sarah mentioned coaching platforms that don\'t stick — you bypassed this to pitch a reference. Should have asked what specifically failed.', suggestion: 'Ask: "When you say they don\'t stick — was that a product issue, adoption issue, or management issue?" This shapes your entire approach.' },
+      ],
+      aiFeedback: JSON.stringify({
+        overallFeedback: 'Strong discovery with excellent pain quantification. You converted ramp delay into $1.75M forgone revenue using Sarah\'s own numbers. The main gaps are authority mapping and building Sarah as a champion for the internal conversation.',
+        strengths: ['Context-aware opener earned trust before the first question', 'Connected Q4 headcount expansion to pain urgency', 'Let Sarah confirm the ramp number before framing the financial impact'],
+        improvements: ['Map the decision process: "Is this something you can move on independently, or does it need board approval?"', 'Probe previous platform failures before jumping to a reference', 'Offer internal talking points: "What would you need to present this to Marcus?"'],
+        proTip: 'Before citing a customer reference, ask: "What would you need to see in a case study to find it credible?" — this tells you exactly which proof point to lead with.',
+        scorecardGroups: [
+          { group: 'Introduction & Agenda', maxPoints: 2, earnedPoints: 1, criteria: [
+            { question: 'Did the seller discuss the agenda and ask for prospect\'s input?', passed: false, reasoning: 'No explicit agenda set — jumped straight to discovery question at 0:05.' },
+            { question: 'Did the seller introduce an Upfront Contract?', passed: true, reasoning: 'Implicit contract established by asking permission before proceeding.' },
+          ]},
+          { group: 'Pain & Metrics Discovery', maxPoints: 2, earnedPoints: 2, criteria: [
+            { question: 'Did the seller uncover specific pain points?', passed: true, reasoning: 'Ramp time at 9 months vs 6-month benchmark surfaced at 0:22.' },
+            { question: 'Did the seller uncover relevant metrics?', passed: true, reasoning: '$1.75M forgone revenue quantified at 1:15.' },
+          ]},
+          { group: 'Objection Handling', maxPoints: 1, earnedPoints: 0, criteria: [
+            { question: 'Did the seller handle objections effectively?', passed: false, reasoning: 'Past platform failure objection at 1:42 was bypassed rather than explored.' },
+          ]},
+          { group: 'Closing', maxPoints: 2, earnedPoints: 2, criteria: [
+            { question: 'Did the seller revisit the upfront contract and define next steps?', passed: true, reasoning: 'Asked for 20-minute meeting with concrete proof at 2:00.' },
+            { question: 'Did the seller qualify out or in effectively?', passed: true, reasoning: 'Sarah agreed to review concrete case study — conditional qualification.' },
+          ]},
+        ],
+      }),
+    },
+    {
+      type: 'ONLINE_MEETING', status: 'COMPLETED', framework: 'SPIN', totalScore: 65,
+      durationSeconds: 390,
+      startedAt: new Date(now - 3 * 86_400_000 - 900_000),
+      endedAt: new Date(now - 3 * 86_400_000 - 510_000),
+      userId: agents[5]._id, personaId: personas[4]._id, companyId: company._id,
+      scenarioConfig: { industry: 'Marketing', roleplayType: 'Discovery Call', personaContext: personas[4].systemPrompt, displayName: personas[4].name, displayTitle: personas[4].title, displayEmoji: '', difficulty: 'EASY', suggestedQuestions: [], avatarId: 'emma' },
+      messages: [
+        { role: 'user', content: "Emma, I was looking at GrowthCo's recent campaigns and noticed you've been doubling down on content marketing. Is that where most of your pipeline is coming from?", timestampMs: 5000 },
+        { role: 'assistant', content: "It's part of it. We're struggling with attribution — we don't have great visibility into which content actually converts.", timestampMs: 22000 },
+        { role: 'user', content: "Attribution is a common pain point. What tool are you using today for tracking?", timestampMs: 38000 },
+        { role: 'assistant', content: "A mix of HubSpot and UTM parameters. It's messy. We spend about 5 hours a week just reconciling data.", timestampMs: 55000 },
+        { role: 'user', content: "Our platform connects all those sources automatically. It could save you that 5 hours a week.", timestampMs: 72000 },
+        { role: 'assistant', content: "Sounds interesting but I'd need to see a demo. We've been burned by tools that overpromise.", timestampMs: 92000 },
+      ],
+      frameworkScores: [
+        { component: 'Situation Questions', score: 75, feedback: 'Good situational opener using visible company research. You established the content marketing context well but moved to the tool question too quickly without deeper situational grounding.', evidence: ['Used content marketing observation as opener at 0:05', 'Identified HubSpot + UTM as current setup at 0:55'] },
+        { component: 'Problem Questions', score: 68, feedback: 'Attribution problem surfaced naturally. When Emma mentioned 5 hours/week reconciling, you didn\'t probe further — how long has this been going on? What decisions are made with bad data?', evidence: ['Attribution pain surfaced at 0:22', '5 hours/week reconciliation cost mentioned at 0:55'] },
+        { component: 'Implication Questions', score: 45, feedback: 'You jumped directly to the solution pitch after hearing the problem. No implication questions asked — what does bad attribution mean for campaign budget decisions? For board reporting?', evidence: ['Moved to solution pitch immediately at 1:12 — no implication questions asked'] },
+        { component: 'Need-Payoff Questions', score: 50, feedback: 'You stated the payoff ("could save you that 5 hours") instead of asking Emma to articulate it. In SPIN, the prospect needs to express the value — not the seller.', evidence: ['Seller stated the benefit at 1:12 instead of asking "What would it mean for you if this was solved?"'] },
+      ],
+      timelineEvents: [
+        { type: 'GOOD', timestampMs: 5000, title: 'Research-based opener', description: 'Used visible company data to open — shows preparation and immediately establishes relevance.', transcriptRef: "I was looking at GrowthCo's recent campaigns" },
+        { type: 'ISSUE', timestampMs: 72000, title: 'Premature solution pitch', description: 'Moved to a solution statement after hearing just one pain point. SPIN requires implication and need-payoff before presenting the solution.', suggestion: 'Instead of "Our platform connects all those sources", ask: "What would it mean for your campaign budget decisions if your attribution was accurate in real time?"', transcriptRef: "Our platform connects all those sources automatically." },
+        { type: 'WARNING', timestampMs: 92000, title: 'Overpromise objection unaddressed', description: 'Emma flagged she\'s been burned by tools that overpromise — this trust signal needs direct acknowledgement before any demo request.', suggestion: 'Respond with: "That\'s fair — what specifically disappointed you last time? I want to make sure I\'m not repeating that experience."', transcriptRef: "We've been burned by tools that overpromise." },
+      ],
+      aiFeedback: JSON.stringify({
+        overallFeedback: 'A promising start with good situational research but the call skipped implication and need-payoff phases entirely, jumping straight to a solution pitch. SPIN requires building the value through questions, not stating it.',
+        strengths: ['Research-based opener showed preparation and earned immediate relevance', 'Attribution pain surfaced naturally and quantified (5 hours/week)'],
+        improvements: ['Never pitch before asking implication questions — "What does bad attribution mean for your Q4 budget decisions?"', 'Let Emma articulate the value: "If this problem was solved, what would change for your team?"', 'Address the "burned before" objection directly — it\'s a trust signal that needs acknowledgement'],
+        proTip: 'In SPIN, the seller who states the benefit owns it. The seller who gets the prospect to state the benefit has built a champion.',
+        scorecardGroups: [
+          { group: 'Situation Questions', maxPoints: 2, earnedPoints: 2, criteria: [
+            { question: 'Did the seller establish the current situation before pitching?', passed: true, reasoning: 'Content marketing focus and HubSpot + UTM stack established at 0:05 and 0:55.' },
+            { question: 'Did the seller ask about current challenges?', passed: true, reasoning: 'Attribution visibility challenge surfaced at 0:22.' },
+          ]},
+          { group: 'Implication Questions', maxPoints: 2, earnedPoints: 0, criteria: [
+            { question: 'Did the seller ask about business impact of the problem?', passed: false, reasoning: 'No implication questions asked — jumped to solution pitch at 1:12.' },
+            { question: 'Did the seller chain implications to strategic risk?', passed: false, reasoning: 'Attribution data quality implications for budget decisions not explored.' },
+          ]},
+          { group: 'Need-Payoff Questions', maxPoints: 1, earnedPoints: 0, criteria: [
+            { question: 'Did the seller ask the prospect to articulate the value?', passed: false, reasoning: 'Seller stated the benefit at 1:12 instead of asking Emma to express the value.' },
+          ]},
+        ],
+      }),
+    },
+    {
+      type: 'PHONE_CALL', status: 'COMPLETED', framework: 'BANT', totalScore: 82,
+      durationSeconds: 348,
+      startedAt: new Date(now - 5 * 86_400_000 - 348_000),
+      endedAt: new Date(now - 5 * 86_400_000),
+      userId: agents[6]._id, personaId: personas[2]._id, companyId: company._id,
+      scenarioConfig: { industry: 'Construction Tech', roleplayType: 'Cold Call', personaContext: personas[2].systemPrompt, displayName: personas[2].name, displayTitle: personas[2].title, displayEmoji: '', difficulty: 'MEDIUM', suggestedQuestions: [], avatarId: 'priya' },
+      messages: [
+        { role: 'user', content: "Priya, quick question — are you seeing any delays in your materials procurement cycle? We're seeing most construction tech companies running 20-30% over their planned lead times.", timestampMs: 5000 },
+        { role: 'assistant', content: "Actually yes. Our steel supplier has been running 3 weeks late on every order this quarter.", timestampMs: 22000 },
+        { role: 'user', content: "Three weeks late per order — how many concurrent projects does that impact, and have you absorbed any penalty clauses?", timestampMs: 38000 },
+        { role: 'assistant', content: "We have 8 active projects. Two have triggered liquidated damages — about $60K total this quarter.", timestampMs: 60000 },
+        { role: 'user', content: "$60K in Q2 alone — annualised that's $240K. Is there budget to address this, or does this need to go through your CFO?", timestampMs: 78000 },
+        { role: 'assistant', content: "I have discretionary budget up to $30K. Anything above needs CFO sign-off. But $240K in penalties justifies a conversation.", timestampMs: 100000 },
+        { role: 'user', content: "Absolutely. What's your timeline? When would you want something in place?", timestampMs: 118000 },
+        { role: 'assistant', content: "Before Q3 starts, which is July 1. So we have 6 weeks.", timestampMs: 138000 },
+      ],
+      frameworkScores: [
+        { component: 'Budget', score: 88, feedback: 'Excellent budget discovery — surfaced the $30K discretionary limit and CFO approval threshold. The $240K annualisation gives a strong ROI anchor for the CFO conversation.', evidence: ['$30K discretionary threshold surfaced at 1:40', '$240K annualised penalty risk calculated at 1:18'] },
+        { component: 'Authority', score: 82, feedback: 'Good authority mapping. Identified Priya has discretionary budget and CFO is the EB above $30K. Should have asked for the CFO\'s name and priorities.', evidence: ['CFO authority above $30K surfaced at 1:40', 'CFO name and success criteria not captured'] },
+        { component: 'Need', score: 88, feedback: 'Outstanding need discovery. $60K penalty in one quarter with 8 active projects and a known root cause. Pain is real, quantified, and growing.', evidence: ['$60K Q2 penalty confirmed by Priya at 1:00', '8 active projects creates scale context at 1:00'] },
+        { component: 'Timeline', score: 72, feedback: 'July 1 deadline surfaced and 6-week window confirmed. Didn\'t map implementation steps — IT involvement, change management requirements.', evidence: ['July 1 Q3 start deadline confirmed at 2:18', 'Implementation requirements not mapped'] },
+      ],
+      timelineEvents: [
+        { type: 'GOOD', timestampMs: 5000, title: 'Industry insight as opener', description: 'Led with an industry data point before asking about Priya\'s specific situation — creates immediate relevance without assuming.', transcriptRef: 'most construction tech companies are running 20-30% over planned lead times' },
+        { type: 'GOOD', timestampMs: 78000, title: 'ROI anchoring before budget question', description: 'Annualised the $60K penalty to $240K before asking about budget — frames the budget question in ROI terms, not cost.', transcriptRef: "$60K in Q2 alone — annualised that's $240K" },
+        { type: 'WARNING', timestampMs: 100000, title: 'CFO qualification incomplete', description: 'Identified the CFO as authority but didn\'t ask for their name or what they care about — essential intelligence for the next call.', suggestion: 'Ask: "Who\'s your CFO and what does a strong business case look like to them?"' },
+      ],
+      aiFeedback: JSON.stringify({
+        overallFeedback: 'A clean, well-structured BANT call with excellent need quantification and budget discovery. You anchored in $240K annualised risk before asking about budget — the right sequence. The gap is CFO qualification.',
+        strengths: ['Industry insight opener earned immediate relevance without being assumptive', 'Annualised the quarterly penalty figure before asking about budget', 'Confirmed the July 1 hard deadline — creates natural urgency'],
+        improvements: ['Get CFO\'s name and success criteria before the next call', 'Map implementation requirements: IT involvement, go-live steps', 'Ask what happened with previous attempts to solve this problem'],
+        proTip: 'When you find a hard deadline, immediately calculate backwards: "So we\'d need to start implementation by X — are there any dependencies that could delay that?" This surfaces hidden blockers before they derail the close.',
+        scorecardGroups: [
+          { group: 'Opener', maxPoints: 2, earnedPoints: 2, criteria: [
+            { question: 'Permission-based opener?', passed: true, reasoning: '"Quick question" at 0:05 — minimal friction.' },
+            { question: 'Used research on prospect?', passed: true, reasoning: 'Industry-specific data point showed preparation.' },
+          ]},
+          { group: 'Discovery', maxPoints: 1, earnedPoints: 1, criteria: [
+            { question: 'SDR asked for preconceptions of product?', passed: true, reasoning: 'Asked about delays before pitching any product — checked relevance first.' },
+          ]},
+          { group: 'Takeaway', maxPoints: 2, earnedPoints: 2, criteria: [
+            { question: 'Re-confirmed that the time works?', passed: true, reasoning: '6-week window before July 1 confirmed at 2:18.' },
+            { question: 'Asked for success criteria for next call?', passed: true, reasoning: 'Priya confirmed $240K penalty justifies a deeper conversation.' },
+          ]},
+          { group: 'Closing', maxPoints: 2, earnedPoints: 2, criteria: [
+            { question: 'Next steps agreed upon?', passed: true, reasoning: 'Priya agreed the penalty case justifies a deeper conversation.' },
+            { question: 'Follow-up meeting booked?', passed: true, reasoning: '6-week window confirmed — meeting to be booked.' },
+          ]},
+        ],
+      }),
+    },
+    {
+      type: 'ONLINE_MEETING', status: 'COMPLETED', framework: 'SNAP', totalScore: 83,
+      durationSeconds: 312,
+      startedAt: new Date(now - 8 * 86_400_000 - 312_000),
+      endedAt: new Date(now - 8 * 86_400_000),
+      userId: agents[4]._id, personaId: personas[1]._id, companyId: company._id,
+      scenarioConfig: { industry: 'FinTech', roleplayType: 'Cold Call', personaContext: personas[1].systemPrompt, displayName: personas[1].name, displayTitle: personas[1].title, displayEmoji: '', difficulty: 'HARD', suggestedQuestions: [], avatarId: 'marcus' },
+      messages: [
+        { role: 'user', content: "Marcus, 30 seconds — we help FinTech CTOs eliminate API downtime caused by rate limiting failures. You had two incidents last month. Is that on your radar?", timestampMs: 5000 },
+        { role: 'assistant', content: "How do you know about those incidents?", timestampMs: 18000 },
+        { role: 'user', content: "StatusPage monitoring. Your API latency spiked twice between the 3rd and 12th. Based on the timing, it looked like a rate limiting cascade. Is that right?", timestampMs: 28000 },
+        { role: 'assistant', content: "That's accurate. We have a fix in progress but it's slow going.", timestampMs: 52000 },
+        { role: 'user', content: "If the fix drags into Q3 and you have another incident during an audit window, what's the exposure? Is that a conversation worth 20 minutes?", timestampMs: 65000 },
+        { role: 'assistant', content: "You've done your homework. Twenty minutes, Thursday.", timestampMs: 82000 },
+      ],
+      frameworkScores: [
+        { component: 'Simple', score: 90, feedback: 'Exceptional clarity. Every message was one thought, no jargon, direct relevance. The 30-second framing showed respect for a busy CTO.', evidence: ['30-second framing at 0:05', 'StatusPage reference — one specific fact, no feature list'] },
+        { component: 'Invaluable', score: 85, feedback: 'Used public StatusPage data to demonstrate preparation — created immediate credibility. The audit risk framing made the value urgent and specific.', evidence: ['StatusPage incident identification at 0:28', 'Audit window risk framing at 1:05 — elevated urgency'] },
+        { component: 'Align', score: 82, feedback: 'Strong alignment — you aligned to a confirmed problem. Let Marcus verify the incident cause himself before presenting context.', evidence: ['Confirmed incident type by asking "Is that right?" at 0:28'] },
+        { component: 'Priority', score: 75, feedback: 'Good close — asked for 20 minutes and justified with audit risk. Could have let Marcus name the urgency: "What\'s the cost of this dragging into Q3?"', evidence: ['Asked for 20 minutes at 1:05', 'Audit window risk used as urgency driver'] },
+      ],
+      timelineEvents: [
+        { type: 'GOOD', timestampMs: 5000, title: 'Intelligence-based opener', description: 'Used public monitoring data to open with specific, verifiable facts — immediately established credibility with a technical buyer.', transcriptRef: 'Your API latency spiked twice between the 3rd and 12th' },
+        { type: 'GOOD', timestampMs: 82000, title: 'CTO agreed to meeting', description: 'Hard-to-reach CTO agreed to a 20-minute meeting after a 6-exchange cold call — direct result of preparation and specific intelligence.', transcriptRef: "You've done your homework. Twenty minutes, Thursday." },
+      ],
+      aiFeedback: JSON.stringify({
+        overallFeedback: 'A near-perfect SNAP cold call. You used specific intelligence (StatusPage data) to earn immediate credibility with a CTO who normally rejects cold calls. Main improvement: let the CTO name the urgency before you do.',
+        strengths: ['StatusPage intelligence created instant credibility and relevance', 'One specific fact per message — never overloaded a technical buyer', 'Audit window framing elevated a technical problem to a business risk'],
+        improvements: ['Before naming the urgency, ask: "What happens if the fix slips past the audit window?" — let Marcus own the risk statement', 'Ask about the current fix timeline to understand how much urgency actually exists'],
+        proTip: 'With technical buyers, specific publicly-available intelligence (StatusPage, GitHub issues, job postings) is worth more than any feature pitch. Know their infrastructure before you call.',
+        scorecardGroups: [
+          { group: 'Opener', maxPoints: 2, earnedPoints: 2, criteria: [
+            { question: 'Permission-based opener?', passed: true, reasoning: '"30 seconds" framing at 0:05 — respectful of CTO time.' },
+            { question: 'Used research on prospect?', passed: true, reasoning: 'StatusPage incident data — highly specific, verifiable research.' },
+          ]},
+          { group: 'Discovery', maxPoints: 1, earnedPoints: 1, criteria: [
+            { question: 'SDR asked for preconceptions of product?', passed: true, reasoning: 'Asked "Is that right?" to confirm incident interpretation before pitching.' },
+          ]},
+          { group: 'Closing', maxPoints: 2, earnedPoints: 2, criteria: [
+            { question: 'Next steps agreed upon?', passed: true, reasoning: '20-minute meeting Thursday agreed at 1:22.' },
+            { question: 'Follow-up meeting booked?', passed: true, reasoning: 'Specific day (Thursday) confirmed at 1:22.' },
+          ]},
+        ],
+      }),
+    },
+    {
+      type: 'PHONE_CALL', status: 'COMPLETED', framework: 'CHALLENGER', totalScore: 72,
+      durationSeconds: 428,
+      startedAt: new Date(now - 7 * 86_400_000 - 428_000),
+      endedAt: new Date(now - 7 * 86_400_000),
+      userId: agents[5]._id, personaId: personas[5]._id, companyId: company._id,
+      scenarioConfig: { industry: 'Logistics', roleplayType: 'Sales Pitch', personaContext: personas[5].systemPrompt, displayName: personas[5].name, displayTitle: personas[5].title, displayEmoji: '', difficulty: 'MEDIUM', suggestedQuestions: [], avatarId: 'carlos' },
+      messages: [
+        { role: 'user', content: "Carlos, here's something counterintuitive. Most logistics companies think their visibility problem is that they don't have enough data. Our data shows it's the opposite — too much fragmented data, no single source of truth.", timestampMs: 8000 },
+        { role: 'assistant', content: "That resonates. We have 6 different systems reporting different numbers. My team spends half their time reconciling.", timestampMs: 28000 },
+        { role: 'user', content: "Half their time reconciling — if you have 5 ops staff doing this at $70/hour loaded, you're spending $90K a year on data wrangling instead of operations.", timestampMs: 45000 },
+        { role: 'assistant', content: "Probably accurate. But consolidation tools always take 18 months and cost more than projected.", timestampMs: 68000 },
+        { role: 'user', content: "You're right to be sceptical — that's the industry average. We specifically designed our onboarding to be 8 weeks, not 18 months. And we back it with a guarantee: if you're not live in 8 weeks, the first 3 months are free.", timestampMs: 85000 },
+        { role: 'assistant', content: "A financial guarantee is interesting. What does 'live' mean in your definition?", timestampMs: 108000 },
+      ],
+      frameworkScores: [
+        { component: 'Teach', score: 80, feedback: 'Solid Challenger reframe: "too much fragmented data" vs "not enough data" is a genuine insight that reframes the conventional solution. Carlos confirmed it immediately.', evidence: ['Counter-intuitive insight at 0:08', 'Carlos confirmed resonance at 0:28'] },
+        { component: 'Tailor', score: 68, feedback: 'The insight was relevant to logistics but not tailored to Carlos specifically. Should have linked it to his 15 warehouse locations and 48-hour lag before making the general point.', evidence: ['Insight was logistics-general, not tailored to Carlos\'s 15-warehouse context'] },
+        { component: 'Take Control', score: 72, feedback: 'Good control on the 18-month objection. Agreed with the scepticism before differentiating — classic Challenger move. The financial guarantee added strong credibility.', evidence: ['Agreed with 18-month concern before differentiating at 1:25', '8-week + financial guarantee as proof'] },
+      ],
+      timelineEvents: [
+        { type: 'GOOD', timestampMs: 8000, title: 'Counter-intuitive Challenger reframe', description: 'Opened with a genuine insight that reframes the conventional diagnosis — strong Challenger technique that earns attention.', transcriptRef: 'too much fragmented data with no single source of truth' },
+        { type: 'GOOD', timestampMs: 85000, title: 'Agreed before differentiating', description: 'Acknowledged the "18-month" concern was valid before introducing differentiation — shows confidence and avoids defensiveness.', transcriptRef: "You're right to be sceptical — that's the industry average." },
+        { type: 'WARNING', timestampMs: 45000, title: 'ROI calculation used generic assumptions', description: 'The $90K data wrangling figure assumed 5 ops staff. Should have asked Carlos how many staff are involved before calculating.', suggestion: 'Ask: "How many operations staff are involved in the reconciliation?" before calculating — prospect-specific numbers land harder.' },
+      ],
+      aiFeedback: JSON.stringify({
+        overallFeedback: 'A solid Challenger call with a genuine reframe and good control on the implementation objection. The financial guarantee was a strong differentiator. The main gap is tailoring — insights were logistics-generic rather than Carlos-specific.',
+        strengths: ['Counter-intuitive opener earned immediate confirmation from a sceptical prospect', 'Agreed with objection before differentiating — classic Challenger confidence move', 'Financial guarantee addressed the "overpromise" concern directly'],
+        improvements: ['Tailor the insight to Carlos specifically: reference his 15 warehouses and 48-hour reporting lag', 'Use prospect-specific numbers in ROI calculation — ask before assuming', 'Define "live" proactively before the prospect asks'],
+        proTip: 'In Challenger, the reframe only works if it connects to something the prospect already knows is true. Reference their specific situation before delivering the insight.',
+        scorecardGroups: [
+          { group: 'Value Proposition', maxPoints: 2, earnedPoints: 2, criteria: [
+            { question: 'Did the seller open with a clear, specific value proposition?', passed: true, reasoning: 'Counter-intuitive insight on fragmented data opened with a genuine reframe.' },
+            { question: 'Did the seller differentiate from competition?', passed: true, reasoning: '8-week vs 18-month implementation with financial guarantee at 1:25.' },
+          ]},
+          { group: 'Business Case', maxPoints: 2, earnedPoints: 1, criteria: [
+            { question: 'Did the seller build a ROI / business case?', passed: true, reasoning: '$90K data wrangling cost calculated at 0:45 — though based on generic assumptions.' },
+            { question: 'Did the seller use a customer reference or proof point?', passed: false, reasoning: 'Financial guarantee cited but no specific customer reference given.' },
+          ]},
+          { group: 'Closing', maxPoints: 2, earnedPoints: 0, criteria: [
+            { question: 'Did the seller define a clear next step?', passed: false, reasoning: 'Call ended with Carlos asking a clarifying question — no explicit next step agreed.' },
+            { question: "Did the seller confirm prospect's commitment to next step?", passed: false, reasoning: 'Conversation still in progress — commitment not secured.' },
+          ]},
+        ],
+      }),
+    },
+    {
+      type: 'ONLINE_MEETING', status: 'COMPLETED', framework: 'SPIN', totalScore: 85,
+      durationSeconds: 510,
+      startedAt: new Date(now - 1_200_000),
+      endedAt: new Date(now - 690_000),
+      userId: agent._id, personaId: personas[0]._id, companyId: company._id,
+      scenarioConfig: { industry: 'SaaS', roleplayType: 'Discovery Call', personaContext: personas[0].systemPrompt, displayName: personas[0].name, displayTitle: personas[0].title, displayEmoji: '', difficulty: 'MEDIUM', suggestedQuestions: [], avatarId: 'sarah' },
+      messages: [
+        { role: 'user', content: "Sarah, before I share anything about us, I'd love to understand your current situation. You mentioned you're scaling the team — what does the coaching process look like for new AEs today?", timestampMs: 8000 },
+        { role: 'assistant', content: "Honestly, it's pretty ad hoc. Managers do call reviews when they have time, but it's inconsistent. New reps don't know what good looks like.", timestampMs: 28000 },
+        { role: 'user', content: "When you say inconsistent — are we talking weekly check-ins or more like monthly at best?", timestampMs: 45000 },
+        { role: 'assistant', content: "Bi-weekly if we're lucky. Most of my managers have 8–10 direct reports and are carrying their own number. Coaching is the first thing that gets cut.", timestampMs: 65000 },
+        { role: 'user', content: "So coaching is reactive, not proactive. When you do a call review, how do you know which calls to review? Is it random, or do you have a way to identify which ones matter most?", timestampMs: 85000 },
+        { role: 'assistant', content: "Usually the manager just picks one from recent activity. It's a bit of a lottery. We miss a lot.", timestampMs: 108000 },
+        { role: 'user', content: "If coaching is a lottery, what happens to the reps who don't get picked? How does that affect their development and attainment?", timestampMs: 125000 },
+        { role: 'assistant', content: "They plateau. We have reps who've been here 2 years and are still at 60–70% attainment. The top reps coach themselves — the middle ones just float.", timestampMs: 148000 },
+        { role: 'user', content: "Two-year reps at 60–70% attainment — if you could get that cohort to 80–85%, what does that mean for your number? How many reps are we talking about?", timestampMs: 168000 },
+        { role: 'assistant', content: "About 8 reps. If they each add $200K to their attainment, that's $1.6M I recover without a single new hire.", timestampMs: 192000 },
+      ],
+      frameworkScores: [
+        { component: 'Situation Questions', score: 88, feedback: 'Excellent situational grounding. You asked about the current coaching process before mentioning your product. The follow-up on "inconsistent" with a specific frequency question showed active listening.', evidence: ['Asked about current coaching process at 0:08', 'Followed up on "inconsistent" at 0:45'] },
+        { component: 'Problem Questions', score: 85, feedback: 'Strong problem uncovering. "Coaching is the first thing that gets cut" and "it\'s a bit of a lottery" are vivid, specific problem statements. Surfaced both process problem (randomness) and capacity problem (managers carrying quota).', evidence: ['Capacity constraint: managers with 8-10 reports at 1:05', 'Process problem: random call selection at 1:48'] },
+        { component: 'Implication Questions', score: 88, feedback: 'Outstanding implication chain. Asked what happens to reps who don\'t get picked, connected it to a specific cohort with quantifiable impact. Sarah self-calculated $1.6M in recoverable quota.', evidence: ['"What happens to reps who don\'t get picked?" at 2:05 — perfect implication question', 'Sarah self-calculated $1.6M at 3:12'] },
+        { component: 'Need-Payoff Questions', score: 82, feedback: 'Very strong need-payoff — asked Sarah to calculate the value of moving the 60% cohort to 80-85%, and she named $1.6M herself. Prospect owns the number.', evidence: ['Prospect self-quantified $1.6M at 3:12', 'Number came from Sarah\'s own cohort analysis, not a benchmark'] },
+      ],
+      timelineEvents: [
+        { type: 'GOOD', timestampMs: 8000, title: 'Situation-first opener', description: 'Asked about current process before mentioning any product — SPIN best practice that establishes trust and context.', transcriptRef: "before I share anything about us, I'd love to understand your current situation" },
+        { type: 'GOOD', timestampMs: 125000, title: 'Implication chain on rep attrition', description: 'Connected random call review to plateaued reps — the critical implication chain that leads to the need-payoff calculation.', transcriptRef: "What happens to the reps who don't get picked?" },
+        { type: 'GOOD', timestampMs: 192000, title: 'Prospect self-calculated $1.6M', description: 'Sarah named $1.6M in recoverable quota from her own cohort analysis — the most powerful proof in SPIN is the prospect\'s own math.', transcriptRef: "that's $1.6M I recover without a single new hire." },
+      ],
+      aiFeedback: JSON.stringify({
+        overallFeedback: 'An outstanding SPIN discovery call. You ran all four question types in sequence, let the prospect do the math, and ended with Sarah naming $1.6M in recoverable quota in her own words. This is a textbook need-payoff close.',
+        strengths: ['Situation-first opener established trust before any product mention', 'Implication chain moved from "coaching is a lottery" to "2-year reps plateauing"', 'Prospect self-calculated $1.6M — seller never had to state the number'],
+        improvements: ['Ask one more situation question about what Sarah has already tried', 'After the $1.6M moment, ask "What would it mean for you personally if you recovered that number this year?"'],
+        proTip: 'When the prospect names a large number, pause for 5 seconds before responding. Let it land before moving forward.',
+        scorecardGroups: [
+          { group: 'Situation Questions', maxPoints: 2, earnedPoints: 2, criteria: [
+            { question: 'Did the seller establish the current situation before pitching?', passed: true, reasoning: 'Coaching process and manager capacity established at 0:08 and 1:05.' },
+            { question: 'Did the seller ask about team capacity and constraints?', passed: true, reasoning: 'Manager span of control (8–10 reports carrying quota) surfaced at 1:05.' },
+          ]},
+          { group: 'Problem Questions', maxPoints: 2, earnedPoints: 2, criteria: [
+            { question: 'Did the seller uncover the core problem?', passed: true, reasoning: 'Random call selection as coaching process surfaced at 1:48.' },
+            { question: 'Did the seller quantify the problem impact?', passed: true, reasoning: '2-year reps at 60-70% attainment surfaced at 2:28.' },
+          ]},
+          { group: 'Implication Questions', maxPoints: 2, earnedPoints: 2, criteria: [
+            { question: 'Did the seller chain implication questions across multiple levels?', passed: true, reasoning: 'Random → plateau → 2-year underperformers → $1.6M recovery — full chain at 2:05–3:12.' },
+            { question: 'Did the seller connect implications to strategic business risk?', passed: true, reasoning: '$1.6M recoverable quota without new hire is a strategic framing.' },
+          ]},
+          { group: 'Need-Payoff Questions', maxPoints: 1, earnedPoints: 1, criteria: [
+            { question: 'Did the seller let the prospect articulate the value themselves?', passed: true, reasoning: 'Sarah calculated $1.6M herself — seller asked the question, prospect did the math.' },
+          ]},
+        ],
+      }),
+    },
+  ]);
+
+  // ── Sessions 14–15: FinanceFlow ───────────────────────────────────────────
+  await Session.insertMany([
+    {
+      type: 'PHONE_CALL', status: 'COMPLETED', framework: 'BANT', totalScore: 71,
+      durationSeconds: 360,
+      startedAt: new Date(now - 2 * 86_400_000 - 800_000),
+      endedAt: new Date(now - 2 * 86_400_000 - 440_000),
+      userId: financeAgents[0]._id, personaId: personas[1]._id, companyId: company2._id,
+      scenarioConfig: { industry: 'FinTech', roleplayType: 'Discovery Call', personaContext: personas[1].systemPrompt, displayName: personas[1].name, displayTitle: personas[1].title, displayEmoji: '', difficulty: 'HARD', suggestedQuestions: [], avatarId: 'marcus' },
+      messages: [
+        { role: 'user', content: "Marcus, I'll be brief. We help FinTech CTOs reduce API downtime costs. Given FinanceFlow's recent infrastructure expansion, is reliability at scale a current concern?", timestampMs: 5000 },
+        { role: 'assistant', content: "Always. We're processing 3x the transaction volume from 18 months ago. Our infrastructure hasn't fully caught up.", timestampMs: 22000 },
+        { role: 'user', content: "3x volume growth — what does your current monitoring stack look like? Latency issues only at peak, or more continuous?", timestampMs: 38000 },
+        { role: 'assistant', content: "Peak-driven. Friday payroll processing is our worst window. Last month we had a 12-minute degradation during peak hours.", timestampMs: 58000 },
+        { role: 'user', content: "A 12-minute payroll degradation — what's the downstream impact? Support volume, SLA penalties, client churn risk?", timestampMs: 75000 },
+        { role: 'assistant', content: "All three. It's our most exposed risk. Budget isn't the constraint — getting the right solution is.", timestampMs: 98000 },
+      ],
+      frameworkScores: [
+        { component: 'Budget', score: 82, feedback: 'Budget confirmed as non-constraining — strong qualification. Should have asked what "right solution" means to Marcus to understand evaluation criteria.', evidence: ['Budget not the constraint confirmed at 1:38'] },
+        { component: 'Authority', score: 65, feedback: 'Marcus is CTO but you didn\'t confirm whether he can make the final call independently or needs board approval for infrastructure spend.', evidence: ['Did not confirm decision authority or board involvement'] },
+        { component: 'Need', score: 88, feedback: 'Strong need discovery — 3x volume growth, peak payroll degradation, and multi-impact (support/SLA/churn) paint a clear, urgent picture.', evidence: ['3x volume growth context at 0:22', '12-minute peak degradation at 0:58', 'Multi-impact confirmed at 1:38'] },
+        { component: 'Timeline', score: 48, feedback: 'Timeline not explored. With a "most exposed risk" statement, there should be urgency — but you didn\'t ask when they need this solved.', evidence: ['No timeline questions asked during the call'] },
+      ],
+      timelineEvents: [
+        { type: 'GOOD', timestampMs: 5000, title: 'Context-aware opener', description: 'Referenced FinanceFlow\'s infrastructure expansion — shows preparation relevant to a CTO.', transcriptRef: "FinanceFlow's recent infrastructure expansion" },
+        { type: 'GOOD', timestampMs: 98000, title: 'Budget qualifier', description: 'Marcus volunteered that budget isn\'t the constraint — a key BANT qualifier that removes a potential blocker.', transcriptRef: "Budget isn't the constraint — getting the right solution is." },
+        { type: 'ISSUE', timestampMs: 75000, title: 'Timeline not explored', description: 'After confirming this is their "most exposed risk", you didn\'t ask when they need it solved — missing urgency qualification.', suggestion: 'Ask: "Given this is your most exposed risk, what does your timeline look like? Is there an audit or board review driving urgency?"' },
+      ],
+      aiFeedback: JSON.stringify({
+        overallFeedback: 'Good need discovery with a clean budget qualifier. The major gap is timeline — "most exposed risk" creates a natural urgency question that wasn\'t asked.',
+        strengths: ['Infrastructure-aware opener earned immediate CTO engagement', 'Multi-impact pain confirmed (support/SLA/churn)', 'Budget non-constraint confirmed early'],
+        improvements: ['Ask for timeline immediately after "most exposed risk"', 'Confirm decision authority: can Marcus sign independently?', 'Ask what "right solution" means — this defines evaluation criteria'],
+        proTip: 'When a prospect says "budget isn\'t the constraint", stop selling value and start selling confidence. Ask: "What does the right solution look like to you?"',
+        scorecardGroups: [
+          { group: 'Opener', maxPoints: 2, earnedPoints: 2, criteria: [
+            { question: 'Permission-based opener?', passed: true, reasoning: '"I\'ll be brief" at 0:05 — minimal friction.' },
+            { question: 'Used research on prospect?', passed: true, reasoning: 'Referenced FinanceFlow infrastructure expansion — specific context.' },
+          ]},
+          { group: 'Discovery', maxPoints: 1, earnedPoints: 1, criteria: [
+            { question: 'SDR asked for preconceptions of product?', passed: true, reasoning: 'Asked about current monitoring stack before pitching at 0:38.' },
+          ]},
+          { group: 'Closing', maxPoints: 2, earnedPoints: 0, criteria: [
+            { question: 'Next steps agreed upon?', passed: false, reasoning: 'Call ended without agreeing on a next step.' },
+            { question: 'Follow-up meeting booked?', passed: false, reasoning: 'No meeting booked — session ended at pain discovery stage.' },
+          ]},
+        ],
+      }),
+    },
+    {
+      type: 'ONLINE_MEETING', status: 'COMPLETED', framework: 'SPIN', totalScore: 74,
+      durationSeconds: 408,
+      startedAt: new Date(now - 4 * 86_400_000 - 600_000),
+      endedAt: new Date(now - 4 * 86_400_000 - 192_000),
+      userId: financeAgents[1]._id, personaId: personas[0]._id, companyId: company2._id,
+      scenarioConfig: { industry: 'SaaS', roleplayType: 'Discovery Call', personaContext: personas[0].systemPrompt, displayName: personas[0].name, displayTitle: personas[0].title, displayEmoji: '', difficulty: 'MEDIUM', suggestedQuestions: [], avatarId: 'sarah' },
+      messages: [
+        { role: 'user', content: "Sarah, I understand you've been scaling the sales team aggressively. Can you tell me about your current onboarding process for new AEs?", timestampMs: 8000 },
+        { role: 'assistant', content: "We have a 2-week bootcamp and then reps are on the phone. It's sink or swim after that.", timestampMs: 25000 },
+        { role: 'user', content: "Sink or swim after 2 weeks — what's your average ramp time to first deal closed?", timestampMs: 40000 },
+        { role: 'assistant', content: "About 5 months. Industry average is 3-4. We're slower than we should be.", timestampMs: 58000 },
+        { role: 'user', content: "Two months slower than industry average — if you have 8 new AEs at $1M quota each, that 2-month gap costs you $1.3M in forgone revenue. Is that roughly right?", timestampMs: 75000 },
+        { role: 'assistant', content: "We have 8 in the current cohort. So yes, $1.3M we're giving up.", timestampMs: 98000 },
+        { role: 'user', content: "What would it mean for your board presentation next month if you could show a clear plan to close that $1.3M ramp gap?", timestampMs: 115000 },
+        { role: 'assistant', content: "It would be significant. We have a board meeting in 6 weeks and this is exactly the kind of operational improvement they're looking for.", timestampMs: 138000 },
+      ],
+      frameworkScores: [
+        { component: 'Situation Questions', score: 78, feedback: 'Good situational setup. You established the onboarding process and ramp time metric quickly. Could have asked about existing coaching tools before jumping to the problem.', evidence: ['Onboarding process established at 0:08', 'Ramp time metric surfaced at 0:40'] },
+        { component: 'Problem Questions', score: 80, feedback: 'Ramp time gap well-identified — 5 months vs 3-4 month industry average is a clear, quantifiable problem. Good use of an industry benchmark to frame the gap.', evidence: ['5-month vs 3-4 month benchmark gap surfaced at 0:58'] },
+        { component: 'Implication Questions', score: 70, feedback: 'The $1.3M calculation was well-executed. However, the board meeting implication was given by Sarah, not asked by you — a stronger implication question would have been "What does this ramp gap mean for your Q3 forecast?"', evidence: ['$1.3M calculated at 1:15', 'Board meeting implication surfaced by Sarah, not asked at 1:55'] },
+        { component: 'Need-Payoff Questions', score: 72, feedback: 'The "board presentation" question was a good need-payoff framing. Sarah articulated the value herself. Could have been more specific: "What number would you need to present to make the board view this as a priority investment?"', evidence: ['Board presentation framing at 1:55', 'Sarah confirmed board significance at 2:18'] },
+      ],
+      timelineEvents: [
+        { type: 'GOOD', timestampMs: 75000, title: 'Industry benchmark framing', description: 'Used industry average to frame the 2-month gap — creates a natural comparison without being aggressive.', transcriptRef: "Two months slower than industry average" },
+        { type: 'GOOD', timestampMs: 138000, title: 'Board meeting urgency', description: 'Sarah volunteered a board meeting in 6 weeks — strong urgency signal that creates a natural deadline.', transcriptRef: "We have a board meeting in 6 weeks and this is exactly the kind of operational improvement they're looking for." },
+        { type: 'WARNING', timestampMs: 115000, title: 'Need-payoff could be stronger', description: 'The board framing was good but generic. Should have asked about the specific metric Sarah would need to present.', suggestion: 'Ask: "What would the improvement need to look like — weeks saved, revenue recovered — to make the board view this as a priority?" This tells you exactly how to position.' },
+      ],
+      aiFeedback: JSON.stringify({
+        overallFeedback: 'A solid SPIN discovery with good benchmark framing and a well-timed need-payoff question. The 6-week board meeting creates natural urgency. Main gap: let Sarah do more of the implication work rather than calculating for her.',
+        strengths: ['Industry benchmark created a neutral, non-aggressive comparison frame', 'Board meeting urgency surfaced and acknowledged', '$1.3M corrected by Sarah at 1:38 — prospect owned the number'],
+        improvements: ['Ask more implication questions before calculating: "What does this ramp gap mean for your Q3 number?"', 'Get specific on board metrics: what does the improvement need to look like to count as a win?', 'Ask what Sarah has already tried to address the ramp gap'],
+        proTip: 'When a prospect mentions a hard deadline, immediately ask: "What would you need to have in place before that meeting to feel prepared?" This converts a deadline into a specification.',
+        scorecardGroups: [
+          { group: 'Situation Questions', maxPoints: 2, earnedPoints: 2, criteria: [
+            { question: 'Did the seller establish the current situation before pitching?', passed: true, reasoning: 'Onboarding process and ramp timeline established at 0:08 and 0:40.' },
+            { question: 'Did the seller ask about current challenges?', passed: true, reasoning: 'Ramp time gap vs industry average surfaced at 0:58.' },
+          ]},
+          { group: 'Implication Questions', maxPoints: 2, earnedPoints: 1, criteria: [
+            { question: 'Did the seller chain implication questions?', passed: false, reasoning: 'Jumped from problem to $1.3M calculation — missed intermediate implication questions.' },
+            { question: 'Did the seller connect to strategic risk?', passed: true, reasoning: 'Board presentation framing connected ramp gap to strategic business impact at 1:55.' },
+          ]},
+          { group: 'Need-Payoff Questions', maxPoints: 1, earnedPoints: 1, criteria: [
+            { question: 'Did the seller let the prospect articulate the value?', passed: true, reasoning: 'Sarah confirmed board significance and acknowledged the $1.3M figure.' },
+          ]},
+        ],
+      }),
+    },
+  ]);
+
   console.log('Created demo sessions');
 
-  // ── Team Roleplays ─────────────────────────────────────────────────────────
-  const drewUser = agents.find((a) => a.email === 'drew@demo.com')!;
+  // ── Usage Logs ─────────────────────────────────────────────────────────────
+  const allSessions = await Session.find({ status: 'COMPLETED' }).lean();
+  const usageLogs: object[] = [];
 
+  // Deterministic pseudo-random based on index so seeds are reproducible
+  allSessions.forEach((s, i) => {
+    const promptTokens = 1400 + (i * 317) % 2200;
+    const completionTokens = 550 + (i * 213) % 900;
+    usageLogs.push({
+      service: 'gemini',
+      operation: 'session_feedback',
+      sessionId: s._id,
+      companyId: s.companyId,
+      userId: s.userId,
+      modelName: 'gemini-2.0-flash',
+      promptTokens,
+      completionTokens,
+      estimatedCostUsd: +(promptTokens * 0.0000001 + completionTokens * 0.0000004).toFixed(6),
+      createdAt: s.endedAt ?? new Date(),
+    });
+
+    // ~60% of sessions get a TTS log
+    if (i % 5 !== 3) {
+      const characters = 700 + (i * 419) % 1400;
+      usageLogs.push({
+        service: 'elevenlabs_tts',
+        operation: 'tts_generation',
+        sessionId: s._id,
+        companyId: s.companyId,
+        userId: s.userId,
+        characters,
+        estimatedCostUsd: +(characters * 0.000024).toFixed(6),
+        createdAt: s.endedAt ?? new Date(),
+      });
+    }
+
+    // ~40% of sessions get a ConvAI log
+    if (i % 5 < 2) {
+      const durationSeconds = 120 + (i * 173) % 420;
+      usageLogs.push({
+        service: 'elevenlabs_convai',
+        operation: 'convai_session',
+        sessionId: s._id,
+        companyId: s.companyId,
+        userId: s.userId,
+        durationSeconds,
+        estimatedCostUsd: +((durationSeconds / 60) * 0.05).toFixed(6),
+        createdAt: s.endedAt ?? new Date(),
+      });
+    }
+  });
+
+  await UsageLog.insertMany(usageLogs);
+  console.log('Created', usageLogs.length, 'usage logs');
+
+  // ── Team Roleplays ─────────────────────────────────────────────────────────
   await TeamRoleplay.insertMany([
     {
       name: 'Cold Call Blitz',
@@ -1030,10 +1509,14 @@ Return valid JSON with overallScore, overallFeedback, scorecardGroups, timelineE
 
   console.log('\n✓ Seed complete!');
   console.log('\nDemo accounts (password: Demo1234!):');
-  console.log('  superadmin@demo.com — Super Admin');
-  console.log('  admin@demo.com      — Company Admin (TechCorp)');
-  console.log('  manager@demo.com    — Manager (TechCorp)');
-  console.log('  agent@demo.com      — Agent (TechCorp)');
+  console.log('  superadmin@demo.com    — Super Admin');
+  console.log('  admin@demo.com         — Company Admin (TechCorp)');
+  console.log('  manager@demo.com       — Manager (TechCorp)');
+  console.log('  agent@demo.com         — Agent (TechCorp)');
+  console.log('  financeadmin@demo.com  — Company Admin (FinanceFlow)');
+  console.log('');
+  console.log('  TechCorp agents: jordan, taylor, morgan, sam, casey, riley @demo.com');
+  console.log('  FinanceFlow agents: financeagent1, financeagent2 @demo.com');
 
   await mongoose.disconnect();
 }

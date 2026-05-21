@@ -28,7 +28,7 @@ export interface IUser extends Document {
 
 const UserSchema = new Schema<IUser>(
   {
-    email: { type: String, required: true, unique: true, lowercase: true, index: false },
+    email: { type: String, required: true, unique: true, lowercase: true },
     passwordHash: { type: String, required: true },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
@@ -52,6 +52,5 @@ const UserSchema = new Schema<IUser>(
 );
 
 UserSchema.index({ companyId: 1 });
-UserSchema.index({ email: 1 });
 
 export const User = mongoose.model<IUser>('User', UserSchema);
