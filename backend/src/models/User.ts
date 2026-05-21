@@ -19,13 +19,16 @@ export interface IUser extends Document {
   territory?: string;
   zone?: string;
   refreshTokens: string[];
+  sessionCap: number | null;
+  minutesCap: number | null;
+  tokensCap: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const UserSchema = new Schema<IUser>(
   {
-    email: { type: String, required: true, unique: true, lowercase: true },
+    email: { type: String, required: true, unique: true, lowercase: true, index: false },
     passwordHash: { type: String, required: true },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
@@ -41,6 +44,9 @@ const UserSchema = new Schema<IUser>(
     territory: String,
     zone: String,
     refreshTokens: [{ type: String }],
+    sessionCap: { type: Number, default: null },
+    minutesCap: { type: Number, default: null },
+    tokensCap: { type: Number, default: null },
   },
   { timestamps: true }
 );

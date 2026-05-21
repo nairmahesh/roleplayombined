@@ -93,6 +93,7 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
       createdAt: s.createdAt,
       user: u ? { id: u._id.toString(), firstName: u.firstName, lastName: u.lastName, avatarUrl: u.avatarUrl } : undefined,
       persona: p ? { id: p._id.toString(), name: p.name, title: p.title, emoji: p.emoji, difficulty: p.difficulty } : undefined,
+      scenarioConfig: s.scenarioConfig,
       frameworkScores: s.frameworkScores,
       timelineEvents: s.timelineEvents,
     };

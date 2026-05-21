@@ -155,7 +155,8 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response): Promise
     return;
   }
   const companyId = user.companyId?.toString() ?? '';
-  res.json({ ...user, id: user._id.toString(), companyId, passwordHash: undefined });
+  const { _id, passwordHash: _pw, refreshTokens: _rt, __v: _v, ...rest } = user as typeof user & { __v?: number };
+  res.json({ ...rest, id: user._id.toString(), companyId });
 });
 
 export default router;

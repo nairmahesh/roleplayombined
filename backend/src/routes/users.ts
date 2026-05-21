@@ -23,6 +23,7 @@ function formatUser(u: InstanceType<typeof User>) {
     team: u.team,
     territory: u.territory,
     zone: u.zone,
+    managerId: u.managerId?.toString(),
   };
 }
 

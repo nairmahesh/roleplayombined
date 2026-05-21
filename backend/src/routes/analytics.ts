@@ -52,7 +52,6 @@ router.get('/dashboard', async (req: AuthRequest, res: Response): Promise<void> 
     };
   });
 
-  // Framework stats aggregation
   const frameworkAgg = await Session.aggregate([
     { $match: { ...matchFilter, status: 'COMPLETED' } },
     { $unwind: '$frameworkScores' },
@@ -67,6 +66,8 @@ router.get('/dashboard', async (req: AuthRequest, res: Response): Promise<void> 
   ]);
 
   let agentExtra;
+  let managerExtra;
+
   if (isAgent) {
     const weekAgo = new Date(Date.now() - 7 * 86_400_000);
     const sessionsThisWeek = await Session.countDocuments({
@@ -75,7 +76,6 @@ router.get('/dashboard', async (req: AuthRequest, res: Response): Promise<void> 
       endedAt: { $gte: weekAgo },
     });
 
-    // Simple streak: consecutive days with sessions
     const streak = await computeStreak(userId.toString());
 
     const leaderboard = await Session.aggregate([
@@ -86,6 +86,48 @@ router.get('/dashboard', async (req: AuthRequest, res: Response): Promise<void> 
     const rank = leaderboard.findIndex((e) => e._id.toString() === userId.toString()) + 1;
 
     agentExtra = { sessionsThisWeek, streak, rank: rank || undefined };
+  } else {
+    // Compute per-member stats for managers and admins
+    const weekAgo = new Date(Date.now() - 7 * 86_400_000);
+
+    const [memberAgg, weekAgg, allMembers] = await Promise.all([
+      Session.aggregate([
+        { $match: { companyId, status: 'COMPLETED' } },
+        {
+          $group: {
+            _id: '$userId',
+            sessionCount: { $sum: 1 },
+            avgScore: { $avg: '$totalScore' },
+          },
+        },
+      ]),
+      Session.aggregate([
+        { $match: { companyId, status: 'COMPLETED', endedAt: { $gte: weekAgo } } },
+        { $group: { _id: '$userId', count: { $sum: 1 } } },
+      ]),
+      User.find({ companyId, isActive: true })
+        .select('firstName lastName avatarUrl role')
+        .lean(),
+    ]);
+
+    const statsMap = new Map(memberAgg.map((e) => [e._id.toString(), e]));
+    const weekMap  = new Map(weekAgg.map((e) => [e._id.toString(), e.count]));
+
+    const members = allMembers.map((u) => {
+      const uid = u._id.toString();
+      const s = statsMap.get(uid);
+      return {
+        id: uid,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        avatarUrl: u.avatarUrl,
+        sessionCount: s?.sessionCount ?? 0,
+        avgScore: s ? Math.round(s.avgScore ?? 0) : 0,
+        sessionsThisWeek: weekMap.get(uid) ?? 0,
+      };
+    });
+
+    managerExtra = { teamSize: allMembers.length, members };
   }
 
   res.json({
@@ -96,6 +138,7 @@ router.get('/dashboard', async (req: AuthRequest, res: Response): Promise<void> 
     recentSessions,
     frameworkStats: frameworkAgg,
     agentExtra,
+    managerExtra,
   });
 });
 

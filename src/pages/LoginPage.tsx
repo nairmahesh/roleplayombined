@@ -74,7 +74,7 @@ export function LoginPage() {
         navigate('/dashboard');
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Invalid email or password');
+      toast.error(err.response?.data?.error || err.response?.data?.detail || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
