@@ -5,7 +5,7 @@ import { Plus, Search, Pencil, Trash2, Copy, BarChart3, X, Check, Sparkles, User
 import { personasApi } from '@/lib/api';
 import { PersonaBuilder } from '@/components/practice/PersonaBuilder';
 import { AvatarDisplay, EthnicityAvatarPicker, AVATARS } from '@/components/practice/PersonaAvatars';
-import { Persona, Framework, PersonaType } from '@/types';
+import { Persona, Framework, PersonaType, FirstSpeaker } from '@/types';
 import { useAuthStore, usePageCache } from '@/lib/store';
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
@@ -158,6 +158,8 @@ interface EditForm {
   avatarId: string;
   name: string; title: string; company: string; industry: string;
   personaType: PersonaType;
+  firstSpeaker: FirstSpeaker;
+  openingLine: string;
   personality: string; systemPrompt: string;
   objections: string[]; buyingSignals: string[];
   frameworks: Framework[];
@@ -215,6 +217,8 @@ function EditPersonaModal({ persona, onSave, onClose }: {
     company: persona.company ?? '',
     industry: persona.industry ?? '',
     personaType: persona.personaType ?? 'NEUTRAL',
+    firstSpeaker: persona.firstSpeaker ?? 'persona',
+    openingLine: persona.openingLine ?? '',
     personality: typeof persona.personality === 'string'
       ? (persona.personality.startsWith('{') ? JSON.parse(persona.personality).description ?? persona.personality : persona.personality)
       : '',
@@ -339,6 +343,39 @@ function EditPersonaModal({ persona, onSave, onClose }: {
                       </button>
                     ))}
                   </div>
+                </div>
+
+                {/* Who speaks first */}
+                <div>
+                  <label className="text-xs font-medium text-white/70 block mb-2">Who speaks first?</label>
+                  <div className="flex gap-2 mb-3">
+                    {(['persona', 'user'] as FirstSpeaker[]).map(s => (
+                      <button key={s} onClick={() => set('firstSpeaker', s)}
+                        className={clsx('flex-1 py-2 rounded-[9px] text-[12px] font-semibold border transition-all',
+                          form.firstSpeaker === s ? 'border-accent bg-accent/10 text-accent' : 'border-white/[0.08] text-white/80 hover:text-white'
+                        )}>
+                        {s === 'persona' ? `${form.name || 'Persona'} answers` : 'User speaks first'}
+                      </button>
+                    ))}
+                  </div>
+                  <label className="text-xs font-medium text-white/70 block mb-1.5">
+                    Opening line <span className="font-normal text-white/40">(leave blank for auto)</span>
+                  </label>
+                  <input
+                    value={form.openingLine}
+                    onChange={e => set('openingLine', e.target.value)}
+                    placeholder={
+                      form.firstSpeaker === 'persona'
+                        ? `e.g. "${form.name?.split(' ')[0] || 'Sarah'} speaking, how can I help?"`
+                        : 'e.g. "Thanks for joining — what can I do for you?"'
+                    }
+                    className="input-base text-[12.5px]"
+                  />
+                  <p className="text-[10.5px] text-white/35 mt-1.5">
+                    {form.firstSpeaker === 'persona'
+                      ? 'Auto: phone calls use a short answer; meetings use a warm greeting.'
+                      : 'The persona waits silently for the user to speak first.'}
+                  </p>
                 </div>
               </motion.div>
             )}

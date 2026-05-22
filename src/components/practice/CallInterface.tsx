@@ -24,6 +24,10 @@ export interface PersonaDisplay {
   systemPrompt?: string;
   firstMessage?: string;
   personaId?: string;
+  // Opening behaviour
+  firstSpeaker?: 'persona' | 'user';
+  openingLine?: string;
+  roleplayType?: string;
 }
 
 interface Props {
@@ -176,11 +180,35 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
         return;
       }
 
-      // No client-side prompt override — each agent has its system prompt baked in at creation.
-      // Voice override only if persona specifies a different ElevenLabs voice.
-      const overrides = persona.elevenlabsVoiceId
-        ? { tts: { voiceId: persona.elevenlabsVoiceId } }
-        : undefined;
+      // Determine who speaks first and what they say.
+      // Logic: the person being *called* answers first. Cold calls / outbound = user called them,
+      // so the persona picks up. In outbound/pitch scenarios where the persona is calling the user,
+      // the user should speak first (the persona dialled them).
+      const isOutbound = /cold call|outbound/i.test(persona.roleplayType ?? '');
+      const personaSpeaksFirst = (persona.firstSpeaker ?? 'persona') === 'persona' && !isOutbound;
+
+      // Derive the opening line if not explicitly set
+      const firstName = persona.name.split(' ')[0];
+      let computedOpeningLine: string;
+      if (persona.openingLine) {
+        computedOpeningLine = persona.openingLine;
+      } else if (!personaSpeaksFirst) {
+        // Persona is the caller — user answers, persona should wait silently
+        // We use an empty/ellipsis so ElevenLabs doesn't speak immediately
+        computedOpeningLine = '...';
+      } else if (sessionType === 'PHONE_CALL') {
+        // Answered an inbound call — terse phone greeting
+        computedOpeningLine = `${firstName} speaking.`;
+      } else {
+        // Online meeting — warmer, host-style greeting
+        computedOpeningLine = `Hi! Thanks for joining — ${firstName} here. How can I help you today?`;
+      }
+
+      // Build overrides: always include the computed first_message so runtime context wins
+      const overrides: Record<string, unknown> = {
+        agent: { firstMessage: computedOpeningLine },
+        ...(persona.elevenlabsVoiceId ? { tts: { voiceId: persona.elevenlabsVoiceId } } : {}),
+      };
 
       console.log('[CallInterface] Persona info — name=%s personaId=%s voiceId=%s',
         persona.name, persona.personaId, persona.elevenlabsVoiceId ?? 'default');

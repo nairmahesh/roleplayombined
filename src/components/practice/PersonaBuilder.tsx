@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { X, Plus, Trash2, Sparkles, Check, Loader as Loader2, Mic } from 'lucide-react';
 import { personasApi } from '@/lib/api';
-import { Persona, Framework, PersonaType, FRAMEWORK_INFO } from '@/types';
+import { Persona, Framework, PersonaType, FirstSpeaker, FRAMEWORK_INFO } from '@/types';
 import { EthnicityAvatarPicker, AvatarDisplay, AVATARS } from '@/components/practice/PersonaAvatars';
 import { VoicePickerModal } from '@/components/practice/VoicePickerModal';
 import { CURATED_VOICES } from '@/components/practice/VoicePicker';
@@ -213,6 +213,8 @@ export function PersonaBuilder({ onCreated, onClose, initialAvatarId }: Props) {
     company: '',
     industry: '',
     personaType: 'NEUTRAL' as PersonaType,
+    firstSpeaker: 'persona' as FirstSpeaker,
+    openingLine: '',
     personality: '',
     systemPrompt: '',
     objections: [''],
@@ -357,6 +359,46 @@ export function PersonaBuilder({ onCreated, onClose, initialAvatarId }: Props) {
                         {t.charAt(0) + t.slice(1).toLowerCase()}
                       </button>
                     ))}
+                  </div>
+                </div>
+
+                {/* Who speaks first */}
+                <div>
+                  <label className="text-xs font-medium text-white/70 block mb-2">Who speaks first?</label>
+                  <div className="flex gap-2 mb-3">
+                    {(['persona', 'user'] as FirstSpeaker[]).map(s => (
+                      <button
+                        key={s}
+                        onClick={() => set('firstSpeaker', s)}
+                        className={clsx(
+                          'flex-1 py-2 rounded-[9px] text-[12px] font-semibold border transition-all',
+                          form.firstSpeaker === s ? 'border-accent bg-accent/10 text-accent' : 'border-white/[0.08] text-white/80 hover:text-white'
+                        )}
+                      >
+                        {s === 'persona' ? `${form.name || 'Persona'} answers` : 'User speaks first'}
+                      </button>
+                    ))}
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-white/70 block mb-1.5">
+                      Opening line
+                      <span className="ml-1 font-normal text-white/40">(leave blank for auto)</span>
+                    </label>
+                    <input
+                      value={form.openingLine}
+                      onChange={e => set('openingLine', e.target.value)}
+                      placeholder={
+                        form.firstSpeaker === 'persona'
+                          ? `e.g. "${form.name?.split(' ')[0] || 'Sarah'} speaking, how can I help?"`
+                          : 'e.g. "Thanks for joining — what can I do for you?"'
+                      }
+                      className="input-base text-[12.5px]"
+                    />
+                    <p className="text-[10.5px] text-white/35 mt-1.5 leading-snug">
+                      {form.firstSpeaker === 'persona'
+                        ? 'Auto: phone calls get a short "Hello?" — meetings get a warm greeting.'
+                        : 'The persona waits silently for the user to speak first.'}
+                    </p>
                   </div>
                 </div>
               </motion.div>

@@ -70,10 +70,17 @@ export async function getOrCreateAgentId(): Promise<string> {
     name: 'PitchIQ Default Agent',
     conversation_config: {
       agent: {
-        first_message: 'Hello, how can I help you today?',
+        // Runtime overrides this per session — this is a safe inbound-call fallback.
+        first_message: 'Hello?',
         language: 'en',
         prompt: {
-          prompt: 'You are a sales prospect in a roleplay scenario. Stay in character as a realistic business decision-maker. Be slightly busy, raise reasonable objections, and ask clarifying questions. Keep responses concise.',
+          prompt: `You are a sales prospect in a roleplay scenario. Stay in character as a realistic business decision-maker. Be slightly busy, raise reasonable objections, and ask clarifying questions. Keep responses concise.
+
+CONVERSATION OPENING RULES:
+- If receiving an inbound phone call, answer with a short terse greeting: "Hello?" or "Speaking."
+- If joining an online meeting, greet warmly: "Hi — thanks for joining, how can I help?"
+- If the scenario involves you having made an outbound/cold call, do NOT speak first — wait for the user to respond.
+- Never volunteer your full name and title unless the user asks or you are pitching.`,
           llm: 'gemini-2.0-flash',
           temperature: 0.7,
         },

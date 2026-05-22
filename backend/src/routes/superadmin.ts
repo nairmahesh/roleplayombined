@@ -161,14 +161,22 @@ router.post('/sync-persona-agents', async (_req: AuthRequest, res: Response): Pr
     }
 
     try {
+      // Default first_message — runtime overrides this per session based on sessionType/roleplayType.
+      // This is a safe fallback: persona picks up like an inbound phone call.
+      const firstName = persona.name.split(' ')[0];
+      const defaultFirstMessage = `${firstName} speaking.`;
+
+      // Enrich system prompt with opening behaviour instructions so the model is primed.
+      const openingInstruction = `\n\n---\nCONVERSATION OPENING RULES:\n- If you are receiving an inbound call (phone), answer with a short, natural phone greeting such as "${firstName} speaking." or "Hello?"\n- If you are in an online meeting and the other party joins, greet them warmly: "Hi! ${firstName} here — thanks for joining."\n- If the roleplay involves you (the prospect) having made an outbound call (e.g. cold call), do NOT speak first. Wait silently for the user to respond.\n- Never introduce your full name and title unprompted unless you are pitching.\n---`;
+
       const result = await createAgent({
         name: `${persona.name} — ${persona.title}`,
         conversation_config: {
           agent: {
-            first_message: `${persona.name.split(' ')[0]} speaking.`,
+            first_message: defaultFirstMessage,
             language: 'en',
             prompt: {
-              prompt: persona.systemPrompt,
+              prompt: persona.systemPrompt + openingInstruction,
               llm: 'gemini-2.0-flash',
               temperature: 0.8,
             },

@@ -149,6 +149,9 @@ export interface PlatformStats {
   activeUsersThisMonth: number;
 }
 
+// Who speaks first when a session starts
+export type FirstSpeaker = 'persona' | 'user';
+
 export interface Persona {
   id: string;
   name: string;
@@ -166,6 +169,9 @@ export interface Persona {
   isPreset: boolean;
   voiceId?: string;
   agentId?: string;
+  // Conversation opening
+  firstSpeaker?: FirstSpeaker;   // defaults to 'persona' (they answer the phone)
+  openingLine?: string;          // what the persona says when they pick up; auto-derived from sessionType if blank
 }
 
 export interface Message {
@@ -213,6 +219,9 @@ export interface ScenarioConfig {
   elevenlabsVoiceId?: string;
   language?: string;
   sessionType?: SessionType;
+  // Who speaks first and what they say
+  firstSpeaker?: FirstSpeaker;
+  openingLine?: string;
   // Knowledge base
   botKnowledge?: KnowledgeBaseEntry[];    // context fed to the AI bot
   userBriefing?: KnowledgeBaseEntry[];    // content shown to user before call
