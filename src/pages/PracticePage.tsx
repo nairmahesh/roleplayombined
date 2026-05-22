@@ -3003,33 +3003,10 @@ function GalleryCard({
             {subtitle && <div className="text-[11.5px] text-white/70 mt-0.5 truncate">{subtitle}</div>}
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
-            {/* Session type — icon+label on md+, icon-only on small */}
-            {sessionType && (
-              <span
-                title={isOnline ? 'Online Meeting' : 'Phone Call'}
-                className={clsx(
-                  'flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full border font-medium flex-shrink-0',
-                  isOnline
-                    ? 'text-sky-400 bg-sky-400/10 border-sky-400/20'
-                    : 'text-white/60 bg-white/[0.04] border-white/[0.1]',
-                )}>
-                {isOnline ? <Monitor size={9} /> : <Phone size={9} />}
-                <span className="hidden sm:inline">{isOnline ? 'Online' : 'Phone'}</span>
-              </span>
-            )}
             {/* Time limit badge */}
             <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full border border-white/[0.1] bg-white/[0.04] text-white/55 font-medium flex-shrink-0">
               {displayMins}m
             </span>
-            {/* Knowledge base indicator */}
-            {hasKnowledge && (
-              <span
-                title="Has knowledge base content"
-                className="flex items-center justify-center w-[18px] h-[18px] rounded-full border border-accent/30 bg-accent/10 text-accent/70 flex-shrink-0"
-              >
-                <BookOpen size={9} />
-              </span>
-            )}
             {canEdit && (
               <>
                 {onEdit && (
@@ -3053,6 +3030,25 @@ function GalleryCard({
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] border border-white/[0.07] text-white/70">{industry}</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] border border-white/[0.07] text-white/70">{type}</span>
           <span className={clsx('text-[10px] px-1.5 py-0.5 rounded border', diffColor)}>{difficulty}</span>
+          {/* Session type tag */}
+          {sessionType && (
+            <span className={clsx(
+              'flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border font-medium',
+              isOnline
+                ? 'text-sky-400 bg-sky-400/10 border-sky-400/20'
+                : 'text-white/60 bg-white/[0.04] border-white/[0.1]',
+            )}>
+              {isOnline ? <Monitor size={9} /> : <Phone size={9} />}
+              {isOnline ? 'Online' : 'Phone Call'}
+            </span>
+          )}
+          {/* Knowledge tag */}
+          {hasKnowledge && (
+            <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-accent/25 bg-accent/[0.07] text-accent/80 font-medium">
+              <BookOpen size={9} />
+              Knowledge
+            </span>
+          )}
           {badge && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/[0.08] border border-accent/15 text-accent/80">{badge}</span>
           )}
