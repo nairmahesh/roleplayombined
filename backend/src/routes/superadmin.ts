@@ -5,7 +5,7 @@ import { Company } from '../models/Company';
 import { User } from '../models/User';
 import { Session } from '../models/Session';
 import { Persona } from '../models/Persona';
-import { createAgent, checkHealth, getOrCreateAgentId } from '../services/elevenlabs';
+import { createAgent, updateAgent, checkHealth, getOrCreateAgentId } from '../services/elevenlabs';
 
 const router = Router();
 router.use(authenticate, requireRole('SUPER_ADMIN'));
@@ -169,7 +169,39 @@ router.patch('/companies/:id/personas/:personaId', async (req: AuthRequest, res:
   );
 
   const updated = await Persona.findByIdAndUpdate(req.params.personaId, update, { new: true }).lean();
-  res.json({ ...updated, id: updated!._id.toString() });
+  if (!updated) { res.status(404).json({ error: 'Persona not found' }); return; }
+
+  // Sync ElevenLabs agent when agent-relevant fields changed
+  const AGENT_FIELDS = new Set(['name', 'title', 'systemPrompt', 'voiceId', 'openingLine', 'firstSpeaker']);
+  if (Object.keys(update).some(k => AGENT_FIELDS.has(k))) {
+    const firstName = updated.name.split(' ')[0];
+    const openingInstruction = `\n\n---\nCONVERSATION OPENING RULES:\n- If you are receiving an inbound call (phone), answer with a short, natural phone greeting such as "${firstName} speaking." or "Hello?"\n- If you are in an online meeting and the other party joins, greet them warmly: "Hi! ${firstName} here — thanks for joining."\n- If the roleplay involves you (the prospect) having made an outbound call (e.g. cold call), do NOT speak first. Wait silently for the user to respond.\n- Never introduce your full name and title unprompted unless you are pitching.\n---`;
+    const agentConfig = {
+      name: `${updated.name} — ${updated.title}`,
+      conversation_config: {
+        agent: {
+          first_message: updated.openingLine || `${firstName} speaking.`,
+          language: 'en',
+          prompt: { prompt: (updated.systemPrompt || '') + openingInstruction, llm: 'gemini-2.0-flash', temperature: 0.8 },
+        },
+        tts: { voice_id: updated.voiceId || 'EXAVITQu4vr4xnSDxMaL', model_id: 'eleven_turbo_v2' },
+      },
+    };
+    if (updated.agentId) {
+      updateAgent(updated.agentId, agentConfig).catch(() => {/* ignore */});
+    } else {
+      (async () => {
+        try {
+          const health = await checkHealth();
+          if (!health.convaiAvailable) return;
+          const result = await createAgent(agentConfig);
+          await Persona.findByIdAndUpdate(req.params.personaId, { agentId: result.agent_id });
+        } catch { /* ignore */ }
+      })();
+    }
+  }
+
+  res.json({ ...updated, id: updated._id.toString() });
 });
 
 // POST /api/superadmin/sync-persona-agents
