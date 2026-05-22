@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Bot, Plus, Trash2, Edit2, X, Check, RefreshCw, Zap, Link2 } from 'lucide-react';
+import { Bot, Plus, Trash2, CreditCard as Edit2, X, Check, RefreshCw, Zap, Link2, CircleAlert as AlertCircle } from 'lucide-react';
 import { voiceApi, superadminApi, AgentSummary, AgentConfig } from '@/lib/api';
 
 // ── Agent row ──────────────────────────────────────────────────────────────────
@@ -86,6 +86,7 @@ function AgentRow({
 export function SuperAdminAgentsPage() {
   const [agents, setAgents]   = useState<AgentSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName]   = useState('');
   const [newPrompt, setNewPrompt] = useState('');
@@ -94,10 +95,12 @@ export function SuperAdminAgentsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       setAgents(await voiceApi.listAgents());
-    } catch {
-      toast.error('Failed to load agents');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to load agents';
+      setLoadError(msg);
     } finally {
       setLoading(false);
     }
@@ -263,6 +266,21 @@ export function SuperAdminAgentsPage() {
             <div className="text-[12px] text-center py-8 text-[color:var(--text3)]">
               <RefreshCw size={16} className="animate-spin mx-auto mb-2 text-accent/50" />
               Loading agents…
+            </div>
+          ) : loadError ? (
+            <div className="flex flex-col items-center gap-3 py-8 text-center">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                <AlertCircle size={18} className="text-red-400" />
+              </div>
+              <div>
+                <div className="text-[13px] font-medium text-red-400">Could not connect to backend</div>
+                <div className="text-[11.5px] text-[color:var(--text3)] mt-1 max-w-xs">
+                  ElevenLabs agent management requires the backend server. Make sure the API is running and reachable.
+                </div>
+              </div>
+              <button type="button" onClick={load} className="btn-ghost py-1.5 px-3 text-[12px] gap-1.5 mt-1">
+                <RefreshCw size={12} /> Retry
+              </button>
             </div>
           ) : agents.length === 0 ? (
             <div className="text-center py-8 flex flex-col items-center gap-2 text-[color:var(--text3)]">

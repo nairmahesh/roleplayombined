@@ -5,7 +5,7 @@ import { useAuthStore, useThemeStore } from '@/lib/store';
 import { authApi } from '@/lib/api';
 import { resetSocket } from '@/lib/socket';
 import toast from 'react-hot-toast';
-import { LayoutDashboard, Play, ClipboardList, Trophy, Users, Settings, LogOut, Target, Building2, Globe, Menu, X, Sun, Moon, Zap, Bot, BarChart3, CircleUser as UserCircle, ChevronDown, Activity, Plug } from 'lucide-react';
+import { LayoutDashboard, Play, ClipboardList, Trophy, Users, Settings, LogOut, Target, Building2, Globe, Menu, X, Sun, Moon, Zap, Bot, BarChart3, CircleUser as UserCircle, ChevronDown, Activity, Plug, FileText } from 'lucide-react';
 import clsx from 'clsx';
 
 type NavItem = {
@@ -19,9 +19,10 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Companies',   to: '/superadmin/companies', icon: Building2,      section: 'Platform', roles: ['SUPER_ADMIN'] },
-  { label: 'Platform',    to: '/superadmin/stats',     icon: Globe,          section: 'Platform', roles: ['SUPER_ADMIN'] },
-  { label: 'Agents',      to: '/superadmin/agents',    icon: Bot,            section: 'Platform', roles: ['SUPER_ADMIN'] },
+  { label: 'Companies',   to: '/superadmin/companies',         icon: Building2,  section: 'Platform', roles: ['SUPER_ADMIN'] },
+  { label: 'Platform',    to: '/superadmin/stats',             icon: Globe,      section: 'Platform', roles: ['SUPER_ADMIN'] },
+  { label: 'Agents',      to: '/superadmin/agents',            icon: Bot,        section: 'Platform', roles: ['SUPER_ADMIN'] },
+  { label: 'Prompts',     to: '/settings/evaluation-prompts',  icon: FileText,   section: 'Platform', roles: ['SUPER_ADMIN'] },
   { label: 'Dashboard',   to: '/dashboard',  icon: LayoutDashboard, section: 'Overview', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
   { label: 'Practice',    to: '/practice',   icon: Play,            section: 'Overview', badge: 'New', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
   { label: 'Sessions',    to: '/sessions',   icon: ClipboardList,   section: 'Overview', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
@@ -325,6 +326,7 @@ function PageTitle({ path }: { path: string }) {
     '/superadmin/companies':    ['Companies',         'Platform-wide company management'],
     '/superadmin/stats':        ['Platform Overview', 'System-wide statistics'],
     '/superadmin/agents':       ['Agents',            'ElevenLabs ConvAI agent management'],
+    '/settings/evaluation-prompts': ['Evaluation Prompts', 'Configure scoring criteria and prompts'],
   };
   const key = Object.keys(titles).find(k => path.startsWith(k)) || '/dashboard';
   const [title, sub] = titles[key] || ['PitchIQ', ''];
