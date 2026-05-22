@@ -5,7 +5,7 @@ import { Plus, Search, Pencil, Trash2, Copy, BarChart3, X, Check, Sparkles, User
 import { personasApi } from '@/lib/api';
 import { PersonaBuilder } from '@/components/practice/PersonaBuilder';
 import { AvatarDisplay, EthnicityAvatarPicker, AVATARS } from '@/components/practice/PersonaAvatars';
-import { Persona, Framework } from '@/types';
+import { Persona, Framework, PersonaType } from '@/types';
 import { useAuthStore, usePageCache } from '@/lib/store';
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
@@ -13,13 +13,15 @@ import { formatDistanceToNow } from 'date-fns';
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const FRAMEWORKS: Framework[] = ['MEDDIC', 'MEDDICC', 'SPIN', 'BANT', 'CHALLENGER', 'SNAP'];
-const DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD', 'EXPERT'] as const;
+const PERSONA_TYPES: PersonaType[] = ['FRIENDLY', 'WARM', 'NEUTRAL', 'SKEPTICAL', 'RUDE', 'AGGRESSIVE'];
 
-const DIFFICULTY_STYLE: Record<string, string> = {
-  EASY:   'text-emerald-400 bg-emerald-400/10 border-emerald-400/25',
-  MEDIUM: 'text-amber-400  bg-amber-400/10  border-amber-400/25',
-  HARD:   'text-orange-400 bg-orange-400/10 border-orange-400/25',
-  EXPERT: 'text-red-400    bg-red-400/10    border-red-400/25',
+const PERSONA_TYPE_STYLE: Record<PersonaType, string> = {
+  FRIENDLY:   'text-emerald-400 bg-emerald-400/10 border-emerald-400/25',
+  WARM:       'text-teal-400   bg-teal-400/10    border-teal-400/25',
+  NEUTRAL:    'text-sky-400    bg-sky-400/10     border-sky-400/25',
+  SKEPTICAL:  'text-amber-400  bg-amber-400/10   border-amber-400/25',
+  RUDE:       'text-orange-400 bg-orange-400/10  border-orange-400/25',
+  AGGRESSIVE: 'text-red-400    bg-red-400/10     border-red-400/25',
 };
 
 // ── Analytics panel ───────────────────────────────────────────────────────────
@@ -155,7 +157,7 @@ function AnalyticsPanel({ personaId, onClose }: { personaId: string; onClose: ()
 interface EditForm {
   avatarId: string;
   name: string; title: string; company: string; industry: string;
-  difficulty: typeof DIFFICULTIES[number];
+  personaType: PersonaType;
   personality: string; systemPrompt: string;
   objections: string[]; buyingSignals: string[];
   frameworks: Framework[];
@@ -212,7 +214,7 @@ function EditPersonaModal({ persona, onSave, onClose }: {
     title: persona.title,
     company: persona.company ?? '',
     industry: persona.industry ?? '',
-    difficulty: persona.difficulty as typeof DIFFICULTIES[number],
+    personaType: persona.personaType ?? 'NEUTRAL',
     personality: typeof persona.personality === 'string'
       ? (persona.personality.startsWith('{') ? JSON.parse(persona.personality).description ?? persona.personality : persona.personality)
       : '',
@@ -326,14 +328,14 @@ function EditPersonaModal({ persona, onSave, onClose }: {
                   ))}
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-white/70 block mb-2">Difficulty</label>
+                  <label className="text-xs font-medium text-white/70 block mb-2">Persona Type</label>
                   <div className="flex flex-wrap gap-2">
-                    {DIFFICULTIES.map(d => (
-                      <button key={d} onClick={() => set('difficulty', d)}
-                        className={clsx('flex-1 min-w-[70px] py-2 rounded-[9px] text-[12px] font-semibold border transition-all capitalize',
-                          form.difficulty === d ? 'border-accent bg-accent/10 text-accent' : 'border-white/[0.08] text-white/80 hover:text-white'
+                    {PERSONA_TYPES.map(t => (
+                      <button key={t} onClick={() => set('personaType', t)}
+                        className={clsx('flex-1 min-w-[80px] py-2 rounded-[9px] text-[12px] font-semibold border transition-all capitalize',
+                          form.personaType === t ? 'border-accent bg-accent/10 text-accent' : 'border-white/[0.08] text-white/80 hover:text-white'
                         )}>
-                        {d.toLowerCase()}
+                        {t.charAt(0) + t.slice(1).toLowerCase()}
                       </button>
                     ))}
                   </div>
@@ -429,7 +431,7 @@ function EditPersonaModal({ persona, onSave, onClose }: {
                         <div className="font-display font-bold">{form.name}</div>
                         <div className="text-[12px] text-white/70 mb-2">{form.title}{form.company ? ` · ${form.company}` : ''}</div>
                         <div className="flex gap-1.5 flex-wrap">
-                          <span className={clsx('text-[10px] px-2 py-0.5 rounded border', DIFFICULTY_STYLE[form.difficulty])}>{form.difficulty}</span>
+                          <span className={clsx('text-[10px] px-2 py-0.5 rounded border', PERSONA_TYPE_STYLE[form.personaType])}>{form.personaType.charAt(0) + form.personaType.slice(1).toLowerCase()}</span>
                           {form.frameworks.map(fw => <span key={fw} className="text-[10px] px-2 py-0.5 rounded border border-white/10 text-white/60">{fw}</span>)}
                         </div>
                       </div>
@@ -495,8 +497,8 @@ function PersonaCard({
           </div>
           <p className="text-[12px] text-white/55 truncate mt-0.5">{persona.title}{persona.company ? ` · ${persona.company}` : ''}</p>
           <div className="flex items-center gap-1.5 flex-wrap mt-2">
-            <span className={clsx('text-[9.5px] px-1.5 py-0.5 rounded border font-medium', DIFFICULTY_STYLE[persona.difficulty])}>
-              {persona.difficulty}
+            <span className={clsx('text-[9.5px] px-1.5 py-0.5 rounded border font-medium', PERSONA_TYPE_STYLE[persona.personaType ?? 'NEUTRAL'])}>
+              {(persona.personaType ?? 'NEUTRAL').charAt(0) + (persona.personaType ?? 'NEUTRAL').slice(1).toLowerCase()}
             </span>
             {persona.industry && (
               <span className="text-[9.5px] px-1.5 py-0.5 rounded border border-white/[0.08] text-white/55">{persona.industry}</span>
@@ -644,7 +646,7 @@ export function PersonasPage() {
   const [personas, setPersonas] = useState<Persona[]>(cached ?? []);
   const [loading, setLoading] = useState(!cached);
   const [search, setSearch] = useState('');
-  const [filterDifficulty, setFilterDifficulty] = useState<string>('');
+  const [filterPersonaType, setFilterPersonaType] = useState<string>('');
   const [filterType, setFilterType] = useState<'all' | 'preset' | 'custom'>('all');
 
   const [showBuilder, setShowBuilder] = useState(false);
@@ -700,7 +702,7 @@ export function PersonasPage() {
   const filtered = personas.filter(p => {
     const q = search.toLowerCase();
     const matchSearch = !q || p.name.toLowerCase().includes(q) || p.title.toLowerCase().includes(q) || (p.industry ?? '').toLowerCase().includes(q);
-    const matchDiff = !filterDifficulty || p.difficulty === filterDifficulty;
+    const matchDiff = !filterPersonaType || p.personaType === filterPersonaType;
     const matchType = filterType === 'all' || (filterType === 'preset' ? p.isPreset : !p.isPreset);
     return matchSearch && matchDiff && matchType;
   });
@@ -756,14 +758,14 @@ export function PersonasPage() {
           ))}
         </div>
 
-        {/* Difficulty filter — compact, auto width */}
+        {/* Persona type filter */}
         <select
-          value={filterDifficulty}
-          onChange={e => setFilterDifficulty(e.target.value)}
+          value={filterPersonaType}
+          onChange={e => setFilterPersonaType(e.target.value)}
           className="input-base text-[11px] py-1.5 w-auto flex-shrink-0 cursor-pointer"
         >
-          <option value="">All difficulties</option>
-          {DIFFICULTIES.map(d => <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1).toLowerCase()}</option>)}
+          <option value="">All types</option>
+          {PERSONA_TYPES.map(t => <option key={t} value={t}>{t.charAt(0) + t.slice(1).toLowerCase()}</option>)}
         </select>
 
         {/* Create button — managers/admins only */}
@@ -786,7 +788,7 @@ export function PersonasPage() {
         <div className="flex flex-col items-center gap-3 py-20 text-center">
           <Users size={36} className="text-white/15" />
           <p className="text-[14px] text-white/45 font-medium">
-            {search || filterDifficulty || filterType !== 'all' ? 'No personas match your filters' : 'No personas yet'}
+            {search || filterPersonaType || filterType !== 'all' ? 'No personas match your filters' : 'No personas yet'}
           </p>
           {!isReadOnly && !search && filterType !== 'preset' && (
             <button onClick={() => setShowBuilder(true)} className="flex items-center gap-1.5 text-[12.5px] text-accent hover:text-accent/80 font-medium mt-1">

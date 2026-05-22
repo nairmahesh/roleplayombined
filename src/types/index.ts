@@ -85,7 +85,7 @@ export interface KnowledgeBaseEntry {
 export type SessionType = 'PHONE_CALL' | 'ONLINE_MEETING';
 export type SessionStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
 export type Framework = 'MEDDIC' | 'MEDDICC' | 'SPIN' | 'BANT' | 'CHALLENGER' | 'SNAP';
-export type Difficulty = 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT';
+export type PersonaType = 'FRIENDLY' | 'WARM' | 'NEUTRAL' | 'SKEPTICAL' | 'RUDE' | 'AGGRESSIVE';
 export type TimelineEventType = 'ISSUE' | 'GOOD' | 'WARNING' | 'NEUTRAL';
 
 export interface User {
@@ -157,7 +157,7 @@ export interface Persona {
   industry?: string;
   emoji: string;
   avatarId?: string;
-  difficulty: Difficulty;
+  personaType: PersonaType;
   personality: string;
   systemPrompt: string;
   objections: string[];
@@ -203,7 +203,7 @@ export interface ScenarioConfig {
   displayName: string;
   displayTitle: string;
   displayEmoji: string;
-  difficulty: string;
+  personaType: string;
   suggestedQuestions: string[];
   objections?: string[];
   aiCanEnd?: boolean;
@@ -231,7 +231,7 @@ export interface Session {
   endedAt?: string;
   createdAt: string;
   user?: Pick<User, 'id' | 'firstName' | 'lastName' | 'avatarUrl'>;
-  persona?: Pick<Persona, 'id' | 'name' | 'title' | 'emoji' | 'difficulty'>;
+  persona?: Pick<Persona, 'id' | 'name' | 'title' | 'emoji' | 'personaType'>;
   scenarioConfig?: ScenarioConfig;
   frameworkScores?: FrameworkScore[];
   timelineEvents?: TimelineEvent[];
@@ -418,9 +418,11 @@ export const FRAMEWORK_INFO: Record<Framework, { label: string; components: stri
   },
 };
 
-export const DIFFICULTY_CONFIG: Record<Difficulty, { label: string; className: string }> = {
-  EASY: { label: 'Easy', className: 'tag-green' },
-  MEDIUM: { label: 'Medium', className: 'tag-amber' },
-  HARD: { label: 'Hard', className: 'tag-red' },
-  EXPERT: { label: 'Expert', className: 'tag-red' },
+export const PERSONA_TYPE_CONFIG: Record<PersonaType, { label: string; className: string }> = {
+  FRIENDLY:   { label: 'Friendly',   className: 'tag-green' },
+  WARM:       { label: 'Warm',       className: 'tag-green' },
+  NEUTRAL:    { label: 'Neutral',    className: 'tag-amber' },
+  SKEPTICAL:  { label: 'Skeptical',  className: 'tag-amber' },
+  RUDE:       { label: 'Rude',       className: 'tag-red' },
+  AGGRESSIVE: { label: 'Aggressive', className: 'tag-red' },
 };

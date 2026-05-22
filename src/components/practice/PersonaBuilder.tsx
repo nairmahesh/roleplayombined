@@ -4,14 +4,23 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { X, Plus, Trash2, Sparkles, Check, Loader as Loader2, Mic } from 'lucide-react';
 import { personasApi } from '@/lib/api';
-import { Persona, Framework, FRAMEWORK_INFO } from '@/types';
+import { Persona, Framework, PersonaType, FRAMEWORK_INFO } from '@/types';
 import { EthnicityAvatarPicker, AvatarDisplay, AVATARS } from '@/components/practice/PersonaAvatars';
 import { VoicePickerModal } from '@/components/practice/VoicePickerModal';
 import { CURATED_VOICES } from '@/components/practice/VoicePicker';
 import clsx from 'clsx';
 
 const FRAMEWORKS: Framework[] = ['MEDDIC', 'MEDDICC', 'SPIN', 'BANT', 'CHALLENGER', 'SNAP'];
-const DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD', 'EXPERT'] as const;
+const PERSONA_TYPES: PersonaType[] = ['FRIENDLY', 'WARM', 'NEUTRAL', 'SKEPTICAL', 'RUDE', 'AGGRESSIVE'];
+
+const PERSONA_TYPE_STYLE: Record<PersonaType, string> = {
+  FRIENDLY:   'border-emerald-500/30 text-emerald-400',
+  WARM:       'border-teal-500/30 text-teal-400',
+  NEUTRAL:    'border-sky-500/30 text-sky-400',
+  SKEPTICAL:  'border-amber-500/30 text-amber-400',
+  RUDE:       'border-orange-500/30 text-orange-400',
+  AGGRESSIVE: 'border-red-500/30 text-red-400',
+};
 
 const FRAMEWORK_DESCRIPTIONS: Record<Framework, string> = {
   MEDDIC:    'Enterprise-grade qualification for complex, multi-stakeholder deals. Tests your ability to uncover metrics, find the champion, and map the decision process.',
@@ -22,15 +31,15 @@ const FRAMEWORK_DESCRIPTIONS: Record<Framework, string> = {
   SNAP:      'Buyer-centric framework for busy, information-overloaded prospects. Tests whether you can be Simple, iNvaluable, Aligned, and a Priority.',
 };
 
-function getRecommendedFramework(industry: string, difficulty: string): Framework {
+function getRecommendedFramework(industry: string, personaType: string): Framework {
   const ind = industry.toLowerCase();
-  const diff = difficulty.toUpperCase();
+  const pt = personaType.toUpperCase();
   if (ind.includes('finance') || ind.includes('bank') || ind.includes('insurance')) return 'MEDDIC';
-  if (diff === 'EXPERT' || diff === 'HARD') return 'MEDDICC';
+  if (pt === 'AGGRESSIVE' || pt === 'RUDE') return 'MEDDICC';
   if (ind.includes('health') || ind.includes('medical') || ind.includes('consult')) return 'SPIN';
   if (ind.includes('real estate') || ind.includes('manufacturing')) return 'CHALLENGER';
   if (ind.includes('saas') || ind.includes('tech') || ind.includes('software')) return 'MEDDIC';
-  if (diff === 'EASY') return 'BANT';
+  if (pt === 'FRIENDLY' || pt === 'WARM') return 'BANT';
   return 'SPIN';
 }
 
@@ -203,7 +212,7 @@ export function PersonaBuilder({ onCreated, onClose, initialAvatarId }: Props) {
     title: '',
     company: '',
     industry: '',
-    difficulty: 'MEDIUM' as typeof DIFFICULTIES[number],
+    personaType: 'NEUTRAL' as PersonaType,
     personality: '',
     systemPrompt: '',
     objections: [''],
@@ -334,18 +343,18 @@ export function PersonaBuilder({ onCreated, onClose, initialAvatarId }: Props) {
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-white/70 block mb-2">Difficulty</label>
+                  <label className="text-xs font-medium text-white/70 block mb-2">Persona Type</label>
                   <div className="flex flex-wrap gap-2">
-                    {DIFFICULTIES.map(d => (
+                    {PERSONA_TYPES.map(t => (
                       <button
-                        key={d}
-                        onClick={() => set('difficulty', d)}
+                        key={t}
+                        onClick={() => set('personaType', t)}
                         className={clsx(
-                          'flex-1 min-w-[70px] py-2 rounded-[9px] text-[12px] font-semibold border transition-all capitalize',
-                          form.difficulty === d ? 'border-accent bg-accent/10 text-accent' : 'border-white/[0.08] text-white/80 hover:text-white'
+                          'flex-1 min-w-[80px] py-2 rounded-[9px] text-[12px] font-semibold border transition-all capitalize',
+                          form.personaType === t ? 'border-accent bg-accent/10 text-accent' : 'border-white/[0.08] text-white/80 hover:text-white'
                         )}
                       >
-                        {d.toLowerCase()}
+                        {t.charAt(0) + t.slice(1).toLowerCase()}
                       </button>
                     ))}
                   </div>
@@ -443,7 +452,7 @@ export function PersonaBuilder({ onCreated, onClose, initialAvatarId }: Props) {
               <motion.div key="s3" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex flex-col gap-4">
                 {/* AI recommendation banner */}
                 {(() => {
-                  const rec = getRecommendedFramework(form.industry, form.difficulty);
+                  const rec = getRecommendedFramework(form.industry, form.personaType);
                   return (
                     <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-[11px]" style={{ background: 'rgba(91,111,255,0.08)', border: '1px solid rgba(91,111,255,0.2)' }}>
                       <Sparkles size={13} className="flex-shrink-0 mt-0.5 text-accent" />
@@ -452,7 +461,7 @@ export function PersonaBuilder({ onCreated, onClose, initialAvatarId }: Props) {
                           AI recommends <span className="text-accent">{FRAMEWORK_INFO[rec].label}</span> for this persona
                         </p>
                         <p className="text-[11px] text-white/50 mt-0.5 leading-snug">
-                          Based on {form.industry ? `${form.industry} industry` : 'the persona profile'} and {form.difficulty.toLowerCase()} difficulty. You can select multiple frameworks.
+                          Based on {form.industry ? `${form.industry} industry` : 'the persona profile'} and a {form.personaType.toLowerCase()} persona type. You can select multiple frameworks.
                         </p>
                       </div>
                       {!form.frameworks.includes(rec) && (
@@ -476,7 +485,7 @@ export function PersonaBuilder({ onCreated, onClose, initialAvatarId }: Props) {
                     {FRAMEWORKS.map(fw => {
                       const info = FRAMEWORK_INFO[fw];
                       const selected = form.frameworks.includes(fw);
-                      const isRec = fw === getRecommendedFramework(form.industry, form.difficulty);
+                      const isRec = fw === getRecommendedFramework(form.industry, form.personaType);
                       return (
                         <button
                           key={fw}
@@ -532,10 +541,9 @@ export function PersonaBuilder({ onCreated, onClose, initialAvatarId }: Props) {
                         <div className="font-display font-bold">{form.name}</div>
                         <div className="text-[12px] text-white/70 mb-2">{form.title}{form.company ? ` · ${form.company}` : ''}</div>
                         <div className="flex gap-1.5 flex-wrap">
-                          <span className={clsx('text-[10px] px-2 py-0.5 rounded border',
-                            form.difficulty === 'EASY' ? 'border-emerald-500/30 text-emerald-400' :
-                            form.difficulty === 'MEDIUM' ? 'border-amber-500/30 text-amber-400' : 'border-red-500/30 text-red-400'
-                          )}>{form.difficulty}</span>
+                          <span className={clsx('text-[10px] px-2 py-0.5 rounded border', PERSONA_TYPE_STYLE[form.personaType])}>
+                            {form.personaType.charAt(0) + form.personaType.slice(1).toLowerCase()}
+                          </span>
                           {form.frameworks.map(fw => (
                             <span key={fw} className="text-[10px] px-2 py-0.5 rounded border border-white/10 text-white/60">{fw}</span>
                           ))}

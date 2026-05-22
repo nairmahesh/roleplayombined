@@ -18,11 +18,13 @@ interface PreCallBriefingProps {
   onSkip: () => void;
 }
 
-const DIFFICULTY_COLORS: Record<string, string> = {
-  Easy: 'text-green-400 bg-green-400/10 border-green-400/25',
-  Medium: 'text-amber-400 bg-amber-400/10 border-amber-400/25',
-  Hard: 'text-red-400 bg-red-400/10 border-red-400/25',
-  Expert: 'text-red-500 bg-red-500/10 border-red-500/30',
+const PERSONA_TYPE_COLORS: Record<string, string> = {
+  Friendly:   'text-emerald-400 bg-emerald-400/10 border-emerald-400/25',
+  Warm:       'text-teal-400 bg-teal-400/10 border-teal-400/25',
+  Neutral:    'text-sky-400 bg-sky-400/10 border-sky-400/25',
+  Skeptical:  'text-amber-400 bg-amber-400/10 border-amber-400/25',
+  Rude:       'text-orange-400 bg-orange-400/10 border-orange-400/25',
+  Aggressive: 'text-red-400 bg-red-400/10 border-red-400/25',
 };
 
 function EntryIcon({ type }: { type: string }) {
@@ -76,7 +78,7 @@ export function PreCallBriefing({
               )}
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {difficulty && (
-                  <span className={clsx('text-[11px] px-2 py-0.5 rounded border font-medium', DIFFICULTY_COLORS[difficulty] || 'text-white/80 bg-white/5 border-white/10')}>
+                  <span className={clsx('text-[11px] px-2 py-0.5 rounded border font-medium', PERSONA_TYPE_COLORS[difficulty] || 'text-white/80 bg-white/5 border-white/10')}>
                     {difficulty}
                   </span>
                 )}

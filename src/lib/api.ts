@@ -186,7 +186,7 @@ const DEMO_PERSONAS: Persona[] = [
     industry: 'Technology',
     emoji: '👩‍💻',
     avatarId: 'sarah',
-    difficulty: 'MEDIUM',
+    personaType: 'SKEPTICAL',
     personality: 'Analytical and data-driven. Skeptical of vendor claims. Needs ROI proof.',
     systemPrompt: 'You are Sarah Chen, VP of Engineering at TechCorp. You are analytical and skeptical. Push for technical depth and concrete metrics before agreeing to anything.',
     objections: ['We already have a solution', 'Prove the ROI first', 'Our team will need training time'],
@@ -202,7 +202,7 @@ const DEMO_PERSONAS: Persona[] = [
     industry: 'Finance',
     emoji: '💼',
     avatarId: 'marcus',
-    difficulty: 'HARD',
+    personaType: 'RUDE',
     personality: 'Budget-focused. Wants cost justification upfront. Short on time.',
     systemPrompt: 'You are Marcus Webb, CFO at GrowthCo. You are busy and financially driven. You need clear cost-benefit analysis and fast answers.',
     objections: ['The budget is already allocated', 'I need sign-off from the board', 'What\'s the total cost of ownership?'],
@@ -218,7 +218,7 @@ const DEMO_PERSONAS: Persona[] = [
     industry: 'SaaS',
     emoji: '⚙️',
     avatarId: 'priya',
-    difficulty: 'EASY',
+    personaType: 'FRIENDLY',
     personality: 'Process-oriented and collaborative. Open to change if it reduces friction.',
     systemPrompt: 'You are Priya Nair, Head of Operations at ScaleUp Inc. You are open-minded and focused on making your team\'s workflows smoother.',
     objections: ['How long does onboarding take?', 'Will this integrate with our current stack?'],
@@ -234,7 +234,7 @@ const DEMO_PERSONAS: Persona[] = [
     industry: 'Sales',
     emoji: '🎯',
     avatarId: 'jordan',
-    difficulty: 'MEDIUM',
+    personaType: 'SKEPTICAL',
     personality: 'Competitive and results-driven. Wants to know how this helps his team close faster.',
     systemPrompt: 'You are Jordan Lee, Director of Sales at Pipeline Pro. You are competitive and only care about revenue impact. Challenge the salesperson to prove direct impact on quota attainment.',
     objections: ['My reps don\'t have time for more tools', 'We tried something like this before and it didn\'t stick'],
@@ -250,7 +250,7 @@ const DEMO_PERSONAS: Persona[] = [
     industry: 'Technology',
     emoji: '🧠',
     avatarId: 'aisha',
-    difficulty: 'HARD',
+    personaType: 'AGGRESSIVE',
     personality: 'Visionary but deeply technical. Will probe architecture and security hard.',
     systemPrompt: 'You are Aisha Okonkwo, CTO at Nexus Labs. You are technically brilliant and won\'t accept vague answers. Ask deep questions about security, scalability, and architecture.',
     objections: ['How does this handle data sovereignty?', 'What\'s your uptime SLA?', 'Show me your SOC 2 report'],
@@ -266,7 +266,7 @@ const DEMO_PERSONAS: Persona[] = [
     industry: 'Consulting',
     emoji: '🏢',
     avatarId: 'carlos',
-    difficulty: 'HARD',
+    personaType: 'NEUTRAL',
     personality: 'Big-picture thinker. Wants strategic value, not features. Time is precious.',
     systemPrompt: 'You are Carlos Mendez, CEO of Meridian Group. You are strategic and pressed for time. Dismiss feature-level talk and demand to understand the business transformation this enables.',
     objections: ['I need my leadership team aligned first', 'We\'re focused on other priorities right now'],
@@ -541,7 +541,7 @@ export const practiceApi = {
       displayName: string;
       displayTitle: string;
       displayEmoji: string;
-      difficulty: string;
+      personaType: string;
       personaContext: string;
       suggestedQuestions: string[];
     };

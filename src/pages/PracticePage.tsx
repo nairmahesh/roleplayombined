@@ -42,7 +42,7 @@ const TEMPLATES: Array<ScenarioConfig & { id: string; label: string; avatarId: s
     id: 't1', label: 'Enterprise CRM Pitch', avatarId: 'alex',
     industry: 'SaaS', roleplayType: 'Sales Pitch', displayEmoji: '',
     displayName: 'Alex Chen', displayTitle: 'Head of Sales, Accenture',
-    difficulty: 'Hard', sessionType: 'ONLINE_MEETING',
+    personaType: 'Skeptical', sessionType: 'ONLINE_MEETING',
     suggestedQuestions: [
       'Why should we switch from Salesforce?', 'What ROI have your existing clients achieved?',
       'How long does implementation take?', 'How disruptive will migration be for my team?',
@@ -58,7 +58,7 @@ How to behave: Start by briefly welcoming the rep and asking them to walk you th
     id: 't2', label: 'SaaS Cold Call', avatarId: 'james',
     industry: 'SaaS', roleplayType: 'Cold Call', displayEmoji: '',
     displayName: "James O'Brien", displayTitle: 'VP of Engineering, TechCorp',
-    difficulty: 'Hard', sessionType: 'PHONE_CALL',
+    personaType: 'Rude', sessionType: 'PHONE_CALL',
     suggestedQuestions: [
       'How did you get this number?', 'What makes you different from the 10 tools we already use?',
       "I'm busy — give me the 30-second version.", 'Do you have case studies from companies our size?',
@@ -74,7 +74,7 @@ How to behave: Be initially dismissive and short. Give the caller 60 seconds. If
     id: 't3', label: 'Healthcare Discovery Call', avatarId: 'sarah',
     industry: 'Healthcare', roleplayType: 'Discovery Call', displayEmoji: '',
     displayName: 'Sarah Mitchell', displayTitle: 'CMO, Regional Health System',
-    difficulty: 'Medium', sessionType: 'ONLINE_MEETING',
+    personaType: 'Neutral', sessionType: 'ONLINE_MEETING',
     suggestedQuestions: [
       'How does your solution handle HIPAA compliance?', 'What EHR systems does this integrate with?',
       'What does the implementation timeline look like?', 'How have other health systems measured outcomes?',
@@ -90,7 +90,7 @@ How to behave: Probe deeply on compliance, integration, and implementation risk.
     id: 't4', label: 'Objection Handling — Price', avatarId: 'robert',
     industry: 'Consulting', roleplayType: 'Objection Handling', displayEmoji: '',
     displayName: 'Robert Hayes', displayTitle: 'Procurement Director, Global Corp',
-    difficulty: 'Expert', sessionType: 'PHONE_CALL',
+    personaType: 'Aggressive', sessionType: 'PHONE_CALL',
     suggestedQuestions: [
       "Your competitor is 30% cheaper — why should we pay more?",
       'Can you justify that price with concrete ROI data?',
@@ -107,7 +107,7 @@ How to behave: Lead with price objections immediately. Push hard on discounts, p
     id: 't5', label: 'Banking Negotiation', avatarId: 'emma',
     industry: 'Banking', roleplayType: 'Negotiation', displayEmoji: '',
     displayName: 'Emma Wilson', displayTitle: 'Head of Treasury, First National Bank',
-    difficulty: 'Hard', sessionType: 'ONLINE_MEETING',
+    personaType: 'Skeptical', sessionType: 'ONLINE_MEETING',
     suggestedQuestions: [
       'What are your regulatory compliance certifications?', 'How does your risk model handle market volatility?',
       'What service SLAs can you commit to?', 'What does the integration with our core banking system look like?',
@@ -121,7 +121,7 @@ How to behave: Clarify key terms you need addressed: SLAs, regulatory compliance
     id: 't6', label: 'Account Expansion', avatarId: 'priya',
     industry: 'SaaS', roleplayType: 'Account Expansion', displayEmoji: '',
     displayName: 'Priya Kapoor', displayTitle: 'Head of Operations, ScaleUp Inc',
-    difficulty: 'Medium', sessionType: 'ONLINE_MEETING',
+    personaType: 'Warm', sessionType: 'ONLINE_MEETING',
     suggestedQuestions: [
       "We're already paying for your product — why should we pay more?",
       "What value haven't we gotten from the current plan?",
@@ -138,7 +138,7 @@ How to behave: Be friendly — you have a good relationship. But be analytically
     id: 't7', label: 'Insurance Cold Call', avatarId: 'layla',
     industry: 'Insurance', roleplayType: 'Cold Call', displayEmoji: '',
     displayName: 'Layla Hassan', displayTitle: 'CFO, MidWest Logistics',
-    difficulty: 'Hard', sessionType: 'PHONE_CALL',
+    personaType: 'Skeptical', sessionType: 'PHONE_CALL',
     suggestedQuestions: [
       'We already have a broker — why would we switch?',
       'What savings have you actually delivered for similar companies?',
@@ -157,7 +157,7 @@ How to behave: Be initially dismissive. If the rep leads with cost savings and r
     id: 't8', label: 'Real Estate Pitch', avatarId: 'carlos',
     industry: 'Real Estate', roleplayType: 'Sales Pitch', displayEmoji: '',
     displayName: 'Carlos Rivera', displayTitle: 'Head of Acquisitions, Apex Properties',
-    difficulty: 'Medium', sessionType: 'ONLINE_MEETING',
+    personaType: 'Neutral', sessionType: 'ONLINE_MEETING',
     suggestedQuestions: [
       'What comparable deals have you closed in this market?',
       'How are you valuing this property — what assumptions are you making?',
@@ -174,7 +174,7 @@ How to behave: Ask tough questions about valuation methodology, market comparabl
     id: 't9', label: 'HR / Talent Platform', avatarId: 'aisha',
     industry: 'Consulting', roleplayType: 'Discovery Call', displayEmoji: '',
     displayName: 'Aisha Brown', displayTitle: 'Chief People Officer, GrowthCo',
-    difficulty: 'Easy', sessionType: 'ONLINE_MEETING',
+    personaType: 'Friendly', sessionType: 'ONLINE_MEETING',
     suggestedQuestions: [
       "We already use LinkedIn Recruiter — what does yours do differently?",
       'How does your platform reduce time-to-hire?',
@@ -193,7 +193,7 @@ How to behave: Be warm and engaged. Ask practical questions about implementation
     id: 't10', label: 'Manufacturing Demo', avatarId: 'marcus',
     industry: 'Manufacturing', roleplayType: 'Sales Pitch', displayEmoji: '',
     displayName: 'Marcus Johnson', displayTitle: 'VP of Operations, PrecisionMfg',
-    difficulty: 'Hard', sessionType: 'PHONE_CALL',
+    personaType: 'Rude', sessionType: 'PHONE_CALL',
     suggestedQuestions: [
       'How does this integrate with our existing MES and ERP systems?',
       "We've tried automation before — it broke our line for 3 weeks. Why is this different?",
@@ -212,7 +212,7 @@ How to behave: Be gruff and direct. Challenge every claim with real-world edge c
     id: 't_demo_kb', label: 'FinTech Partnership Negotiation (Demo)', avatarId: 'emma',
     industry: 'Banking', roleplayType: 'Negotiation', displayEmoji: '',
     displayName: 'Emma Wilson', displayTitle: 'Head of Treasury, First National Bank',
-    difficulty: 'Hard', sessionType: 'ONLINE_MEETING',
+    personaType: 'Skeptical', sessionType: 'ONLINE_MEETING',
     suggestedQuestions: [
       "What's your uptime SLA and what's the compensation for breaches?",
       'How do you handle regulatory audits and data residency requirements?',
@@ -450,7 +450,7 @@ interface FrameworkRec {
 function recommendFramework(
   roleplayType: string,
   industry: string,
-  difficulty: string,
+  personaType: string,
   personaTitle: string,
 ): FrameworkRec {
   const t = roleplayType.toLowerCase();
@@ -508,7 +508,7 @@ function recommendFramework(
   };
 
   // Fast-cycle / transactional / startup / SMB
-  if (difficulty.toLowerCase() === 'easy' || i.includes('retail') || i.includes('smb')) return {
+  if (personaType.toLowerCase() === 'friendly' || i.includes('retail') || i.includes('smb')) return {
     framework: 'BANT',
     reason: `For transactional or early-stage conversations, BANT quickly qualifies Budget, Authority, Need and Timeline — efficient when deal cycles are short.`,
     confidence: 'Medium',
@@ -534,15 +534,15 @@ interface FrameworkSelectorProps {
   setFramework: (f: Framework) => void;
   roleplayType: string;
   industry: string;
-  difficulty: string;
+  personaType: string;
   personaTitle: string;
   compact?: boolean;
 }
 
-function FrameworkSelector({ framework, setFramework, roleplayType, industry, difficulty, personaTitle, compact }: FrameworkSelectorProps) {
+function FrameworkSelector({ framework, setFramework, roleplayType, industry, personaType, personaTitle, compact }: FrameworkSelectorProps) {
   const [showRec, setShowRec] = useState(false);
   const hasContext = !!(roleplayType || industry || personaTitle);
-  const rec = hasContext ? recommendFramework(roleplayType, industry, difficulty, personaTitle) : null;
+  const rec = hasContext ? recommendFramework(roleplayType, industry, personaType, personaTitle) : null;
   const recDiffers = rec && rec.framework !== framework;
 
   return (
@@ -660,11 +660,13 @@ function FrameworkSelector({ framework, setFramework, roleplayType, industry, di
   );
 }
 
-const DIFFICULTY_COLORS: Record<string, string> = {
-  Easy:   'text-accent-3 bg-accent-3/10 border-accent-3/20',
-  Medium: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
-  Hard:   'text-accent-4 bg-accent-4/10 border-accent-4/20',
-  Expert: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
+const PERSONA_TYPE_COLORS: Record<string, string> = {
+  Friendly:   'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+  Warm:       'text-teal-400 bg-teal-400/10 border-teal-400/20',
+  Neutral:    'text-sky-400 bg-sky-400/10 border-sky-400/20',
+  Skeptical:  'text-amber-400 bg-amber-400/10 border-amber-400/20',
+  Rude:       'text-orange-400 bg-orange-400/10 border-orange-400/20',
+  Aggressive: 'text-red-400 bg-red-400/10 border-red-400/20',
 };
 
 type GalleryTab = 'assigned' | 'mine' | 'library';
@@ -698,7 +700,7 @@ export function PracticePage() {
   const [displayTitle, setDisplayTitle]           = useState('');
   const [displayEmoji, setDisplayEmoji]           = useState('');
   const [personaContext, setPersonaContext]        = useState('');
-  const [difficulty, setDifficulty]               = useState('Medium');
+  const [personaType, setPersonaType]              = useState('Neutral');
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
   const [showQuestions, setShowQuestions]         = useState(false);
   const [questionInput, setQuestionInput]         = useState('');
@@ -879,7 +881,7 @@ export function PracticePage() {
     setDisplayTitle(t.displayTitle);
     setDisplayEmoji(t.displayEmoji);
     setPersonaContext(t.personaContext);
-    setDifficulty(t.difficulty);
+    setPersonaType(t.personaType);
     setSuggestedQuestions(t.suggestedQuestions);
     setShowQuestions(true);
     setIndustry(t.industry);
@@ -906,7 +908,7 @@ export function PracticePage() {
     setDisplayTitle(sc.displayTitle);
     setDisplayEmoji(sc.displayEmoji);
     setPersonaContext(sc.personaContext);
-    setDifficulty(sc.difficulty);
+    setPersonaType(sc.personaType);
     setSuggestedQuestions(sc.suggestedQuestions);
     setShowQuestions(true);
     setIndustry(sc.industry);
@@ -951,7 +953,7 @@ export function PracticePage() {
     setDisplayTitle('');
     setDisplayEmoji('🧑‍💼');
     setPersonaContext('');
-    setDifficulty('Medium');
+    setPersonaType('Neutral');
     setSuggestedQuestions([]);
     setStagedQuestions([]);
     setShowQuestions(false);
@@ -1001,7 +1003,7 @@ export function PracticePage() {
       setDisplayName(result.displayName);
       setDisplayTitle(result.displayTitle);
       setDisplayEmoji(result.displayEmoji);
-      setDifficulty(result.difficulty);
+      setPersonaType(result.personaType ?? 'Neutral');
       setSuggestedQuestions(result.suggestedQuestions);
       setShowQuestions(true);
       toast.success('Persona generated');
@@ -1046,7 +1048,7 @@ export function PracticePage() {
         scenarioConfig: {
           industry, roleplayType, personaContext,
           displayName, displayTitle, displayEmoji,
-          difficulty, suggestedQuestions, objections,
+          personaType, suggestedQuestions, objections,
           aiCanEnd, endCondition, timeLimitMins: timeLimitMinsNum,
           avatarId, elevenlabsVoiceId: selectedVoiceId,
           language, botKnowledge, userBriefing,
@@ -1114,7 +1116,7 @@ export function PracticePage() {
     setDisplayName(p.name);
     setDisplayTitle(p.title);
     setDisplayEmoji(p.emoji);
-    setDifficulty(p.difficulty);
+    setPersonaType(p.personaType ?? 'Neutral');
     setSuggestedQuestions([]);
     setShowPersonaPicker(false);
   };
@@ -1136,7 +1138,7 @@ export function PracticePage() {
     try {
       const sc: ScenarioConfig = {
         industry, roleplayType, personaContext, displayName, displayTitle,
-        displayEmoji, difficulty, suggestedQuestions, objections,
+        displayEmoji, personaType, suggestedQuestions, objections,
         aiCanEnd, endCondition, timeLimitMins: timeLimitMins ? parseInt(timeLimitMins, 10) || null : null,
         avatarId, elevenlabsVoiceId: selectedVoiceId,
         language, botKnowledge, userBriefing,
@@ -1257,7 +1259,7 @@ export function PracticePage() {
                         subtitle={tr.scenarioConfig.displayTitle}
                         industry={tr.scenarioConfig.industry}
                         type={tr.scenarioConfig.roleplayType}
-                        difficulty={tr.scenarioConfig.difficulty}
+                        difficulty={tr.scenarioConfig.personaType}
                         timeLimitMins={tr.scenarioConfig.timeLimitMins ?? 3}
                         sessionType={tr.scenarioConfig.sessionType}
                         metaLabel={`by ${tr.createdBy.firstName} ${tr.createdBy.lastName}`}
@@ -1318,7 +1320,7 @@ export function PracticePage() {
                       subtitle={tr.scenarioConfig.displayTitle}
                       industry={tr.scenarioConfig.industry}
                       type={tr.scenarioConfig.roleplayType}
-                      difficulty={tr.scenarioConfig.difficulty}
+                      difficulty={tr.scenarioConfig.personaType}
                       timeLimitMins={tr.scenarioConfig.timeLimitMins ?? 3}
                       sessionType={tr.scenarioConfig.sessionType}
                       metaLabel={`by ${tr.createdBy.firstName} ${tr.createdBy.lastName}`}
@@ -1357,7 +1359,7 @@ export function PracticePage() {
                     subtitle={t.displayTitle}
                     industry={t.industry}
                     type={t.roleplayType}
-                    difficulty={t.difficulty}
+                    difficulty={t.personaType}
                     timeLimitMins={3}
                     sessionType={(t as ScenarioConfig & { id: string; label: string; avatarId: string; sessionType?: SessionType }).sessionType}
                     metaLabel="Built-in"
@@ -1454,7 +1456,7 @@ export function PracticePage() {
                     <div className="font-display text-[18px] font-bold leading-tight">{displayName}</div>
                     {displayTitle && <div className="text-[13px] text-white/65 mt-0.5">{displayTitle}</div>}
                     <div className="flex flex-wrap gap-1.5 mt-2">
-                      <span className={clsx('text-[11px] px-2 py-0.5 rounded border font-medium', DIFFICULTY_COLORS[difficulty] || 'text-white/80 bg-white/5 border-white/10')}>{difficulty}</span>
+                      <span className={clsx('text-[11px] px-2 py-0.5 rounded border font-medium', PERSONA_TYPE_COLORS[personaType] || 'text-white/80 bg-white/5 border-white/10')}>{personaType}</span>
                       {industry && <span className="text-[11px] px-2 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/80">{industry}</span>}
                       {roleplayType && <span className="text-[11px] px-2 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/80">{roleplayType}</span>}
                       {language && language !== 'English' && <span className="text-[11px] px-2 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/80">{language}</span>}
@@ -1518,7 +1520,7 @@ export function PracticePage() {
                     setFramework={setFramework}
                     roleplayType={roleplayType}
                     industry={industry}
-                    difficulty={difficulty}
+                    personaType={personaType}
                     personaTitle={displayTitle}
                     compact
                   />
@@ -1627,8 +1629,8 @@ export function PracticePage() {
                       <div className="text-[11.5px] font-semibold truncate">{displayName}</div>
                     )}
                     {displayTitle && <div className="text-[10px] text-white/75 mt-0.5 truncate">{displayTitle}</div>}
-                    <span className={clsx('inline-block text-[9.5px] px-1.5 py-0.5 rounded border mt-1', DIFFICULTY_COLORS[difficulty] || 'text-white/80 bg-white/5 border-white/10')}>
-                      {difficulty}
+                    <span className={clsx('inline-block text-[9.5px] px-1.5 py-0.5 rounded border mt-1', PERSONA_TYPE_COLORS[personaType] || 'text-white/80 bg-white/5 border-white/10')}>
+                      {personaType}
                     </span>
                   </div>
                 </div>
@@ -1890,9 +1892,9 @@ export function PracticePage() {
                           <input value={displayTitle} onChange={e => setDisplayTitle(e.target.value)} className="input-base text-[12.5px]" placeholder="VP Sales, Acme" />
                         </div>
                         <div>
-                          <label className="text-[10px] text-white/75 block mb-1">Difficulty</label>
-                          <select value={difficulty} onChange={e => setDifficulty(e.target.value)} className="input-base text-[12.5px] w-full">
-                            {['Easy', 'Medium', 'Hard', 'Expert'].map(d => <option key={d} value={d}>{d}</option>)}
+                          <label className="text-[10px] text-white/75 block mb-1">Persona Type</label>
+                          <select value={personaType} onChange={e => setPersonaType(e.target.value)} className="input-base text-[12.5px] w-full">
+                            {['Friendly', 'Warm', 'Neutral', 'Skeptical', 'Rude', 'Aggressive'].map(t => <option key={t} value={t}>{t}</option>)}
                           </select>
                         </div>
                       </div>
@@ -1922,7 +1924,7 @@ export function PracticePage() {
                                     key={t.id}
                                     type="button"
                                     onClick={() => applyTemplate(t)}
-                                    title={`${t.displayTitle} · ${t.difficulty}`}
+                                    title={`${t.displayTitle} · ${t.personaType}`}
                                     className={clsx(
                                       'flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] border text-[11px] font-medium transition-all',
                                       isActive
@@ -1934,8 +1936,8 @@ export function PracticePage() {
                                     <span>{t.label}</span>
                                     <span className={clsx(
                                       'text-[9px] px-1.5 py-0.5 rounded border leading-none',
-                                      DIFFICULTY_COLORS[t.difficulty] || 'text-white/80 bg-white/5 border-white/10'
-                                    )}>{t.difficulty}</span>
+                                      PERSONA_TYPE_COLORS[t.personaType] || 'text-white/80 bg-white/5 border-white/10'
+                                    )}>{t.personaType}</span>
                                   </button>
                                 );
                               })
@@ -1946,7 +1948,7 @@ export function PracticePage() {
                                     key={t.id}
                                     type="button"
                                     onClick={() => applyTemplate(t)}
-                                    title={`${t.displayTitle} · ${t.difficulty}`}
+                                    title={`${t.displayTitle} · ${t.personaType}`}
                                     className={clsx(
                                       'flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] border text-[11px] font-medium transition-all',
                                       isActive
@@ -1958,8 +1960,8 @@ export function PracticePage() {
                                     <span>{t.label}</span>
                                     <span className={clsx(
                                       'text-[9px] px-1.5 py-0.5 rounded border leading-none',
-                                      DIFFICULTY_COLORS[t.difficulty] || 'text-white/80 bg-white/5 border-white/10'
-                                    )}>{t.difficulty}</span>
+                                      PERSONA_TYPE_COLORS[t.personaType] || 'text-white/80 bg-white/5 border-white/10'
+                                    )}>{t.personaType}</span>
                                   </button>
                                 );
                               })
@@ -2311,7 +2313,7 @@ export function PracticePage() {
                           <div className="flex flex-wrap gap-1 mt-1">
                             {industry && <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/80">{industry}</span>}
                             {roleplayType && <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/80">{roleplayType}</span>}
-                            {difficulty && <span className={clsx('text-[9.5px] px-1.5 py-0.5 rounded border', DIFFICULTY_COLORS[difficulty] || 'text-white/80 bg-white/5 border-white/10')}>{difficulty}</span>}
+                            {personaType && <span className={clsx('text-[9.5px] px-1.5 py-0.5 rounded border', PERSONA_TYPE_COLORS[personaType] || 'text-white/80 bg-white/5 border-white/10')}>{personaType}</span>}
                           </div>
                         </div>
                       </div>
@@ -2323,7 +2325,7 @@ export function PracticePage() {
                           setFramework={setFramework}
                           roleplayType={roleplayType}
                           industry={industry}
-                          difficulty={difficulty}
+                          personaType={personaType}
                           personaTitle={displayTitle}
                         />
 
@@ -2568,7 +2570,7 @@ export function PracticePage() {
               avatarId={avatarId}
               industry={industry}
               roleplayType={roleplayType}
-              difficulty={difficulty}
+              difficulty={personaType}
               sessionType={sessionType}
               briefing={userBriefing}
               onReady={() => {
@@ -2862,7 +2864,7 @@ export function PracticePage() {
                     <div className="font-display text-[16px] sm:text-[17px] font-bold leading-tight truncate">{displayName}</div>
                     {displayTitle && <div className="text-[12px] sm:text-[12.5px] text-white/65 mt-0.5 truncate">{displayTitle}</div>}
                     <div className="flex flex-wrap gap-1.5 mt-1.5">
-                      <span className={clsx('text-[10px] px-1.5 py-0.5 rounded border', DIFFICULTY_COLORS[difficulty] || 'text-white/80 bg-white/5 border-white/10')}>{difficulty}</span>
+                      <span className={clsx('text-[10px] px-1.5 py-0.5 rounded border', PERSONA_TYPE_COLORS[personaType] || 'text-white/80 bg-white/5 border-white/10')}>{personaType}</span>
                       {industry && <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/70">{industry}</span>}
                       {roleplayType && <span className="hidden sm:inline text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/70">{roleplayType}</span>}
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 border border-accent/20 text-accent/70 flex items-center gap-1">
@@ -2978,10 +2980,12 @@ function GalleryCard({
   onDelete?: (e: React.MouseEvent) => void;
 }) {
   const diffColor = ({
-    Easy:   'text-accent-3 bg-accent-3/10 border-accent-3/20',
-    Medium: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
-    Hard:   'text-accent-4 bg-accent-4/10 border-accent-4/20',
-    Expert: 'text-rose-400 bg-rose-400/10 border-rose-400/20',
+    Friendly:   'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+    Warm:       'text-teal-400 bg-teal-400/10 border-teal-400/20',
+    Neutral:    'text-sky-400 bg-sky-400/10 border-sky-400/20',
+    Skeptical:  'text-amber-400 bg-amber-400/10 border-amber-400/20',
+    Rude:       'text-orange-400 bg-orange-400/10 border-orange-400/20',
+    Aggressive: 'text-red-400 bg-red-400/10 border-red-400/20',
   } as Record<string, string>)[difficulty] ?? 'text-white/80 bg-white/5 border-white/10';
 
   const displayMins = timeLimitMins ?? 3;

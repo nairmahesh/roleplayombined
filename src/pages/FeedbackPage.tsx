@@ -525,8 +525,8 @@ export function FeedbackPage() {
               {session.durationSeconds && (
                 <span className="tag">{Math.floor(session.durationSeconds / 60)}m {session.durationSeconds % 60}s</span>
               )}
-              {session.persona?.difficulty && (
-                <span className="tag">{session.persona.difficulty}</span>
+              {session.persona?.personaType && (
+                <span className="tag">{session.persona.personaType}</span>
               )}
               {session.totalScore != null && (
                 <span
