@@ -2,6 +2,8 @@ import axios, { AxiosInstance } from 'axios';
 import { useAuthStore } from './store';
 import type {
   DashboardStats,
+  DashboardRecentSession,
+  DashboardFrameworkStat,
   LeaderboardEntry,
   Session,
   Persona,
@@ -207,17 +209,76 @@ export const personasApi = {
   },
 };
 
+// ── Demo dashboard data ───────────────────────────────────────────────────────
+
+function demoDashboard(role: string | undefined): DashboardStats {
+  const recentSessions: DashboardRecentSession[] = [
+    { id: 's1', endedAt: new Date(Date.now() - 3_600_000).toISOString(), durationSeconds: 420, framework: 'MEDDIC', sessionType: 'PHONE_CALL', personaName: 'Sarah Chen', personaEmoji: '👩', userFirstName: 'Demo', userLastName: 'Agent', totalScore: 82 },
+    { id: 's2', endedAt: new Date(Date.now() - 86_400_000).toISOString(), durationSeconds: 600, framework: 'MEDDIC', sessionType: 'ONLINE_MEETING', personaName: 'Marcus Webb', personaEmoji: '👨', userFirstName: 'Demo', userLastName: 'Agent', totalScore: 71 },
+    { id: 's3', endedAt: new Date(Date.now() - 172_800_000).toISOString(), durationSeconds: 380, framework: 'SPICED', sessionType: 'PHONE_CALL', personaName: 'Priya Nair', personaEmoji: '👩', userFirstName: 'Demo', userLastName: 'Agent', totalScore: 58 },
+  ];
+  const frameworkStats: DashboardFrameworkStat[] = [
+    { component: 'Metrics', avgScore: 79, count: 8 },
+    { component: 'Economic Buyer', avgScore: 65, count: 8 },
+    { component: 'Decision Criteria', avgScore: 88, count: 8 },
+    { component: 'Decision Process', avgScore: 72, count: 8 },
+    { component: 'Identify Pain', avgScore: 55, count: 8 },
+    { component: 'Champion', avgScore: 84, count: 8 },
+  ];
+
+  if (role === 'AGENT') {
+    return {
+      totalSessions: 12,
+      avgScore: 74,
+      activeUsers: 1,
+      passRate: 67,
+      recentSessions,
+      frameworkStats,
+      agentExtra: { sessionsThisWeek: 3, streak: 2, rank: 4 },
+    };
+  }
+  const members = [
+    { id: 'm1', firstName: 'Alex', lastName: 'Rivera', sessionCount: 18, avgScore: 88, sessionsThisWeek: 5 },
+    { id: 'm2', firstName: 'Jordan', lastName: 'Kim', sessionCount: 15, avgScore: 81, sessionsThisWeek: 4 },
+    { id: 'm3', firstName: 'Morgan', lastName: 'Taylor', sessionCount: 11, avgScore: 74, sessionsThisWeek: 2 },
+    { id: 'm4', firstName: 'Demo', lastName: 'Agent', sessionCount: 12, avgScore: 74, sessionsThisWeek: 3 },
+    { id: 'm5', firstName: 'Casey', lastName: 'Walsh', sessionCount: 7, avgScore: 61, sessionsThisWeek: 0 },
+    { id: 'm6', firstName: 'Riley', lastName: 'Scott', sessionCount: 4, avgScore: 58, sessionsThisWeek: 0 },
+  ];
+  return {
+    totalSessions: 67,
+    avgScore: 74,
+    activeUsers: members.length,
+    passRate: 71,
+    recentSessions: [
+      ...recentSessions,
+      { id: 's4', endedAt: new Date(Date.now() - 7_200_000).toISOString(), durationSeconds: 510, framework: 'MEDDIC', sessionType: 'ONLINE_MEETING', personaName: 'Wei Zhang', personaEmoji: '👨', userFirstName: 'Alex', userLastName: 'Rivera', totalScore: 88 },
+    ],
+    frameworkStats,
+    managerExtra: { teamSize: members.length, members },
+  };
+}
+
 // ── Analytics API ─────────────────────────────────────────────────────────────
 
 export const analyticsApi = {
   dashboard: async (): Promise<DashboardStats> => {
-    const { data } = await http.get('/analytics/dashboard');
-    return data as DashboardStats;
+    try {
+      const { data } = await http.get('/analytics/dashboard');
+      return data as DashboardStats;
+    } catch {
+      const user = useAuthStore.getState().user;
+      return demoDashboard(user?.role);
+    }
   },
 
   leaderboard: async (period?: string): Promise<LeaderboardEntry[]> => {
-    const { data } = await http.get('/analytics/leaderboard', { params: period ? { period } : undefined });
-    return data as LeaderboardEntry[];
+    try {
+      const { data } = await http.get('/analytics/leaderboard', { params: period ? { period } : undefined });
+      return data as LeaderboardEntry[];
+    } catch {
+      return [];
+    }
   },
 };
 
