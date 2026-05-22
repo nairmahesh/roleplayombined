@@ -482,6 +482,16 @@ export const superadminApi = {
     const { data } = await http.post('/superadmin/sync-persona-agents');
     return data as { synced: number; results: { name: string; agentId: string | null; status: string }[] };
   },
+
+  getCompanyPersonas: async (companyId: string) => {
+    const { data } = await http.get(`/superadmin/companies/${companyId}/personas`);
+    return data as Persona[];
+  },
+
+  updateCompanyPersona: async (companyId: string, personaId: string, payload: Partial<Persona>) => {
+    const { data } = await http.patch(`/superadmin/companies/${companyId}/personas/${personaId}`, payload);
+    return data as Persona;
+  },
 };
 
 // ── Voice API ─────────────────────────────────────────────────────────────────

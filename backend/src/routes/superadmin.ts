@@ -139,6 +139,39 @@ router.patch('/companies/:id/users/:userId', async (req: AuthRequest, res: Respo
   res.json({ id: user._id.toString(), ...update });
 });
 
+// GET /api/superadmin/companies/:id/personas
+// Returns all personas visible to this company (preset + custom)
+router.get('/companies/:id/personas', async (req: AuthRequest, res: Response): Promise<void> => {
+  const personas = await Persona.find({
+    $or: [{ isPreset: true }, { companyId: req.params.id }],
+  }).lean();
+  res.json(personas.map(p => ({
+    ...p,
+    id: p._id.toString(),
+    companyId: p.companyId?.toString(),
+  })));
+});
+
+// PATCH /api/superadmin/companies/:id/personas/:personaId
+// Super admin can edit any field on any persona (preset included)
+router.patch('/companies/:id/personas/:personaId', async (req: AuthRequest, res: Response): Promise<void> => {
+  const persona = await Persona.findById(req.params.personaId);
+  if (!persona) { res.status(404).json({ error: 'Persona not found' }); return; }
+
+  const allowed = [
+    'name', 'title', 'company', 'industry', 'emoji', 'avatarId',
+    'personality', 'systemPrompt', 'objections', 'buyingSignals',
+    'frameworks', 'voiceId', 'agentId', 'personaType',
+    'firstSpeaker', 'openingLine',
+  ];
+  const update = Object.fromEntries(
+    Object.entries(req.body as Record<string, unknown>).filter(([k]) => allowed.includes(k))
+  );
+
+  const updated = await Persona.findByIdAndUpdate(req.params.personaId, update, { new: true }).lean();
+  res.json({ ...updated, id: updated!._id.toString() });
+});
+
 // POST /api/superadmin/sync-persona-agents
 // Creates ElevenLabs agents for preset personas that don't have one yet and saves the IDs to DB.
 router.post('/sync-persona-agents', async (_req: AuthRequest, res: Response): Promise<void> => {

@@ -19,6 +19,11 @@ export interface IPersona extends Document {
   createdById?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+  // Conversation opening
+  firstSpeaker?: 'persona' | 'user';
+  openingLine?: string;
+  personaType?: string;
+  avatarId?: string;
 }
 
 const PersonaSchema = new Schema<IPersona>(
@@ -39,6 +44,10 @@ const PersonaSchema = new Schema<IPersona>(
     agentId: String,
     companyId: { type: Schema.Types.ObjectId, ref: 'Company' },
     createdById: { type: Schema.Types.ObjectId, ref: 'User' },
+    firstSpeaker: { type: String, enum: ['persona', 'user'], default: 'persona' },
+    openingLine: { type: String, default: '' },
+    personaType: String,
+    avatarId: String,
   },
   { timestamps: true }
 );

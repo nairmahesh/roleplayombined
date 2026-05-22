@@ -42,7 +42,8 @@ router.patch('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
   }
 
   const allowed = ['name', 'title', 'company', 'industry', 'emoji', 'difficulty', 'personality',
-    'systemPrompt', 'objections', 'buyingSignals', 'frameworks', 'voiceId', 'agentId'];
+    'systemPrompt', 'objections', 'buyingSignals', 'frameworks', 'voiceId', 'agentId',
+    'firstSpeaker', 'openingLine', 'personaType', 'avatarId'];
   const update = Object.fromEntries(
     Object.entries(req.body as Record<string, unknown>).filter(([k]) => allowed.includes(k))
   );
