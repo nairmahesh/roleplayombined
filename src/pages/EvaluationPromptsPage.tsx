@@ -166,14 +166,16 @@ export function EvaluationPromptsPage() {
   const [dirty, setDirty]               = useState(false);
 
   useEffect(() => {
-    evaluationPromptsApi.list().then(data => {
-      setPrompts(data);
-      if (data.length > 0) {
-        setActiveId(data[0].id);
-        setEditing(JSON.parse(JSON.stringify(data[0])));
-      }
-      setLoading(false);
-    });
+    evaluationPromptsApi.list()
+      .then(data => {
+        setPrompts(data);
+        if (data.length > 0) {
+          setActiveId(data[0].id);
+          setEditing(JSON.parse(JSON.stringify(data[0])));
+        }
+      })
+      .catch(() => {/* demo data already returned by api layer */})
+      .finally(() => setLoading(false));
   }, []);
 
   const copyShareLink = () => {

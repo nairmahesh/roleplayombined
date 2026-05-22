@@ -610,10 +610,60 @@ export const teamRoleplaysApi = {
 
 // ── Evaluation Prompts API ────────────────────────────────────────────────────
 
+const DEMO_EVALUATION_PROMPTS: EvaluationPrompt[] = [
+  {
+    id: 'demo-ep-1',
+    roleplayType: 'cold_call',
+    displayName: 'Cold Call',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    scoringCriteria: [
+      { group: 'Opening', criteria: [{ question: 'Did the rep open with a clear, confident introduction?', hint: 'Name, company, reason for calling' }, { question: 'Was the hook relevant and compelling?' }] },
+      { group: 'Qualification', criteria: [{ question: 'Did the rep qualify budget, authority, need and timeline?', hint: 'BANT fundamentals' }, { question: 'Did the rep uncover pain points?' }] },
+      { group: 'Closing', criteria: [{ question: 'Did the rep secure a clear next step?' }, { question: 'Did the rep handle objections confidently?' }] },
+    ],
+    promptTemplate: 'You are evaluating a cold call roleplay session. Score each criterion from 1–5 based on the transcript. Focus on opening quality, qualification depth, objection handling, and the strength of the call close.',
+  },
+  {
+    id: 'demo-ep-2',
+    roleplayType: 'discovery_call',
+    displayName: 'Discovery Call',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    scoringCriteria: [
+      { group: 'Discovery', criteria: [{ question: 'Did the rep ask open-ended discovery questions?', hint: 'Situation and problem questions' }, { question: 'Did the rep listen actively and follow up on key points?' }] },
+      { group: 'Pain & Impact', criteria: [{ question: 'Did the rep uncover the business impact of the problem?', hint: 'Quantified pain if possible' }, { question: 'Did the rep connect their solution to the prospect\'s goals?' }] },
+      { group: 'Next Steps', criteria: [{ question: 'Did the rep set a clear, agreed-upon next step?' }] },
+    ],
+    promptTemplate: 'You are evaluating a discovery call. Score based on quality of questions asked, depth of understanding of the prospect\'s situation, ability to articulate value, and how well next steps were established.',
+  },
+  {
+    id: 'demo-ep-3',
+    roleplayType: 'objection_handling',
+    displayName: 'Objection Handling',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    scoringCriteria: [
+      { group: 'Acknowledge', criteria: [{ question: 'Did the rep acknowledge the objection without dismissing it?' }] },
+      { group: 'Reframe', criteria: [{ question: 'Did the rep ask clarifying questions to understand the root objection?' }, { question: 'Did the rep reframe or address the objection with evidence?' }] },
+      { group: 'Move Forward', criteria: [{ question: 'Did the rep successfully move the conversation forward after handling the objection?' }] },
+    ],
+    promptTemplate: 'Evaluate how effectively the sales rep handled objections. Look for empathy, curiosity, clear reframing, and the ability to advance the sale after resolving each objection.',
+  },
+];
+
 export const evaluationPromptsApi = {
   list: async () => {
-    const { data } = await http.get('/evaluation-prompts');
-    return data as EvaluationPrompt[];
+    try {
+      const { data } = await http.get('/evaluation-prompts');
+      const results = data as EvaluationPrompt[];
+      return results.length > 0 ? results : DEMO_EVALUATION_PROMPTS;
+    } catch {
+      return DEMO_EVALUATION_PROMPTS;
+    }
   },
 
   get: async (roleplayType: string) => {
