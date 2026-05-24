@@ -112,7 +112,7 @@ export function SuperAdminAgentsPage() {
       name: newName.trim(),
       conversation_config: {
         agent: {
-          first_message: 'Hello! Ready to begin the roleplay?',
+          first_message: 'Hello?',
           language: 'en',
           prompt: {
             prompt: newPrompt.trim() || 'You are a sales prospect in a roleplay. Stay in character.',

@@ -70,7 +70,7 @@ export async function getOrCreateAgentId(): Promise<string> {
     name: 'PitchIQ Default Agent',
     conversation_config: {
       agent: {
-        first_message: 'Hello, how can I help you today?',
+        first_message: 'Hello?',
         language: 'en',
         prompt: {
           prompt: 'You are a sales prospect in a roleplay scenario. Stay in character as a realistic business decision-maker. Be slightly busy, raise reasonable objections, and ask clarifying questions. Keep responses concise.',

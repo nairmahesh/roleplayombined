@@ -165,7 +165,7 @@ router.post('/sync-persona-agents', async (_req: AuthRequest, res: Response): Pr
         name: `${persona.name} — ${persona.title}`,
         conversation_config: {
           agent: {
-            first_message: `${persona.name.split(' ')[0]} speaking.`,
+            first_message: 'Hello?',
             language: 'en',
             prompt: {
               prompt: persona.systemPrompt,

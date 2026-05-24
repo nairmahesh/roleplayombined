@@ -139,6 +139,14 @@ export const sessionsApi = {
     const { data } = await http.post<{ shareUrl: string }>(`/sessions/${id}/share`);
     return data;
   },
+  getPlaybackUrl: async (sessionId: string): Promise<string | null> => {
+    try {
+      const { data } = await http.get<{ url: string }>(`/recordings/playback/${sessionId}`);
+      return data.url;
+    } catch {
+      return null;
+    }
+  },
 };
 
 // ── Personas API ──────────────────────────────────────────────────────────────

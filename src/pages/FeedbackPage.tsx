@@ -280,7 +280,10 @@ export function FeedbackPage() {
         setSession(data);
         setPeerScores(peers);
         setPeerSessions(peerSess);
-        if (data.recordingUrl) setPlaybackUrl(data.recordingUrl);
+        if (data.recordingUrl) {
+          const presignedUrl = await sessionsApi.getPlaybackUrl(id);
+          if (presignedUrl) setPlaybackUrl(presignedUrl);
+        }
         if (data.status === 'COMPLETED' && !data.totalScore) setAnalysing(true);
       } catch {
         toast.error('Session not found');
