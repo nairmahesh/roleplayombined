@@ -1,0 +1,95 @@
+
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - production
+
+jobs:
+  deploy:
+    name: Sync & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      # ─── 1. Checkout code ───────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ─── 2. Sync source files to server (no build/install artifacts) ────────
+      - name: Sync source files to server
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: >-
+            -avz --delete
+            --exclude='.git/'
+            --exclude='.env'
+            --exclude='backend/.env'
+            --exclude='node_modules/'
+            --exclude='backend/node_modules/'
+            --exclude='dist/'
+            --exclude='backend/dist/'
+          path: ./
+          remote_path: /home/effyadmin/www/pitchiq/roleplayombined-mahesh-may22
+          remote_host: ${{ secrets.SSH_HOST }}
+          remote_port: ${{ secrets.SSH_PORT || 22 }}
+          remote_user: ${{ secrets.SSH_USER }}
+          remote_key: ${{ secrets.PRIVATE_KEY }}
+
+      # ─── 3. Install, build & restart on server ──────────────────────────────
+      - name: Install, build & restart on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
+
+            APP_DIR="/home/effyadmin/www/pitchiq/roleplayombined-mahesh-may22"
+            STATIC_DIR="/var/www/html/airoleplay/dist"
+
+            echo "==> Installing frontend dependencies"
+            cd "$APP_DIR"
+            npm ci
+
+            echo "==> Installing backend dependencies (including devDependencies for build)"
+            cd "$APP_DIR/backend"
+            npm ci
+            npm run build
+
+            echo "==> Building frontend & backend"
+            cd "$APP_DIR"
+            npm run build
+
+            echo "==> Pruning backend devDependencies after build"
+            cd "$APP_DIR/server"
+            npm prune --omit=dev
+
+            echo "==> Copying frontend dist to web root"
+            cp -r "$APP_DIR/dist/." "$STATIC_DIR/"
+
+            echo "==> Restarting backend with PM2"
+            pm2 restart airoleplay-backend || pm2 start "$APP_DIR/backend/dist/index.js" --name airoleplay-backend
+
+            echo "==> Saving PM2 process list"
+            pm2 save
+
+            echo "==> Waiting for backend to be ready"
+            sleep 5
+
+            echo "==> Health check"
+            for i in 1 2 3 4 5; do
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:4224/health)
+              if [ "$STATUS" = "200" ]; then
+                echo "Backend is up (HTTP $STATUS)"
+                exit 0
+              fi
+              echo "Attempt $i: got HTTP $STATUS, retrying in 5s..."
+              sleep 5
+            done
+
+            echo "ERROR: Backend health check failed after 5 attempts"
+            pm2 logs airoleplay-backend --lines 20 --nostream
+            exit 1
