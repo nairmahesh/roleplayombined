@@ -64,7 +64,7 @@ jobs:
             npm run build
 
             echo "==> Pruning backend devDependencies after build"
-            cd "$APP_DIR/server"
+            cd "$APP_DIR/backend"
             npm prune --omit=dev
 
             echo "==> Copying frontend dist to web root"
