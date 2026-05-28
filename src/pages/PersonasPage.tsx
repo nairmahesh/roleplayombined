@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Plus, Search, Pencil, Trash2, Copy, BarChart3, X, Check, Sparkles, Users, TrendingUp, Clock, ChevronDown, ChevronUp, Shield, Loader as Loader2, TriangleAlert as AlertTriangle, RefreshCw } from 'lucide-react';
-import { personasApi } from '@/lib/api';
+import { Plus, Search, Pencil, Trash2, Copy, BarChart3, X, Check, Sparkles, Users, TrendingUp, Clock, ChevronDown, ChevronUp, Shield, Loader as Loader2, TriangleAlert as AlertTriangle, RefreshCw, Bot } from 'lucide-react';
+import { personasApi, voiceApi } from '@/lib/api';
 import { PersonaBuilder } from '@/components/practice/PersonaBuilder';
 import { AvatarDisplay, EthnicityAvatarPicker, AVATARS } from '@/components/practice/PersonaAvatars';
 import { Persona, Framework, PersonaType, FirstSpeaker } from '@/types';
@@ -255,8 +255,19 @@ function EditPersonaModal({ persona, onSave, onClose }: {
         buyingSignals: form.buyingSignals.filter(Boolean),
         personality: JSON.stringify({ description: form.personality }),
       });
+
+      if (persona.agentId && form.systemPrompt !== persona.systemPrompt) {
+        try {
+          await voiceApi.updateAgent(persona.agentId, {
+            conversation_config: { agent: { prompt: { prompt: form.systemPrompt } } },
+          });
+        } catch {
+          toast.error('Persona saved, but failed to sync prompt to ElevenLabs agent');
+        }
+      }
+
       onSave(updated);
-      toast.success('Persona updated');
+      toast.success(persona.agentId ? 'Persona updated & agent synced' : 'Persona updated');
     } catch {
       toast.error('Failed to update persona');
     } finally {
@@ -388,9 +399,16 @@ function EditPersonaModal({ persona, onSave, onClose }: {
                     placeholder="Skeptical, data-driven, impatient with fluff…" className="input-base resize-none" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-white/70 block mb-1.5">
-                    AI System Prompt * <span className="font-normal text-white/50">(defines character behaviour)</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-medium text-white/70">
+                      AI System Prompt * <span className="font-normal text-white/50">(defines character behaviour)</span>
+                    </label>
+                    {persona.agentId && (
+                      <span className="flex items-center gap-1 text-[10px] text-accent/80 bg-accent/10 border border-accent/20 rounded px-1.5 py-0.5">
+                        <Bot size={10} /> Syncs to ElevenLabs
+                      </span>
+                    )}
+                  </div>
                   <textarea value={form.systemPrompt} onChange={e => set('systemPrompt', e.target.value)} rows={5}
                     className="input-base resize-none text-[12.5px] leading-relaxed" />
                 </div>
@@ -529,6 +547,11 @@ function PersonaCard({
             {persona.isPreset && (
               <span className="flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/25 text-amber-400 font-semibold flex-shrink-0">
                 <Shield size={8} /> Preset
+              </span>
+            )}
+            {persona.agentId && (
+              <span className="flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full bg-accent/10 border border-accent/25 text-accent font-semibold flex-shrink-0" title={`ElevenLabs agent: ${persona.agentId}`}>
+                <Bot size={8} /> Agent
               </span>
             )}
           </div>

@@ -145,7 +145,7 @@ export function OnlineMeetingRoom(props: Props) {
 
 // ── Inner room ─────────────────────────────────────────────────────────────────
 function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, onEnd, multiPersonas = [] }: Props) {
-  const { startSession, endSession, status, isSpeaking: isBotSpeaking, isMuted, setMuted } = useConversation();
+  const { startSession, endSession, status, isSpeaking: isBotSpeaking, isMuted, setMuted, getId } = useConversation();
 
   // Media streams
   const [localStream, setLocalStream]       = useState<MediaStream | null>(null);
@@ -178,9 +178,10 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
   const isEndingRef      = useRef(false);
   const handleEndRef     = useRef<(() => void) | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const everConnectedRef = useRef(false);
+  const everConnectedRef  = useRef(false);
+  const connectTimeRef    = useRef<number | null>(null);
   const sessionStartedRef = useRef(false);
-  const endDataRef       = useRef<{ durationSeconds: number } | null>(null);
+  const endDataRef       = useRef<{ durationSeconds: number; convaiConversationId?: string } | null>(null);
   const socket = connectSocket();
   const isConnected = status === 'connected';
   const allPersonas = multiPersonas.length > 0 ? [persona, ...multiPersonas] : [persona];
@@ -224,19 +225,26 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
       return;
     }
 
-    const overrides = persona.elevenlabsVoiceId ? { tts: { voiceId: persona.elevenlabsVoiceId } } : undefined;
     sessionStartedRef.current = true;
     startSession({
       signedUrl,
-      overrides,
-      onConnect: () => { everConnectedRef.current = true; },
+      onConnect: () => {
+        everConnectedRef.current = true;
+        connectTimeRef.current = Date.now();
+      },
       onMessage: ({ message, source }: { message: string; source: string }) => {
         if (message?.trim()) addMsg(source === 'ai' ? 'assistant' : 'user', message.trim());
       },
       onError: (msg: string) => toast.error(`Voice AI error: ${msg}`, { duration: 8000 }),
       onDisconnect: () => {
-        if (sessionStartedRef.current && !isEndingRef.current && everConnectedRef.current) {
-          handleEndRef.current?.();
+        const connectedMs = connectTimeRef.current ? Date.now() - connectTimeRef.current : 0;
+        if (sessionStartedRef.current && !isEndingRef.current) {
+          if (everConnectedRef.current && connectedMs > 4000) {
+            handleEndRef.current?.();
+          } else if (everConnectedRef.current) {
+            toast.error('Voice connection dropped immediately. Check agent settings or try again.', { duration: 8000 });
+            onEnd(sessionId);
+          }
         }
       },
     });
@@ -364,11 +372,12 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
     if (isEndingRef.current) return;
     isEndingRef.current = true;
     setIsEnding(true);
+    const convaiConversationId = getId() ?? undefined;
     try { endSession(); } catch {}
     if (timerRef.current) clearInterval(timerRef.current);
     localStream?.getTracks().forEach(t => t.stop());
     screenStream?.getTracks().forEach(t => t.stop());
-    endDataRef.current = { durationSeconds: Math.round((Date.now() - startTimeRef.current) / 1000) };
+    endDataRef.current = { durationSeconds: Math.round((Date.now() - startTimeRef.current) / 1000), convaiConversationId };
     // If actively recording, stop it — onstop will set recordingBlob and then we show review
     if (isRecording && mediaRecorderRef.current) {
       mediaRecorderRef.current.onstop = () => {
@@ -404,8 +413,9 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
   const confirmEnd = async (analyze: boolean) => {
     setShowAnalysisPrompt(false);
     const durationSeconds = endDataRef.current?.durationSeconds ?? 0;
+    const convaiConversationId = endDataRef.current?.convaiConversationId;
     try {
-      await sessionsApi.end(sessionId, { durationSeconds, transcript: historyRef.current, skipAnalysis: !analyze });
+      await sessionsApi.end(sessionId, { durationSeconds, transcript: historyRef.current, skipAnalysis: !analyze, convaiConversationId });
       toast.success(analyze ? 'Session ended — AI is analysing…' : 'Session saved.');
       onEnd(sessionId);
     } catch (err: unknown) {

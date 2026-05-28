@@ -9,7 +9,7 @@ import { createAgent, updateAgent, checkHealth } from '../services/elevenlabs';
 function buildAgentConfig(persona: { name: string; title: string; systemPrompt: string; voiceId?: string; openingLine?: string; firstSpeaker?: string }) {
   const firstName = persona.name.split(' ')[0];
   const defaultFirstMessage = persona.openingLine || `${firstName} speaking.`;
-  const openingInstruction = `\n\n---\nCONVERSATION OPENING RULES:\n- If you are receiving an inbound call (phone), answer with a short, natural phone greeting such as "${firstName} speaking." or "Hello?"\n- If you are in an online meeting and the other party joins, greet them warmly: "Hi! ${firstName} here — thanks for joining."\n- If the roleplay involves you (the prospect) having made an outbound call (e.g. cold call), do NOT speak first. Wait silently for the user to respond.\n- Never introduce your full name and title unprompted unless you are pitching.\n---`;
+  const openingInstruction = `\n\n---\nCONVERSATION OPENING RULES:\n- You are receiving an inbound call or meeting from a sales representative who wants to pitch you.\n- DO NOT say "How can I help you?" or anything customer-service-like — you are a busy executive, not a support agent.\n- For phone calls: answer with only a brief greeting ("${firstName} speaking." or "Hello?") then STAY SILENT and wait for the caller to state their purpose.\n- For online meetings: greet briefly ("Hi, ${firstName} here." or "Hi — thanks for joining.") then wait for them to introduce themselves.\n- The caller will initiate the sales conversation — do not ask what they want.\n- Never volunteer your full name and title unprompted.\n---`;
   return {
     name: `${persona.name} — ${persona.title}`,
     conversation_config: {
@@ -49,9 +49,11 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
-  const personas = await Persona.find({
-    $or: [{ isPreset: true }, { companyId: req.companyId }],
-  }).lean();
+  const filter = req.companyId
+    ? { $or: [{ isPreset: true }, { companyId: req.companyId }] }
+    : { isPreset: true };
+
+  const personas = await Persona.find(filter).lean();
 
   res.json(
     personas.map((p) => ({

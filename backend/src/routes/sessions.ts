@@ -7,8 +7,27 @@ import { User } from '../models/User';
 import { EvaluationPrompt } from '../models/EvaluationPrompt';
 import { generatePersonaResponse, generateSessionFeedback } from '../services/gemini';
 import { logConvaiUsage } from '../services/usage';
+import { getConversationAudio } from '../services/elevenlabs';
+import { Request } from 'express';
 
 const router = Router();
+
+// ── Audio proxy (no JWT required — session ID acts as the access token) ────────
+router.get('/:id/audio', async (req: Request, res: Response): Promise<void> => {
+  const session = await Session.findById(req.params.id).lean();
+  if (!session) { res.status(404).json({ error: 'Not found' }); return; }
+  if (!session.convaiConversationId) { res.status(404).json({ error: 'No recording' }); return; }
+
+  try {
+    const { data, contentType } = await getConversationAudio(session.convaiConversationId);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    (data as NodeJS.ReadableStream).pipe(res);
+  } catch {
+    res.status(404).json({ error: 'Recording not available yet — try again in a moment' });
+  }
+});
+
 router.use(authenticate);
 
 function serializeSession(s: InstanceType<typeof Session>, persona?: InstanceType<typeof Persona> | null) {
@@ -162,10 +181,11 @@ router.patch('/:id/end', async (req: AuthRequest, res: Response): Promise<void> 
   const session = await Session.findById(req.params.id);
   if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
 
-  const { skipAnalysis = false, durationSeconds: clientDuration } = req.body as {
+  const { skipAnalysis = false, durationSeconds: clientDuration, convaiConversationId } = req.body as {
     skipAnalysis?: boolean;
     durationSeconds?: number;
     transcript?: unknown;
+    convaiConversationId?: string;
   };
 
   const now = new Date();
@@ -178,6 +198,12 @@ router.patch('/:id/end', async (req: AuthRequest, res: Response): Promise<void> 
   session.endedAt = now;
   session.durationSeconds = durationSeconds;
 
+  // Store ElevenLabs conversation ID for audio playback
+  if (convaiConversationId) {
+    session.convaiConversationId = convaiConversationId;
+    session.recordingUrl = `/api/sessions/${session._id}/audio`;
+  }
+
   // Log ConvAI session duration for cost tracking
   if (durationSeconds > 0) {
     logConvaiUsage({
@@ -187,6 +213,8 @@ router.patch('/:id/end', async (req: AuthRequest, res: Response): Promise<void> 
       userId: session.userId as mongoose.Types.ObjectId,
     });
   }
+
+  if (skipAnalysis) session.analysisSkipped = true;
 
   // Build transcript for AI feedback (unless client explicitly skipped analysis)
   if (!skipAnalysis && session.messages.length > 0) {

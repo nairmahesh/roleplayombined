@@ -15,7 +15,7 @@ import { CURATED_VOICES } from '@/components/practice/VoicePicker';
 import { KnowledgeBaseEditor } from '@/components/practice/KnowledgeBaseEditor';
 import { PreCallBriefing } from '@/components/practice/PreCallBriefing';
 import { PlanGate } from '@/components/PlanGate';
-import { useAuthStore, usePlanStore } from '@/lib/store';
+import { useAuthStore, usePlanStore, usePageCache } from '@/lib/store';
 import clsx from 'clsx';
 
 // ── Static config ─────────────────────────────────────────────────────────────
@@ -677,6 +677,7 @@ type SetupMode = 'view' | 'edit';
 export function PracticePage() {
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
+  const { invalidate } = usePageCache();
 
   // ── View / navigation ──────────────────────────────────────────────────────
   const [view, setView]               = useState<'gallery' | 'setup'>('gallery');
@@ -2606,7 +2607,7 @@ export function PracticePage() {
             sessionType={sessionType}
             framework={framework}
             timeLimitMins={timeLimitMins ? parseInt(timeLimitMins, 10) || null : null}
-            onEnd={sid => { setActiveSession(null); navigate(`/sessions/${sid}/feedback`); }}
+            onEnd={sid => { invalidate('sessions'); setActiveSession(null); navigate(`/sessions/${sid}/feedback`); }}
           />
         )}
         {activeSession && sessionType === 'ONLINE_MEETING' && (
@@ -2621,7 +2622,7 @@ export function PracticePage() {
                   name: a.name, title: a.title, emoji: '', avatarId: a.avatarId,
                 }))
               : []}
-            onEnd={sid => { setActiveSession(null); navigate(`/sessions/${sid}/feedback`); }}
+            onEnd={sid => { invalidate('sessions'); setActiveSession(null); navigate(`/sessions/${sid}/feedback`); }}
           />
         )}
       </AnimatePresence>

@@ -53,6 +53,8 @@ export interface ISession extends Document {
   durationSeconds?: number;
   recordingUrl?: string;
   aiFeedback?: string;
+  analysisSkipped?: boolean;
+  convaiConversationId?: string;
   startedAt?: Date;
   endedAt?: Date;
   userId: mongoose.Types.ObjectId;
@@ -117,6 +119,8 @@ const SessionSchema = new Schema<ISession>(
     durationSeconds: Number,
     recordingUrl: String,
     aiFeedback: String,
+    analysisSkipped: Boolean,
+    convaiConversationId: String,
     startedAt: Date,
     endedAt: Date,
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },

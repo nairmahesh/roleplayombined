@@ -345,21 +345,16 @@ export function PersonaBuilder({ onCreated, onClose, initialAvatarId }: Props) {
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-white/70 block mb-2">Persona Type</label>
-                  <div className="flex flex-wrap gap-2">
+                  <label className="text-xs font-medium text-white/70 block mb-1.5">Persona Type</label>
+                  <select
+                    value={form.personaType}
+                    onChange={e => set('personaType', e.target.value as PersonaType)}
+                    className="input-base w-full capitalize"
+                  >
                     {PERSONA_TYPES.map(t => (
-                      <button
-                        key={t}
-                        onClick={() => set('personaType', t)}
-                        className={clsx(
-                          'flex-1 min-w-[80px] py-2 rounded-[9px] text-[12px] font-semibold border transition-all capitalize',
-                          form.personaType === t ? 'border-accent bg-accent/10 text-accent' : 'border-white/[0.08] text-white/80 hover:text-white'
-                        )}
-                      >
-                        {t.charAt(0) + t.slice(1).toLowerCase()}
-                      </button>
+                      <option key={t} value={t}>{t.charAt(0) + t.slice(1).toLowerCase()}</option>
                     ))}
-                  </div>
+                  </select>
                 </div>
 
                 {/* Who speaks first */}

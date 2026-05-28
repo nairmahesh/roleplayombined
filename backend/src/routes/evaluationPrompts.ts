@@ -6,10 +6,11 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
-  const prompts = await EvaluationPrompt.find({
-    $or: [{ companyId: req.companyId }, { companyId: null }],
-    isActive: true,
-  }).lean();
+  const companyFilter = req.companyId
+    ? { $or: [{ companyId: req.companyId }, { companyId: null }] }
+    : { companyId: null };
+
+  const prompts = await EvaluationPrompt.find({ ...companyFilter, isActive: true }).lean();
 
   res.json(
     prompts.map((p) => ({
@@ -27,9 +28,13 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
 });
 
 router.get('/:type', async (req: AuthRequest, res: Response): Promise<void> => {
+  const companyFilter = req.companyId
+    ? { $or: [{ companyId: req.companyId }, { companyId: null }] }
+    : { companyId: null };
+
   const prompt = await EvaluationPrompt.findOne({
     roleplayType: req.params.type,
-    $or: [{ companyId: req.companyId }, { companyId: null }],
+    ...companyFilter,
   }).lean();
 
   if (!prompt) { res.status(404).json({ error: 'Not found' }); return; }

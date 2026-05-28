@@ -236,6 +236,7 @@ export interface Session {
   durationSeconds?: number;
   recordingUrl?: string;
   aiFeedback?: string; // JSON string
+  analysisSkipped?: boolean;
   startedAt?: string;
   endedAt?: string;
   createdAt: string;

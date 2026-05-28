@@ -82,7 +82,7 @@ export function CallInterface(props: Props) {
 }
 
 function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLimitMins, onEnd }: Props) {
-  const { startSession, endSession, status, isSpeaking: isBotSpeaking, isMuted, setMuted } = useConversation();
+  const { startSession, endSession, status, isSpeaking: isBotSpeaking, isMuted, setMuted, getId } = useConversation();
 
   const [phase, setPhase]                 = useState<'ringing' | 'active'>('ringing');
   const [ringDot, setRingDot]             = useState(0);
@@ -92,9 +92,10 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
   const [isEnding, setIsEnding]           = useState(false);
   const [showAnalysisPrompt, setShowAnalysisPrompt] = useState(false);
   const everConnectedRef = useRef(false);
+  const connectTimeRef   = useRef<number | null>(null);
 
   const startTimeRef     = useRef(Date.now());
-  const endDataRef       = useRef<{ durationSeconds: number } | null>(null);
+  const endDataRef       = useRef<{ durationSeconds: number; convaiConversationId?: string } | null>(null);
   const timerRef         = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeLimitWarnRef = useRef(false);
   const historyRef       = useRef<Message[]>([]);
@@ -204,24 +205,17 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
         computedOpeningLine = `Hi! Thanks for joining — ${firstName} here. How can I help you today?`;
       }
 
-      // Build overrides: always include the computed first_message so runtime context wins
-      const overrides: Record<string, unknown> = {
-        agent: { firstMessage: computedOpeningLine },
-        ...(persona.elevenlabsVoiceId ? { tts: { voiceId: persona.elevenlabsVoiceId } } : {}),
-      };
-
       console.log('[CallInterface] Persona info — name=%s personaId=%s voiceId=%s',
         persona.name, persona.personaId, persona.elevenlabsVoiceId ?? 'default');
-      console.log('[CallInterface] Session overrides:', JSON.stringify(overrides ?? 'none'));
 
       if (!cancelled) {
         sessionStartedRef.current = true;
         console.log('[CallInterface] Calling startSession with signedUrl=%s', signedUrl?.slice(0, 80));
         startSession({
           signedUrl,
-          overrides,
           onConnect: () => {
             everConnectedRef.current = true;
+            connectTimeRef.current = Date.now();
             console.log('[CallInterface] ✅ EL onConnect — WebSocket open, session active');
           },
           onMessage: ({ message, source }: { message: string; source: string }) => {
@@ -234,13 +228,17 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
           },
           onDisconnect: (details?: unknown) => {
             const d = details as { reason?: string; message?: string; closeCode?: number; closeReason?: string } | undefined;
-            console.warn('[CallInterface] 🔌 EL onDisconnect — closeCode=%s reason=%s message=%s | cancelled=%s sessionStarted=%s everConnected=%s isEnding=%s',
-              d?.closeCode, d?.reason, d?.message,
-              cancelled, sessionStartedRef.current, everConnectedRef.current, isEndingRef.current);
-            console.warn('[CallInterface] Full disconnect details:', JSON.stringify(details));
+            const connectedMs = connectTimeRef.current ? Date.now() - connectTimeRef.current : 0;
+            console.warn('[CallInterface] 🔌 EL onDisconnect — closeCode=%s reason=%s connectedMs=%s | cancelled=%s isEnding=%s',
+              d?.closeCode, d?.reason, connectedMs, cancelled, isEndingRef.current);
             if (!cancelled && sessionStartedRef.current && !isEndingRef.current) {
-              if (everConnectedRef.current) {
+              if (everConnectedRef.current && connectedMs > 4000) {
+                // Normal end — session actually ran
                 handleEndRef.current?.();
+              } else if (everConnectedRef.current) {
+                // Disconnected within 4s — likely agent config rejection (overrides not allowed, etc.)
+                toast.error('Voice connection dropped immediately. Check agent settings or try again.', { duration: 8000 });
+                onEnd(sessionId);
               } else {
                 toast.error(`Session failed to connect — ${d?.message ?? JSON.stringify(details)}`, { duration: 10000 });
               }
@@ -267,20 +265,22 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
     if (isEndingRef.current) return;
     isEndingRef.current = true;
     setIsEnding(true);
+    const convaiConversationId = getId() ?? undefined;
     try { endSession(); } catch {}
     if (timerRef.current) clearInterval(timerRef.current);
     recording.stopRecording?.();
-    endDataRef.current = { durationSeconds: Math.round((Date.now() - startTimeRef.current) / 1000) };
+    endDataRef.current = { durationSeconds: Math.round((Date.now() - startTimeRef.current) / 1000), convaiConversationId };
     setShowAnalysisPrompt(true);
-  }, [endSession, recording]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [endSession, getId, recording]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { handleEndRef.current = handleEnd; });
 
   const confirmEnd = async (analyze: boolean) => {
     setShowAnalysisPrompt(false);
     const durationSeconds = endDataRef.current?.durationSeconds ?? 0;
+    const convaiConversationId = endDataRef.current?.convaiConversationId;
     try {
-      await sessionsApi.end(sessionId, { durationSeconds, transcript: historyRef.current, skipAnalysis: !analyze });
+      await sessionsApi.end(sessionId, { durationSeconds, transcript: historyRef.current, skipAnalysis: !analyze, convaiConversationId });
       toast.success(analyze ? 'Session ended — AI is analysing…' : 'Session saved.');
       onEnd(sessionId);
     } catch (err: unknown) {

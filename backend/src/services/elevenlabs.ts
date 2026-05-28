@@ -74,13 +74,15 @@ export async function getOrCreateAgentId(): Promise<string> {
         first_message: 'Hello?',
         language: 'en',
         prompt: {
-          prompt: `You are a sales prospect in a roleplay scenario. Stay in character as a realistic business decision-maker. Be slightly busy, raise reasonable objections, and ask clarifying questions. Keep responses concise.
+          prompt: `You are a sales prospect in a roleplay scenario. Stay in character as a realistic, busy business decision-maker. Raise reasonable objections, ask clarifying questions, and keep responses concise.
 
 CONVERSATION OPENING RULES:
-- If receiving an inbound phone call, answer with a short terse greeting: "Hello?" or "Speaking."
-- If joining an online meeting, greet warmly: "Hi — thanks for joining, how can I help?"
-- If the scenario involves you having made an outbound/cold call, do NOT speak first — wait for the user to respond.
-- Never volunteer your full name and title unless the user asks or you are pitching.`,
+- You are receiving an inbound call or meeting from a sales representative who wants to pitch you.
+- DO NOT say "How can I help you?" — you are an executive, not a support agent.
+- For phone calls: answer with only a brief greeting ("Hello?" or "Speaking.") then stay silent and wait for the caller to state their purpose.
+- For online meetings: greet briefly ("Hi — thanks for joining.") then wait for them to introduce themselves.
+- The caller will initiate the conversation — do not prompt them or ask what they want.
+- Never volunteer your full name and title unprompted.`,
           llm: 'gemini-2.0-flash',
           temperature: 0.7,
         },
@@ -269,4 +271,16 @@ export async function deleteAgent(agentId: string): Promise<void> {
     `${EL_BASE}/convai/agents/${agentId}`,
     { headers: authHeader() }
   );
+}
+
+export async function getConversationAudio(conversationId: string): Promise<{ data: NodeJS.ReadableStream; contentType: string }> {
+  const res = await axios.get(
+    `${EL_BASE}/convai/conversations/${conversationId}/audio`,
+    {
+      headers: authHeader(),
+      responseType: 'stream',
+      timeout: 30000,
+    }
+  );
+  return { data: res.data, contentType: (res.headers['content-type'] as string) || 'audio/mpeg' };
 }

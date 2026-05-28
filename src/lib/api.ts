@@ -2,8 +2,6 @@ import axios, { AxiosInstance } from 'axios';
 import { useAuthStore } from './store';
 import type {
   DashboardStats,
-  DashboardRecentSession,
-  DashboardFrameworkStat,
   LeaderboardEntry,
   Session,
   Persona,
@@ -27,73 +25,10 @@ http.interceptors.request.use((cfg) => {
   return cfg;
 });
 
-// ── Demo users (no backend required) ─────────────────────────────────────────
-
-const DEMO_COMPANY = {
-  id: '00000000-0000-0000-0000-000000000001',
-  name: 'Demo Company',
-  slug: 'demo',
-  defaultFramework: 'MEDDIC' as const,
-  passThreshold: 70,
-  industry: 'Technology',
-};
-
-const DEMO_USERS: Record<string, User & { password: string }> = {
-  'superadmin@demo.com': {
-    id: '10000000-0000-0000-0000-000000000001',
-    email: 'superadmin@demo.com',
-    firstName: 'Super',
-    lastName: 'Admin',
-    role: 'SUPER_ADMIN',
-    companyId: DEMO_COMPANY.id,
-    company: DEMO_COMPANY,
-    isActive: true,
-    password: 'Demo1234!',
-  },
-  'admin@demo.com': {
-    id: '10000000-0000-0000-0000-000000000002',
-    email: 'admin@demo.com',
-    firstName: 'Company',
-    lastName: 'Admin',
-    role: 'COMPANY_ADMIN',
-    companyId: DEMO_COMPANY.id,
-    company: DEMO_COMPANY,
-    isActive: true,
-    password: 'Demo1234!',
-  },
-  'manager@demo.com': {
-    id: '10000000-0000-0000-0000-000000000003',
-    email: 'manager@demo.com',
-    firstName: 'Demo',
-    lastName: 'Manager',
-    role: 'MANAGER',
-    companyId: DEMO_COMPANY.id,
-    company: DEMO_COMPANY,
-    isActive: true,
-    password: 'Demo1234!',
-  },
-  'agent@demo.com': {
-    id: '10000000-0000-0000-0000-000000000004',
-    email: 'agent@demo.com',
-    firstName: 'Demo',
-    lastName: 'Agent',
-    role: 'AGENT',
-    companyId: DEMO_COMPANY.id,
-    company: DEMO_COMPANY,
-    isActive: true,
-    password: 'Demo1234!',
-  },
-};
-
 // ── Auth API ──────────────────────────────────────────────────────────────────
 
 export const authApi = {
   login: async (email: string, password: string) => {
-    const demo = DEMO_USERS[email.toLowerCase()];
-    if (demo && demo.password === password) {
-      const { password: _pw, ...user } = demo;
-      return { user, accessToken: 'demo-token', refreshToken: 'demo-refresh' };
-    }
     const { data } = await http.post('/auth/login', { email, password });
     return data as { user: User; accessToken: string; refreshToken: string };
   },
@@ -154,7 +89,7 @@ export const sessionsApi = {
     return data as { status: string };
   },
 
-  end: async (id: string, payload?: unknown) => {
+  end: async (id: string, payload?: { durationSeconds?: number; skipAnalysis?: boolean; transcript?: unknown; convaiConversationId?: string }) => {
     const { data } = await http.patch(`/sessions/${id}/end`, payload ?? {});
     return data as Session;
   },
@@ -175,130 +110,12 @@ export const sessionsApi = {
   },
 };
 
-// ── Demo personas fallback ────────────────────────────────────────────────────
-
-const DEMO_PERSONAS: Persona[] = [
-  {
-    id: 'demo-p1',
-    name: 'Sarah Chen',
-    title: 'VP of Engineering',
-    company: 'TechCorp',
-    industry: 'Technology',
-    emoji: '👩‍💻',
-    avatarId: 'sarah',
-    personaType: 'SKEPTICAL',
-    firstSpeaker: 'persona',
-    openingLine: '',  // auto: phone = "Sarah speaking." / meeting = "Hi! Sarah here..."
-    personality: 'Analytical and data-driven. Skeptical of vendor claims. Needs ROI proof.',
-    systemPrompt: 'You are Sarah Chen, VP of Engineering at TechCorp. You are analytical and skeptical. Push for technical depth and concrete metrics before agreeing to anything.',
-    objections: ['We already have a solution', 'Prove the ROI first', 'Our team will need training time'],
-    buyingSignals: ['Can you show me a technical demo?', 'What does the implementation timeline look like?'],
-    frameworks: ['MEDDIC', 'SNAP'],
-    isPreset: true,
-  },
-  {
-    id: 'demo-p2',
-    name: 'Marcus Webb',
-    title: 'CFO',
-    company: 'GrowthCo',
-    industry: 'Finance',
-    emoji: '💼',
-    avatarId: 'marcus',
-    personaType: 'RUDE',
-    firstSpeaker: 'persona',
-    openingLine: 'Webb.',  // terse CFO answer
-    personality: 'Budget-focused. Wants cost justification upfront. Short on time.',
-    systemPrompt: 'You are Marcus Webb, CFO at GrowthCo. You are busy and financially driven. You need clear cost-benefit analysis and fast answers.',
-    objections: ['The budget is already allocated', 'I need sign-off from the board', 'What\'s the total cost of ownership?'],
-    buyingSignals: ['What are the payment terms?', 'Can we pilot this first?'],
-    frameworks: ['MEDDIC', 'BANT'],
-    isPreset: true,
-  },
-  {
-    id: 'demo-p3',
-    name: 'Priya Nair',
-    title: 'Head of Operations',
-    company: 'ScaleUp Inc',
-    industry: 'SaaS',
-    emoji: '⚙️',
-    avatarId: 'priya',
-    personaType: 'FRIENDLY',
-    firstSpeaker: 'persona',
-    openingLine: 'Hi! Priya here, how can I help?',
-    personality: 'Process-oriented and collaborative. Open to change if it reduces friction.',
-    systemPrompt: 'You are Priya Nair, Head of Operations at ScaleUp Inc. You are open-minded and focused on making your team\'s workflows smoother.',
-    objections: ['How long does onboarding take?', 'Will this integrate with our current stack?'],
-    buyingSignals: ['This could save us a lot of manual work', 'Who else on my team should be in this conversation?'],
-    frameworks: ['SNAP', 'MEDDIC'],
-    isPreset: true,
-  },
-  {
-    id: 'demo-p4',
-    name: 'Jordan Lee',
-    title: 'Director of Sales',
-    company: 'Pipeline Pro',
-    industry: 'Sales',
-    emoji: '🎯',
-    avatarId: 'jordan',
-    personaType: 'SKEPTICAL',
-    firstSpeaker: 'persona',
-    openingLine: '',  // auto based on session type
-    personality: 'Competitive and results-driven. Wants to know how this helps his team close faster.',
-    systemPrompt: 'You are Jordan Lee, Director of Sales at Pipeline Pro. You are competitive and only care about revenue impact. Challenge the salesperson to prove direct impact on quota attainment.',
-    objections: ['My reps don\'t have time for more tools', 'We tried something like this before and it didn\'t stick'],
-    buyingSignals: ['How fast do teams typically see results?', 'Can I see case studies from similar companies?'],
-    frameworks: ['BANT', 'MEDDIC'],
-    isPreset: true,
-  },
-  {
-    id: 'demo-p5',
-    name: 'Aisha Okonkwo',
-    title: 'CTO',
-    company: 'Nexus Labs',
-    industry: 'Technology',
-    emoji: '🧠',
-    avatarId: 'aisha',
-    personaType: 'AGGRESSIVE',
-    firstSpeaker: 'persona',
-    openingLine: 'Okonkwo.',  // curt technical leader
-    personality: 'Visionary but deeply technical. Will probe architecture and security hard.',
-    systemPrompt: 'You are Aisha Okonkwo, CTO at Nexus Labs. You are technically brilliant and won\'t accept vague answers. Ask deep questions about security, scalability, and architecture.',
-    objections: ['How does this handle data sovereignty?', 'What\'s your uptime SLA?', 'Show me your SOC 2 report'],
-    buyingSignals: ['Interesting — how does the API work?', 'Can we do a security review?'],
-    frameworks: ['MEDDIC', 'SNAP'],
-    isPreset: true,
-  },
-  {
-    id: 'demo-p6',
-    name: 'Carlos Mendez',
-    title: 'CEO',
-    company: 'Meridian Group',
-    industry: 'Consulting',
-    emoji: '🏢',
-    avatarId: 'carlos',
-    personaType: 'NEUTRAL',
-    firstSpeaker: 'persona',
-    openingLine: 'Carlos Mendez.',  // executive brevity
-    personality: 'Big-picture thinker. Wants strategic value, not features. Time is precious.',
-    systemPrompt: 'You are Carlos Mendez, CEO of Meridian Group. You are strategic and pressed for time. Dismiss feature-level talk and demand to understand the business transformation this enables.',
-    objections: ['I need my leadership team aligned first', 'We\'re focused on other priorities right now'],
-    buyingSignals: ['Who are your other enterprise clients?', 'What does success look like at 12 months?'],
-    frameworks: ['MEDDIC', 'SNAP'],
-    isPreset: true,
-  },
-];
-
 // ── Personas API ──────────────────────────────────────────────────────────────
 
 export const personasApi = {
   list: async () => {
-    try {
-      const { data } = await http.get('/personas');
-      const personas = data as Persona[];
-      return personas.length ? personas : DEMO_PERSONAS;
-    } catch {
-      return DEMO_PERSONAS;
-    }
+    const { data } = await http.get('/personas');
+    return data as Persona[];
   },
 
   create: async (payload: Partial<Persona>) => {
@@ -327,76 +144,17 @@ export const personasApi = {
   },
 };
 
-// ── Demo dashboard data ───────────────────────────────────────────────────────
-
-function demoDashboard(role: string | undefined): DashboardStats {
-  const recentSessions: DashboardRecentSession[] = [
-    { id: 's1', endedAt: new Date(Date.now() - 3_600_000).toISOString(), durationSeconds: 420, framework: 'MEDDIC', sessionType: 'PHONE_CALL', personaName: 'Sarah Chen', personaEmoji: '👩', userFirstName: 'Demo', userLastName: 'Agent', totalScore: 82 },
-    { id: 's2', endedAt: new Date(Date.now() - 86_400_000).toISOString(), durationSeconds: 600, framework: 'MEDDIC', sessionType: 'ONLINE_MEETING', personaName: 'Marcus Webb', personaEmoji: '👨', userFirstName: 'Demo', userLastName: 'Agent', totalScore: 71 },
-    { id: 's3', endedAt: new Date(Date.now() - 172_800_000).toISOString(), durationSeconds: 380, framework: 'SNAP', sessionType: 'PHONE_CALL', personaName: 'Priya Nair', personaEmoji: '👩', userFirstName: 'Demo', userLastName: 'Agent', totalScore: 58 },
-  ];
-  const frameworkStats: DashboardFrameworkStat[] = [
-    { component: 'Metrics', avgScore: 79, count: 8 },
-    { component: 'Economic Buyer', avgScore: 65, count: 8 },
-    { component: 'Decision Criteria', avgScore: 88, count: 8 },
-    { component: 'Decision Process', avgScore: 72, count: 8 },
-    { component: 'Identify Pain', avgScore: 55, count: 8 },
-    { component: 'Champion', avgScore: 84, count: 8 },
-  ];
-
-  if (role === 'AGENT') {
-    return {
-      totalSessions: 12,
-      avgScore: 74,
-      activeUsers: 1,
-      passRate: 67,
-      recentSessions,
-      frameworkStats,
-      agentExtra: { sessionsThisWeek: 3, streak: 2, rank: 4 },
-    };
-  }
-  const members = [
-    { id: 'm1', firstName: 'Alex', lastName: 'Rivera', sessionCount: 18, avgScore: 88, sessionsThisWeek: 5 },
-    { id: 'm2', firstName: 'Jordan', lastName: 'Kim', sessionCount: 15, avgScore: 81, sessionsThisWeek: 4 },
-    { id: 'm3', firstName: 'Morgan', lastName: 'Taylor', sessionCount: 11, avgScore: 74, sessionsThisWeek: 2 },
-    { id: 'm4', firstName: 'Demo', lastName: 'Agent', sessionCount: 12, avgScore: 74, sessionsThisWeek: 3 },
-    { id: 'm5', firstName: 'Casey', lastName: 'Walsh', sessionCount: 7, avgScore: 61, sessionsThisWeek: 0 },
-    { id: 'm6', firstName: 'Riley', lastName: 'Scott', sessionCount: 4, avgScore: 58, sessionsThisWeek: 0 },
-  ];
-  return {
-    totalSessions: 67,
-    avgScore: 74,
-    activeUsers: members.length,
-    passRate: 71,
-    recentSessions: [
-      ...recentSessions,
-      { id: 's4', endedAt: new Date(Date.now() - 7_200_000).toISOString(), durationSeconds: 510, framework: 'MEDDIC', sessionType: 'ONLINE_MEETING', personaName: 'Wei Zhang', personaEmoji: '👨', userFirstName: 'Alex', userLastName: 'Rivera', totalScore: 88 },
-    ],
-    frameworkStats,
-    managerExtra: { teamSize: members.length, members },
-  };
-}
-
 // ── Analytics API ─────────────────────────────────────────────────────────────
 
 export const analyticsApi = {
   dashboard: async (): Promise<DashboardStats> => {
-    try {
-      const { data } = await http.get('/analytics/dashboard');
-      return data as DashboardStats;
-    } catch {
-      const user = useAuthStore.getState().user;
-      return demoDashboard(user?.role);
-    }
+    const { data } = await http.get('/analytics/dashboard');
+    return data as DashboardStats;
   },
 
   leaderboard: async (period?: string): Promise<LeaderboardEntry[]> => {
-    try {
-      const { data } = await http.get('/analytics/leaderboard', { params: period ? { period } : undefined });
-      return data as LeaderboardEntry[];
-    } catch {
-      return [];
-    }
+    const { data } = await http.get('/analytics/leaderboard', { params: period ? { period } : undefined });
+    return data as LeaderboardEntry[];
   },
 };
 
@@ -610,60 +368,10 @@ export const teamRoleplaysApi = {
 
 // ── Evaluation Prompts API ────────────────────────────────────────────────────
 
-const DEMO_EVALUATION_PROMPTS: EvaluationPrompt[] = [
-  {
-    id: 'demo-ep-1',
-    roleplayType: 'cold_call',
-    displayName: 'Cold Call',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    scoringCriteria: [
-      { group: 'Opening', criteria: [{ question: 'Did the rep open with a clear, confident introduction?', hint: 'Name, company, reason for calling' }, { question: 'Was the hook relevant and compelling?' }] },
-      { group: 'Qualification', criteria: [{ question: 'Did the rep qualify budget, authority, need and timeline?', hint: 'BANT fundamentals' }, { question: 'Did the rep uncover pain points?' }] },
-      { group: 'Closing', criteria: [{ question: 'Did the rep secure a clear next step?' }, { question: 'Did the rep handle objections confidently?' }] },
-    ],
-    promptTemplate: 'You are evaluating a cold call roleplay session. Score each criterion from 1–5 based on the transcript. Focus on opening quality, qualification depth, objection handling, and the strength of the call close.',
-  },
-  {
-    id: 'demo-ep-2',
-    roleplayType: 'discovery_call',
-    displayName: 'Discovery Call',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    scoringCriteria: [
-      { group: 'Discovery', criteria: [{ question: 'Did the rep ask open-ended discovery questions?', hint: 'Situation and problem questions' }, { question: 'Did the rep listen actively and follow up on key points?' }] },
-      { group: 'Pain & Impact', criteria: [{ question: 'Did the rep uncover the business impact of the problem?', hint: 'Quantified pain if possible' }, { question: 'Did the rep connect their solution to the prospect\'s goals?' }] },
-      { group: 'Next Steps', criteria: [{ question: 'Did the rep set a clear, agreed-upon next step?' }] },
-    ],
-    promptTemplate: 'You are evaluating a discovery call. Score based on quality of questions asked, depth of understanding of the prospect\'s situation, ability to articulate value, and how well next steps were established.',
-  },
-  {
-    id: 'demo-ep-3',
-    roleplayType: 'objection_handling',
-    displayName: 'Objection Handling',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    scoringCriteria: [
-      { group: 'Acknowledge', criteria: [{ question: 'Did the rep acknowledge the objection without dismissing it?' }] },
-      { group: 'Reframe', criteria: [{ question: 'Did the rep ask clarifying questions to understand the root objection?' }, { question: 'Did the rep reframe or address the objection with evidence?' }] },
-      { group: 'Move Forward', criteria: [{ question: 'Did the rep successfully move the conversation forward after handling the objection?' }] },
-    ],
-    promptTemplate: 'Evaluate how effectively the sales rep handled objections. Look for empathy, curiosity, clear reframing, and the ability to advance the sale after resolving each objection.',
-  },
-];
-
 export const evaluationPromptsApi = {
   list: async () => {
-    try {
-      const { data } = await http.get('/evaluation-prompts');
-      const results = data as EvaluationPrompt[];
-      return results.length > 0 ? results : DEMO_EVALUATION_PROMPTS;
-    } catch {
-      return DEMO_EVALUATION_PROMPTS;
-    }
+    const { data } = await http.get('/evaluation-prompts');
+    return data as EvaluationPrompt[];
   },
 
   get: async (roleplayType: string) => {

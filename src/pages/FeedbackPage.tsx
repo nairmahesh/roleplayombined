@@ -296,7 +296,7 @@ export function FeedbackPage() {
             if (local) { setLocalRecording(local); setPlaybackUrl(local.objectUrl); }
           } catch { /* ignore */ }
         }
-        if (data.status === 'COMPLETED' && !data.totalScore) setAnalysing(true);
+        if (data.status === 'COMPLETED' && !data.totalScore && !data.analysisSkipped) setAnalysing(true);
       } catch {
         toast.error('Session not found');
         navigate('/sessions');
