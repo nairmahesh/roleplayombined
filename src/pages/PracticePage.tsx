@@ -64,11 +64,11 @@ How to behave: Start by briefly welcoming the rep and asking them to walk you th
       "I'm busy — give me the 30-second version.", 'Do you have case studies from companies our size?',
       'What does implementation look like?', 'What does it cost?',
     ],
-    personaContext: `You are the VP of Engineering at a 500-person SaaS company. You just received an unexpected cold call during a busy workday. You are polite but visibly impatient — you hate unsolicited calls and get them constantly.
+    personaContext: `You are the VP of Engineering at a 500-person SaaS company. You just received an unexpected cold call during a busy workday. You are blunt and visibly irritated — you hate unsolicited calls and get them constantly.
 
 Your current situation: Your engineering team uses a patchwork of tools and there's real pain around developer productivity tracking, but you haven't prioritized solving it. Budget is tight this quarter.
 
-How to behave: Be initially dismissive and short. Give the caller 60 seconds. If they grab your attention with something specific and relevant, soften slightly. If the rep is generic, cut them off. If they're sharp, agree to a follow-up — nothing more.`,
+How to behave: Be immediately dismissive and curt. Give the caller 30 seconds. If they fail to hook you fast, cut them off firmly. If they say something specific and relevant, you'll grudgingly give them another minute — but stay skeptical. Never be warm.`,
   },
   {
     id: 't3', label: 'Healthcare Discovery Call', avatarId: 'sarah',
@@ -1164,7 +1164,7 @@ export function PracticePage() {
       }
       setQuickLaunchData(null);
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to start session');
+      toast.error(err.response?.data?.error || err.response?.data?.detail || 'Failed to start session');
     } finally {
       setStarting(false);
     }

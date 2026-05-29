@@ -321,8 +321,8 @@ function EditPersonaModal({ persona, onSave, onClose }: {
                   <div className="flex items-center gap-3 mb-3 p-3 rounded-[10px] bg-white/[0.03] border border-white/[0.06]">
                     <AvatarDisplay avatarId={form.avatarId} size={44} />
                     <div>
-                      <p className="text-[13px] font-semibold text-white">{selectedAvatar.name}</p>
-                      <p className="text-[11px] text-white/45 capitalize">{selectedAvatar.gender} · {selectedAvatar.ethnicity.replace('-', ' ')}</p>
+                      <p className="text-[13px] font-semibold text-white capitalize">{selectedAvatar.gender} · {selectedAvatar.ethnicity.replace('-', ' ')}</p>
+                      <p className="text-[11px] text-white/45">Avatar photo</p>
                     </div>
                     <button type="button" onClick={() => {
                       const others = AVATARS.filter(a => a.id !== form.avatarId);
@@ -539,7 +539,16 @@ function PersonaCard({
     >
       {/* Card header */}
       <div className="flex items-start gap-4 p-5">
-        <AvatarDisplay avatarId={avatarId} size={44} className="rounded-[12px] flex-shrink-0" />
+        {onEdit && !persona.isPreset ? (
+          <button type="button" onClick={() => onEdit(persona)} className="relative flex-shrink-0 group/avatar rounded-[12px] overflow-hidden focus:outline-none" title="Change photo">
+            <AvatarDisplay avatarId={avatarId} size={44} className="rounded-[12px]" />
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity rounded-[12px]">
+              <Pencil size={13} className="text-white" />
+            </div>
+          </button>
+        ) : (
+          <AvatarDisplay avatarId={avatarId} size={44} className="rounded-[12px] flex-shrink-0" />
+        )}
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">

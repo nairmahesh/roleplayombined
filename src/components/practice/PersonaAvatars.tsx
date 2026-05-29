@@ -186,7 +186,7 @@ function AvatarPickerCard({
     <button
       type="button"
       onClick={onClick}
-      title={`${av.name} · ${av.gender} · ${av.ethnicity}`}
+      title={`${av.gender} · ${av.ethnicity.replace('-', ' ')}`}
       className={clsx(
         'flex items-center justify-center p-1.5 rounded-[10px] border transition-all flex-shrink-0',
         selected ? 'border-accent bg-accent/[0.08]' : 'border-white/[0.07] hover:border-white/20'

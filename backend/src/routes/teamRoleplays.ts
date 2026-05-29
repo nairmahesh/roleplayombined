@@ -56,7 +56,7 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
   );
 });
 
-router.post('/', requireRole('SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER'), async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/', requireRole('SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER', 'AGENT'), async (req: AuthRequest, res: Response): Promise<void> => {
   const data = req.body as Record<string, unknown>;
   const tr = await TeamRoleplay.create({
     ...data,
