@@ -129,18 +129,22 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
     scenarioConfig?: Record<string, unknown>;
   };
 
-  const session = await Session.create({
-    type,
-    framework,
-    status: 'PENDING',
-    userId: req.userId,
-    companyId: req.companyId,
-    personaId: personaId ? new mongoose.Types.ObjectId(personaId) : undefined,
-    scenarioConfig,
-  });
-
-  const persona = personaId ? await Persona.findById(personaId) : null;
-  res.status(201).json(serializeSession(session, persona));
+  try {
+    const session = await Session.create({
+      type,
+      framework,
+      status: 'PENDING',
+      userId: req.userId,
+      companyId: req.companyId,
+      personaId: personaId ? new mongoose.Types.ObjectId(personaId) : undefined,
+      scenarioConfig,
+    });
+    const persona = personaId ? await Persona.findById(personaId) : null;
+    res.status(201).json(serializeSession(session, persona));
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to create session';
+    res.status(400).json({ error: msg });
+  }
 });
 
 router.get('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
