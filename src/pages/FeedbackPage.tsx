@@ -321,7 +321,13 @@ export function FeedbackPage() {
 
   const togglePlay = useCallback(() => {
     if (!audioRef.current) return;
-    if (isPlaying) audioRef.current.pause(); else audioRef.current.play();
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play().catch(() => {});
+      setIsPlaying(true);
+    }
   }, [isPlaying]);
 
   const openPeerAudio = useCallback((ps: PeerSession) => {
@@ -420,9 +426,10 @@ export function FeedbackPage() {
   }, [session?.messages, seekTo]);
 
   const handleTrackClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!trackRef.current || !audioDuration) return;
+    const dur = (audioDuration > 0 && isFinite(audioDuration)) ? audioDuration : (session?.durationSeconds || 0);
+    if (!trackRef.current || !dur) return;
     const rect = trackRef.current.getBoundingClientRect();
-    seekTo(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * audioDuration);
+    seekTo(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * dur);
   };
 
   const filteredMessages = useMemo(() => {
@@ -484,7 +491,8 @@ export function FeedbackPage() {
   const personaName  = session.scenarioConfig?.displayName || session.persona?.name || 'Persona';
   const objections   = session.scenarioConfig?.objections || [];
   const totalDurMs   = (session.durationSeconds || 0) * 1000;
-  const trackProgress = audioDuration ? (audioProgress / audioDuration) * 100 : 0;
+  const effectiveDuration = (audioDuration > 0 && isFinite(audioDuration)) ? audioDuration : (session.durationSeconds || 0);
+  const trackProgress = effectiveDuration > 0 ? (audioProgress / effectiveDuration) * 100 : 0;
   const currentUserId = 'u1';
   const myPeerEntry   = peerScores.find(p => p.userId === currentUserId);
 
@@ -605,7 +613,7 @@ export function FeedbackPage() {
               audioRef.current = el as HTMLAudioElement | null;
               if (el) {
                 el.onloadedmetadata = () => {
-                  setAudioDuration(el.duration);
+                  if (isFinite(el.duration)) setAudioDuration(el.duration);
                   if (pendingSeekRef.current !== null) {
                     el.currentTime = pendingSeekRef.current;
                     el.play().catch(() => {});
@@ -613,6 +621,7 @@ export function FeedbackPage() {
                     pendingSeekRef.current = null;
                   }
                 };
+                el.ondurationchange = () => { if (isFinite(el.duration)) setAudioDuration(el.duration); };
                 el.ontimeupdate = () => setAudioProgress(el.currentTime);
                 el.onplay = () => setIsPlaying(true);
                 el.onpause = () => setIsPlaying(false);
@@ -688,7 +697,7 @@ export function FeedbackPage() {
                 )}
               </div>
               <span className="text-[10px] font-mono flex-shrink-0" style={{ color: 'var(--text3)' }}>
-                {audioDuration ? fmt(audioDuration * 1000) : session.durationSeconds ? fmt(session.durationSeconds * 1000) : '--:--'}
+                {(audioDuration > 0 && isFinite(audioDuration)) ? fmt(audioDuration * 1000) : session.durationSeconds ? fmt(session.durationSeconds * 1000) : '--:--'}
               </span>
               {localRecording && (
                 <button
