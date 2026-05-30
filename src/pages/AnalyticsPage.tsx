@@ -93,7 +93,7 @@ export function AnalyticsPage() {
       setSessions(s);
       setUsers(u);
       setCache('analytics', { sessions: s, users: u });
-    }).finally(() => setLoading(false));
+    }).catch(() => {}).finally(() => setLoading(false));
   }, [isAdmin]);
 
   const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;

@@ -8,6 +8,7 @@ import { EvaluationPrompt } from '../models/EvaluationPrompt';
 import { generatePersonaResponse, generateSessionFeedback } from '../services/gemini';
 import { logConvaiUsage } from '../services/usage';
 import { getConversationAudio } from '../services/elevenlabs';
+import { getIo } from '../socket';
 import { Request } from 'express';
 
 const router = Router();
@@ -220,51 +221,78 @@ router.patch('/:id/end', async (req: AuthRequest, res: Response): Promise<void> 
 
   if (skipAnalysis) session.analysisSkipped = true;
 
-  // Build transcript for AI feedback (unless client explicitly skipped analysis)
-  if (!skipAnalysis && session.messages.length > 0) {
-    const transcript = session.messages
-      .map((m) => `${m.role === 'user' ? 'Sales Rep' : 'Prospect'}: ${m.content}`)
-      .join('\n');
-
-    const evalPrompt = await EvaluationPrompt.findOne({
-      roleplayType: session.scenarioConfig?.roleplayType,
-      isActive: true,
-    });
-
-    const ctx = {
-      sessionId: session._id as mongoose.Types.ObjectId,
-      companyId: session.companyId as mongoose.Types.ObjectId | undefined,
-      userId: session.userId as mongoose.Types.ObjectId,
-    };
-    const promptTemplate = evalPrompt?.promptTemplate ?? defaultFeedbackPrompt(session.framework);
-    try {
-      const rawFeedback = await generateSessionFeedback(transcript, session.framework, promptTemplate, ctx);
-      const cleanJson = rawFeedback.replace(/```json\n?|\n?```/g, '').trim();
-      const parsed = JSON.parse(cleanJson);
-
-      session.aiFeedback = JSON.stringify(parsed);
-      session.totalScore = parsed.overallScore;
-
-      if (parsed.scorecardGroups) {
-        session.frameworkScores = parsed.scorecardGroups.map((g: { group: string; earnedPoints: number; maxPoints: number }) => ({
-          component: g.group,
-          score: Math.round((g.earnedPoints / g.maxPoints) * 100),
-          feedback: '',
-          evidence: [],
-        }));
-      }
-
-      if (parsed.timelineEvents) {
-        session.timelineEvents = parsed.timelineEvents;
-      }
-    } catch (err) {
-      console.error('AI feedback generation failed:', err);
-    }
-  }
-
+  // Save immediately so the HTTP response can return — analysis runs in the background
   await session.save();
   const persona = session.personaId ? await Persona.findById(session.personaId) : null;
   res.json(serializeSession(session, persona));
+
+  // ── Background AI analysis ────────────────────────────────────────────────
+  if (!skipAnalysis && session.messages.length > 0) {
+    const sessionId = session._id.toString();
+    (async () => {
+      const transcript = session.messages
+        .map((m) => `${m.role === 'user' ? 'Sales Rep' : 'Prospect'}: ${m.content}`)
+        .join('\n');
+
+      const evalPrompt = await EvaluationPrompt.findOne({
+        roleplayType: { $regex: new RegExp(`^${session.scenarioConfig?.roleplayType ?? ''}$`, 'i') },
+        isActive: true,
+      });
+
+      const ctx = {
+        sessionId: session._id as mongoose.Types.ObjectId,
+        companyId: session.companyId as mongoose.Types.ObjectId | undefined,
+        userId: session.userId as mongoose.Types.ObjectId,
+      };
+      const promptTemplate = evalPrompt?.promptTemplate ?? defaultFeedbackPrompt(session.framework);
+      try {
+        const rawFeedback = await generateSessionFeedback(transcript, session.framework, promptTemplate, ctx);
+
+        // Robust JSON extraction — handles leading/trailing prose and markdown fences
+        let cleanJson = rawFeedback.replace(/```json\n?|\n?```/g, '').trim();
+        const firstBrace = cleanJson.indexOf('{');
+        const lastBrace  = cleanJson.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace > firstBrace) {
+          cleanJson = cleanJson.slice(firstBrace, lastBrace + 1);
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let parsed: any;
+        try {
+          parsed = JSON.parse(cleanJson);
+        } catch (parseErr) {
+          console.error('AI feedback parse failed. Raw snippet:', rawFeedback.slice(0, 400));
+          throw parseErr;
+        }
+
+        session.aiFeedback = JSON.stringify(parsed);
+        session.totalScore  = parsed.overallScore;
+
+        if (parsed.scorecardGroups) {
+          session.frameworkScores = parsed.scorecardGroups.map(
+            (g: { group: string; earnedPoints: number; maxPoints: number }) => ({
+              component: g.group,
+              score: Math.round((g.earnedPoints / g.maxPoints) * 100),
+              feedback: '',
+              evidence: [],
+            })
+          );
+        }
+
+        if (parsed.timelineEvents) session.timelineEvents = parsed.timelineEvents;
+
+        await session.save();
+        console.log(`[analysis] ✅ session ${sessionId} scored ${parsed.overallScore ?? '?'}`);
+      } catch (err) {
+        console.error(`[analysis] ❌ session ${sessionId}:`, err);
+      } finally {
+        // Always notify the client so it doesn't hang on the analysing screen
+        try {
+          getIo().to(`session:${sessionId}`).emit('analysis:complete', { sessionId });
+        } catch { /* socket may not be ready in tests */ }
+      }
+    })();
+  }
 });
 
 router.post('/:id/messages', async (req: AuthRequest, res: Response): Promise<void> => {

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/lib/store';
-import { voiceApi, AgentSummary, AgentConfig, usageApi, UsageSummary } from '@/lib/api';
+import { voiceApi, VoiceAgentSummary, VoiceAgentConfig, usageApi, UsageSummary } from '@/lib/api';
 import { Save, Zap, Globe, Shield, ChevronRight, FileText, Plus, Trash2, RefreshCw, Bot, CreditCard as Edit2, X, Check, DollarSign, TrendingUp, Share2, Link2, Plug } from 'lucide-react';
 
 // ── Agent row ─────────────────────────────────────────────────────────────────
@@ -12,7 +12,7 @@ function AgentRow({
   onDelete,
   onUpdate,
 }: {
-  agent: AgentSummary;
+  agent: VoiceAgentSummary;
   onDelete: (id: string) => void;
   onUpdate: (id: string, name: string) => void;
 }) {
@@ -94,7 +94,7 @@ function AgentRow({
 // ── Agents manager ────────────────────────────────────────────────────────────
 
 function AgentsManager() {
-  const [agents, setAgents] = useState<AgentSummary[]>([]);
+  const [agents, setAgents] = useState<VoiceAgentSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
@@ -104,7 +104,7 @@ function AgentsManager() {
     setLoading(true);
     try {
       const data = await voiceApi.listAgents();
-      setAgents(data);
+      setAgents(data.agents);
     } catch {
       toast.error('Failed to load agents');
     } finally {
@@ -116,7 +116,7 @@ function AgentsManager() {
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
-    const payload: AgentConfig = {
+    const payload: VoiceAgentConfig = {
       name: newName.trim(),
       conversation_config: {
         agent: {

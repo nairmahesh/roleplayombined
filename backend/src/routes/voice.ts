@@ -14,6 +14,7 @@ import {
   AgentConfig,
 } from '../services/elevenlabs';
 import { Persona } from '../models/Persona';
+import { SystemConfig } from '../models/SystemConfig';
 
 const router = Router();
 router.use(authenticate);
@@ -32,21 +33,26 @@ router.get('/health', async (_req: AuthRequest, res: Response): Promise<void> =>
 // Accepts optional ?personaId=<id> — uses that persona's dedicated agent if it has one,
 // otherwise falls back to the global auto-created agent.
 router.get('/signed-url', async (req: AuthRequest, res: Response): Promise<void> => {
-  const { personaId } = req.query as { personaId?: string };
-  let personaAgentId: string | undefined;
+  const { personaId, agentId: directAgentId } = req.query as { personaId?: string; agentId?: string };
+  let resolvedAgentId: string | undefined;
 
-  if (personaId) {
+  if (directAgentId) {
+    // Caller supplied an explicit voice agent template ID
+    resolvedAgentId = directAgentId;
+    console.log(`[voice/signed-url] using explicit agentId=${resolvedAgentId}`);
+  } else if (personaId) {
+    // Legacy path — look up the persona's dedicated agent
     const persona = await Persona.findById(personaId).select('agentId name').lean();
-    personaAgentId = persona?.agentId ?? undefined;
-    console.log(`[voice/signed-url] personaId=${personaId} persona="${persona?.name}" agentId=${personaAgentId ?? '(none → global fallback)'}`);
+    resolvedAgentId = persona?.agentId ?? undefined;
+    console.log(`[voice/signed-url] personaId=${personaId} persona="${persona?.name}" agentId=${resolvedAgentId ?? '(none → global fallback)'}`);
   } else {
-    console.log('[voice/signed-url] no personaId → using global default agent (overrides must be allowed on that agent)');
+    console.log('[voice/signed-url] no agentId/personaId → using global default agent');
   }
 
   try {
-    const signedUrl = await getSignedUrl(personaAgentId);
+    const signedUrl = await getSignedUrl(resolvedAgentId);
     console.log('[voice/signed-url] ✅ signed URL issued agentId=%s url_prefix=%s',
-      personaAgentId ?? 'global', signedUrl.slice(0, 80));
+      resolvedAgentId ?? 'global', signedUrl.slice(0, 80));
     res.json({ signedUrl });
   } catch (err) {
     const status = (err as AxiosError)?.response?.status;
@@ -83,8 +89,12 @@ router.get('/voices', async (_req: AuthRequest, res: Response): Promise<void> =>
 // ── Agent management (admin/manager only) ────────────────────────────────────
 
 router.get('/agents', requireRole('COMPANY_ADMIN', 'MANAGER', 'SUPER_ADMIN'), async (_req: AuthRequest, res: Response): Promise<void> => {
-  const agents = await listAgents();
-  res.json(agents);
+  const [agents, defaultCfg] = await Promise.all([
+    listAgents(),
+    SystemConfig.findOne({ key: 'defaultAgentId' }).lean(),
+  ]);
+  const defaultAgentId = defaultCfg?.value ?? null;
+  res.json({ agents, defaultAgentId });
 });
 
 router.get('/agents/:agentId', requireRole('COMPANY_ADMIN', 'MANAGER', 'SUPER_ADMIN'), async (req: AuthRequest, res: Response): Promise<void> => {
@@ -117,6 +127,11 @@ router.patch('/agents/:agentId', requireRole('COMPANY_ADMIN', 'SUPER_ADMIN'), as
 });
 
 router.delete('/agents/:agentId', requireRole('COMPANY_ADMIN', 'SUPER_ADMIN'), async (req: AuthRequest, res: Response): Promise<void> => {
+  const defaultCfg = await SystemConfig.findOne({ key: 'defaultAgentId' }).lean();
+  if (defaultCfg?.value === req.params.agentId) {
+    res.status(409).json({ error: 'Cannot delete the default voice agent. Set another agent as default first.' });
+    return;
+  }
   await deleteAgent(req.params.agentId);
   res.status(204).send();
 });

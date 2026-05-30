@@ -24,6 +24,7 @@ export interface PersonaDisplay {
   systemPrompt?: string;
   firstMessage?: string;
   personaId?: string;
+  voiceAgentId?: string;  // explicit voice agent template to use for this session
   // Opening behaviour
   firstSpeaker?: 'persona' | 'user';
   openingLine?: string;
@@ -156,8 +157,8 @@ function CallInterfaceInner({ sessionId, persona, sessionType, framework, timeLi
       // Pass personaId so the backend uses that persona's dedicated ElevenLabs agent.
       let signedUrl: string | null = null;
       try {
-        console.log('[CallInterface] Fetching signed URL for personaId:', persona.personaId);
-        signedUrl = await voiceApi.getSignedUrl(persona.personaId);
+        console.log('[CallInterface] Fetching signed URL — agentId:', persona.voiceAgentId, 'personaId:', persona.personaId);
+        signedUrl = await voiceApi.getSignedUrl(persona.personaId, persona.voiceAgentId);
         console.log('[CallInterface] Got signed URL (first 60 chars):', signedUrl?.slice(0, 60));
       } catch (err: unknown) {
         const code = (err as { response?: { data?: { code?: string } } })?.response?.data?.code;

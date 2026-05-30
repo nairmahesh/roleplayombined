@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Phone, Monitor, Sparkles, Loader as Loader2, ChevronDown, ChevronUp, RefreshCw, Play, Plus, X, Settings, Info, Pencil, Trash2, ArrowLeft, BookOpen, Lock, Check, User, Layers, Globe, Database, FileText, ClipboardList, CircleCheck, Wand as Wand2 } from 'lucide-react';
-import { practiceApi, sessionsApi, personasApi, teamRoleplaysApi, evaluationPromptsApi } from '@/lib/api';
+import { practiceApi, sessionsApi, personasApi, teamRoleplaysApi, evaluationPromptsApi, voiceApi, VoiceAgentSummary } from '@/lib/api';
 import type { AssignmentScope, AssignmentTarget, EvaluationGroupDef } from '@/types';
 import { Framework, SessionType, FRAMEWORK_INFO, ScenarioConfig, Persona, TeamRoleplay, KnowledgeBaseEntry } from '@/types';
 import { CallInterface, PersonaDisplay } from '@/components/practice/CallInterface';
@@ -25,10 +25,12 @@ const INDUSTRIES = [
   'Manufacturing', 'Retail', 'Consulting', 'Real Estate', 'Education',
 ];
 
-const ROLEPLAY_TYPES = [
-  'Sales Pitch', 'Cold Call', 'Discovery Call', 'Negotiation',
-  'Customer Support', 'Interview', 'Leadership Conversation',
-  'Conflict Resolution', 'Account Expansion', 'Objection Handling',
+const CONVERSATION_OBJECTIVES = [
+  'Discovery Call', 'Cold Call', 'First Meeting', 'Product Demo',
+  'Objection Handling', 'Executive Pitch', 'Business Case Presentation',
+  'Procurement Negotiation', 'Renewal Discussion', 'Upsell / Cross-sell',
+  'Competitive Replacement', 'Sales Interview', 'HR Screening',
+  'Leadership Interview', 'Technical Interview', 'Stress Interview', 'Panel Interview',
 ];
 
 const LANGUAGES = [
@@ -713,6 +715,30 @@ export function PracticePage() {
   // ── Context fields ─────────────────────────────────────────────────────────
   const [industry, setIndustry]         = useState('');
   const [roleplayType, setRoleplayType] = useState('');
+
+  // ── Voice agent ────────────────────────────────────────────────────────────
+  const [voiceAgents, setVoiceAgents]           = useState<VoiceAgentSummary[]>([]);
+  const [selectedVoiceAgentId, setSelectedVoiceAgentId] = useState<string>('');
+
+  useEffect(() => {
+    voiceApi.listAgents().then(r => {
+      setVoiceAgents(r.agents);
+      if (r.defaultAgentId) setSelectedVoiceAgentId(r.defaultAgentId);
+    }).catch(() => {});
+  }, []);
+
+  // Auto-suggest the best template when the conversation objective changes
+  useEffect(() => {
+    if (!voiceAgents.length || !roleplayType) return;
+    const rt = roleplayType.toLowerCase();
+    let hint = 'Sales Prospect';
+    if (rt.includes('hr') || rt.includes('screening'))                hint = 'HR Screener';
+    else if (rt.includes('interview'))                                hint = 'Hiring Manager';
+    else if (rt.includes('procurement') || rt.includes('negotiation')) hint = 'Procurement Reviewer';
+    else if (rt.includes('executive') || rt.includes('business case')) hint = 'Executive Buyer';
+    const match = voiceAgents.find(a => a.name.toLowerCase().includes(hint.toLowerCase()));
+    if (match) setSelectedVoiceAgentId(match.agent_id);
+  }, [roleplayType, voiceAgents]);
   const [language, setLanguage]         = useState('English');
   const [objectionInput, setObjectionInput] = useState('');
   const [objections, setObjections]     = useState<string[]>([]);
@@ -972,7 +998,7 @@ export function PracticePage() {
     setBotKnowledge([]);
     setUserBriefing([]);
     autoGenRef.current = '';
-    openSetup('edit', 'New Roleplay', '', '');
+    openSetup('edit', 'New Scenario', '', '');
   };
 
   // ── API handlers ───────────────────────────────────────────────────────────
@@ -1018,7 +1044,7 @@ export function PracticePage() {
   };
 
   const openSaveModal = (presetScope?: AssignmentScope) => {
-    setSaveRoleplayName(selectedLabel && selectedLabel !== 'New Roleplay' ? selectedLabel : '');
+    setSaveRoleplayName(selectedLabel && selectedLabel !== 'New Scenario' ? selectedLabel : '');
     setSaveRoleplayDesc(selectedDesc || '');
     setAssignScope(presetScope ?? 'all');
     setAssignRegions([]);
@@ -1137,7 +1163,7 @@ export function PracticePage() {
 
   const handleStart = async () => {
     if (!industry) return toast.error('Select an industry first (Context step)');
-    if (!roleplayType) return toast.error('Select a roleplay type (Context step)');
+    if (!roleplayType) return toast.error('Select a conversation objective (Context step)');
     if (!personaContext.trim()) return toast.error('Add persona context (Persona step)');
     setStarting(true);
     try {
@@ -1152,6 +1178,7 @@ export function PracticePage() {
       const pd: PersonaDisplay = {
         name: displayName, title: displayTitle, emoji: displayEmoji,
         avatarId, elevenlabsVoiceId: selectedVoiceId, personaId: selectedPersonaId,
+        voiceAgentId: selectedVoiceAgentId || undefined,
         firstSpeaker: personaFirstSpeaker, openingLine: personaOpeningLine,
         roleplayType,
       };
@@ -1190,7 +1217,7 @@ export function PracticePage() {
               style={{ background: 'var(--accent)', color: '#fff', boxShadow: '0 2px 12px rgba(91,111,255,0.35)' }}
             >
               <Plus size={15} />
-              New Roleplay
+              New Scenario
             </button>
           </div>
 
@@ -1660,7 +1687,7 @@ export function PracticePage() {
                       transition={{ duration: 0.18, ease: 'easeOut' }}
                       className="card p-4 sm:p-5 flex flex-col gap-4"
                     >
-                      {/* Industry + Language + Roleplay Type — compact dropdowns */}
+                      {/* Industry + Language + Conversation Objective — compact dropdowns */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                           <label className="flex items-center gap-1.5 text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-1.5">
@@ -1698,7 +1725,7 @@ export function PracticePage() {
                             <div className={clsx('w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0', roleplayType ? 'bg-accent-3 text-white' : 'bg-white/[0.07] text-white/60 border border-white/[0.1]')}>
                               {roleplayType ? <Check size={7} /> : '2'}
                             </div>
-                            Roleplay Type
+                            Conversation Objective
                           </label>
                           <select
                             value={roleplayType}
@@ -1706,7 +1733,7 @@ export function PracticePage() {
                             className={clsx('input-base text-[12.5px] w-full', !roleplayType && 'text-white/45')}
                           >
                             <option value="" disabled>Select type…</option>
-                            {ROLEPLAY_TYPES.map(rt => <option key={rt} value={rt}>{rt}</option>)}
+                            {CONVERSATION_OBJECTIVES.map(rt => <option key={rt} value={rt}>{rt}</option>)}
                           </select>
                         </div>
                       </div>
@@ -2350,6 +2377,21 @@ export function PracticePage() {
                             </button>
                           </div>
                         </div>
+
+                        {voiceAgents.length > 0 && (
+                          <div>
+                            <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mb-2">Voice Agent</p>
+                            <select
+                              value={selectedVoiceAgentId}
+                              onChange={e => setSelectedVoiceAgentId(e.target.value)}
+                              className="input-base text-[12px]"
+                            >
+                              {voiceAgents.map(a => (
+                                <option key={a.agent_id} value={a.agent_id}>{a.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
                       </div>
 
                       {/* Scoring Rubric Preview */}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore, useThemeStore } from '@/lib/store';
@@ -21,12 +21,12 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { label: 'Companies',   to: '/superadmin/companies',         icon: Building2,  section: 'Platform', roles: ['SUPER_ADMIN'] },
   { label: 'Platform',    to: '/superadmin/stats',             icon: Globe,      section: 'Platform', roles: ['SUPER_ADMIN'] },
-  { label: 'Agents',      to: '/superadmin/agents',            icon: Bot,        section: 'Platform', roles: ['SUPER_ADMIN'] },
+  { label: 'Voice Agents',to: '/superadmin/agents',            icon: Bot,        section: 'Platform', roles: ['SUPER_ADMIN'] },
   { label: 'Prompts',     to: '/settings/evaluation-prompts',  icon: FileText,   section: 'Platform', roles: ['SUPER_ADMIN'] },
   { label: 'Dashboard',   to: '/dashboard',  icon: LayoutDashboard, section: 'Overview', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
   { label: 'Practice',    to: '/practice',   icon: Play,            section: 'Overview', badge: 'New', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
   { label: 'Sessions',    to: '/sessions',   icon: ClipboardList,   section: 'Overview', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
-  { label: 'Personas',    to: '/personas',   icon: UserCircle,      section: 'Overview', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
+  { label: 'Prospects',   to: '/personas',   icon: UserCircle,      section: 'Overview', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
   { label: 'Analytics',   to: '/analytics',  icon: BarChart3,       section: 'Insights', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
   { label: 'Leaderboard', to: '/leaderboard',icon: Trophy,          section: 'Insights', roles: ['COMPANY_ADMIN', 'MANAGER', 'AGENT'] },
   { label: 'Team',        to: '/team',       icon: Users,           section: 'Admin', roles: ['COMPANY_ADMIN', 'MANAGER', 'SUPER_ADMIN'] },
@@ -35,6 +35,14 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Settings',     to: '/settings',              icon: Settings, section: 'Admin', roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'] },
   { label: 'Integrations', to: '/settings/integrations', icon: Plug,     section: 'Admin', roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'], indent: true },
 ];
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="w-8 h-8 rounded-full border-2 border-accent/30 border-t-accent animate-spin" />
+    </div>
+  );
+}
 
 // sections that start collapsed by default
 const DEFAULT_COLLAPSED = new Set<string>(['Admin']);
@@ -227,8 +235,8 @@ export function AppShell() {
               <div className="text-[12.5px] font-medium truncate" style={{ color: 'var(--text)' }}>
                 {user?.firstName} {user?.lastName}
               </div>
-              <div className="text-[10.5px] capitalize" style={{ color: 'var(--text3)' }}>
-                {user?.role?.replace(/_/g, ' ').toLowerCase()}
+              <div className="text-[10.5px]" style={{ color: 'var(--text3)' }}>
+                {({ SUPER_ADMIN: 'Super Admin', COMPANY_ADMIN: 'Admin', MANAGER: 'Manager', AGENT: 'Rep' } as Record<string, string>)[user?.role ?? ''] ?? user?.role}
               </div>
             </div>
             <button
@@ -293,17 +301,19 @@ export function AppShell() {
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto px-4 pt-4 pb-4 md:px-7 md:pt-5 md:pb-7">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={location.pathname}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.08 }}
-            >
-              <Outlet />
-            </motion.div>
-          </AnimatePresence>
+          <Suspense fallback={<PageLoader />}>
+            <AnimatePresence mode="sync" initial={false}>
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.08 }}
+              >
+                <Outlet />
+              </motion.div>
+            </AnimatePresence>
+          </Suspense>
         </main>
       </div>
     </div>
@@ -314,18 +324,18 @@ function PageTitle({ path }: { path: string }) {
   const titles: Record<string, [string, string]> = {
     '/dashboard':               ['Dashboard',         'Welcome back'],
     '/practice':                ['Practice',          'Choose a scenario to begin'],
-    '/sessions':                ['My Sessions',       'Your roleplay history'],
+    '/sessions':                ['My Sessions',       'Your practice history'],
     '/analytics':               ['Analytics',         'Performance insights and trends'],
     '/leaderboard':             ['Leaderboard',       'Company rankings'],
-    '/personas':                ['Personas',          'Browse and manage AI roleplay personas'],
-    '/team':                    ['Team',              'Manage your agents'],
+    '/personas':                ['Prospects',         'Browse and manage AI prospects'],
+    '/team':                    ['Team',              'Manage your team'],
     '/usage':                   ['Usage & Costs',     'Token consumption, API costs, and user caps'],
     '/settings/plan':           ['Plan & Modules',     'Manage your subscription and feature modules'],
     '/settings/integrations':   ['Integrations',      'Connect PitchIQ to your CRM and sales stack'],
     '/settings':                ['Settings',          'Platform configuration'],
     '/superadmin/companies':    ['Companies',         'Platform-wide company management'],
     '/superadmin/stats':        ['Platform Overview', 'System-wide statistics'],
-    '/superadmin/agents':       ['Agents',            'ElevenLabs ConvAI agent management'],
+    '/superadmin/agents':       ['Voice Agents',      'ElevenLabs ConvAI voice agent management'],
     '/settings/evaluation-prompts': ['Evaluation Prompts', 'Configure scoring criteria and prompts'],
   };
   const key = Object.keys(titles).find(k => path.startsWith(k)) || '/dashboard';

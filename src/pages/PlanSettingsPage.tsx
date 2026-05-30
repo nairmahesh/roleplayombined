@@ -17,14 +17,14 @@ interface ModuleRow {
   label: string;
   description: string;
   icon: React.ElementType;
-  capKey?: 'sessionsPerMonth' | 'agentsMax' | 'sessionMinutesMax';
+  capKey?: 'sessionsPerMonth' | 'voiceAgentsMax' | 'sessionMinutesMax';
 }
 
 const MODULES: ModuleRow[] = [
   { key: 'knowledgeBase',       label: 'Knowledge Base',       description: 'Train the AI bot with docs, URLs, and text content', icon: BookOpen },
   { key: 'preCallBriefing',     label: 'Pre-Call Briefing',    description: 'Share product materials with users before each call', icon: FileText },
-  { key: 'customPersonas',      label: 'Custom Personas',      description: 'Create and save custom AI personas', icon: Brain },
-  { key: 'teamRoleplays',       label: 'Team Roleplays',       description: 'Assign scenarios to agents from a shared library', icon: Users },
+  { key: 'customProspects',     label: 'Custom Prospects',     description: 'Create and save custom AI prospects', icon: Brain },
+  { key: 'teamScenarios',       label: 'Team Scenarios',       description: 'Assign scenarios to reps from a shared library', icon: Users },
   { key: 'analytics',           label: 'Analytics',            description: 'Talk ratio, pacing, filler words, and monologue stats', icon: BarChart3 },
   { key: 'leaderboard',         label: 'Leaderboard',          description: 'Team performance rankings', icon: Trophy },
   { key: 'recordings',          label: 'Call Recordings',      description: 'Record and replay practice sessions', icon: Mic },
@@ -146,7 +146,7 @@ export function PlanSettingsPage() {
                 <span className="text-[13px] font-semibold" style={{ color: 'var(--text2)' }}>{cfg.price}</span>
                 <div className="flex flex-wrap gap-1 mt-1">
                   <CapBadge label="Sessions" value={cfg.features.sessionsPerMonth} />
-                  <CapBadge label="Agents" value={cfg.features.agentsMax} />
+                  <CapBadge label="Voice Agents" value={cfg.features.voiceAgentsMax} />
                 </div>
               </button>
             );
@@ -164,7 +164,7 @@ export function PlanSettingsPage() {
           <div className="flex items-center gap-2">
             <Users size={12} style={{ color: 'var(--text3)' }} />
             <span className="text-[11.5px]" style={{ color: 'var(--text2)' }}>
-              Agents: <strong>{features.agentsMax === null ? 'Unlimited' : features.agentsMax}</strong>
+              Voice Agents: <strong>{features.voiceAgentsMax === null ? 'Unlimited' : features.voiceAgentsMax}</strong>
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -276,7 +276,7 @@ export function PlanSettingsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
             { label: 'Knowledge Base', price: '+$49/mo', desc: 'Doc/URL training & pre-call briefings', feature: 'knowledgeBase' as FeatureKey },
-            { label: 'Extra Agents', price: '+$9/agent/mo', desc: 'Add agents beyond your plan limit', feature: 'agentsMax' as FeatureKey },
+            { label: 'Extra Voice Agents', price: '+$9/agent/mo', desc: 'Add voice agents beyond your plan limit', feature: 'voiceAgentsMax' as FeatureKey },
             { label: 'API Access', price: '+$99/mo', desc: 'Full REST API for custom integrations', feature: 'apiAccess' as FeatureKey },
           ].map(addon => (
             <div

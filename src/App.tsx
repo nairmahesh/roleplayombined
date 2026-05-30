@@ -48,16 +48,22 @@ function PageLoader() {
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+  const hasHydrated = useAuthStore(s => s._hasHydrated);
+  if (!hasHydrated) return <PageLoader />;
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
 function RequireGuest({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+  const hasHydrated = useAuthStore(s => s._hasHydrated);
+  if (!hasHydrated) return <PageLoader />;
   return isAuthenticated ? <Navigate to="/" replace /> : <>{children}</>;
 }
 
 function RequireRole({ roles, children }: { roles: UserRole[]; children: React.ReactNode }) {
   const user = useAuthStore(s => s.user);
+  const hasHydrated = useAuthStore(s => s._hasHydrated);
+  if (!hasHydrated) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
   if (!roles.includes(user.role as UserRole)) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
@@ -66,6 +72,8 @@ function RequireRole({ roles, children }: { roles: UserRole[]; children: React.R
 /** SUPER_ADMIN lands on /superadmin/companies; everyone else on /dashboard */
 function DefaultRedirect() {
   const user = useAuthStore(s => s.user);
+  const hasHydrated = useAuthStore(s => s._hasHydrated);
+  if (!hasHydrated) return <PageLoader />;
   if (user?.role === 'SUPER_ADMIN') return <Navigate to="/superadmin/companies" replace />;
   return <Navigate to="/dashboard" replace />;
 }

@@ -711,7 +711,7 @@ export function CompanyDetailPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-3 mt-2">
                     <MessageSquare size={12} className="text-accent" />
-                    <p className="text-[11px] font-semibold text-accent/80 uppercase tracking-wider">Custom Personas ({customPersonas.length})</p>
+                    <p className="text-[11px] font-semibold text-accent/80 uppercase tracking-wider">Custom Prospects ({customPersonas.length})</p>
                   </div>
                   <div className="flex flex-col gap-2">
                     {customPersonas.map(p => (

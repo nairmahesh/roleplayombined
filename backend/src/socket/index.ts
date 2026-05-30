@@ -3,6 +3,13 @@ import { Server as SocketServer, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
 
+// Module-level reference so routes can emit events without circular imports
+let _io: SocketServer | null = null;
+export function getIo(): SocketServer {
+  if (!_io) throw new Error('Socket.IO not initialised yet');
+  return _io;
+}
+
 export function setupSocket(httpServer: HttpServer): SocketServer {
   const io = new SocketServer(httpServer, {
     cors: {
@@ -27,6 +34,8 @@ export function setupSocket(httpServer: HttpServer): SocketServer {
     }
   });
 
+  _io = io;
+
   io.on('connection', (socket: Socket) => {
     const { userId, companyId } = socket.data as { userId: string; companyId: string };
 
@@ -34,13 +43,15 @@ export function setupSocket(httpServer: HttpServer): SocketServer {
     socket.join(`company:${companyId}`);
     socket.join(`user:${userId}`);
 
-    // Session events
-    socket.on('session:join', (sessionId: string) => {
-      socket.join(`session:${sessionId}`);
+    // Session events — accept both plain string and { sessionId } object from clients
+    socket.on('session:join', (payload: string | { sessionId: string }) => {
+      const sessionId = typeof payload === 'string' ? payload : payload.sessionId;
+      if (sessionId) socket.join(`session:${sessionId}`);
     });
 
-    socket.on('session:leave', (sessionId: string) => {
-      socket.leave(`session:${sessionId}`);
+    socket.on('session:leave', (payload: string | { sessionId: string }) => {
+      const sessionId = typeof payload === 'string' ? payload : payload.sessionId;
+      if (sessionId) socket.leave(`session:${sessionId}`);
     });
 
     socket.on('session:message', (data: { sessionId: string; message: unknown }) => {
