@@ -86,9 +86,10 @@ router.get('/voices', async (_req: AuthRequest, res: Response): Promise<void> =>
   res.json(voices);
 });
 
-// ── Agent management (admin/manager only) ────────────────────────────────────
+// ── Agent management ──────────────────────────────────────────────────────────
 
-router.get('/agents', requireRole('COMPANY_ADMIN', 'MANAGER', 'SUPER_ADMIN'), async (_req: AuthRequest, res: Response): Promise<void> => {
+// GET /agents — all authenticated users (Reps need this to pick a voice agent when starting a session)
+router.get('/agents', async (_req: AuthRequest, res: Response): Promise<void> => {
   const [agents, defaultCfg] = await Promise.all([
     listAgents(),
     SystemConfig.findOne({ key: 'defaultAgentId' }).lean(),
