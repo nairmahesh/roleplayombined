@@ -28,6 +28,7 @@ function formatUser(u: InstanceType<typeof User>) {
 }
 
 router.get('/', requireRole('SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER'), async (req: AuthRequest, res: Response): Promise<void> => {
+  if (!req.companyId) { res.json([]); return; }
   const users = await User.find({ companyId: req.companyId }).lean();
   res.json(users.map((u) => ({ ...formatUser(u as InstanceType<typeof User>) })));
 });

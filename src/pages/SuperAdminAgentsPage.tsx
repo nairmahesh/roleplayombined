@@ -2,16 +2,18 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Bot, Plus, Trash2, CreditCard as Edit2, X, Check, RefreshCw, Zap, Link2, CircleAlert as AlertCircle } from 'lucide-react';
-import { voiceApi, superadminApi, AgentSummary, AgentConfig } from '@/lib/api';
+import { voiceApi, superadminApi, VoiceAgentSummary, VoiceAgentConfig } from '@/lib/api';
 
 // ── Agent row ──────────────────────────────────────────────────────────────────
 
 function AgentRow({
   agent,
+  isDefault,
   onDelete,
   onUpdate,
 }: {
-  agent: AgentSummary;
+  agent: VoiceAgentSummary;
+  isDefault: boolean;
   onDelete: (id: string) => void;
   onUpdate: (id: string, name: string) => void;
 }) {
@@ -46,7 +48,14 @@ function AgentRow({
           />
         ) : (
           <>
-            <div className="text-[13.5px] font-medium truncate">{agent.name}</div>
+            <div className="flex items-center gap-2 truncate">
+              <div className="text-[13.5px] font-medium truncate">{agent.name}</div>
+              {isDefault && (
+                <span className="flex-shrink-0 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/25">
+                  default
+                </span>
+              )}
+            </div>
             <div className="text-[11px] font-mono truncate text-[color:var(--text3)] mt-0.5">{agent.agent_id}</div>
           </>
         )}
@@ -69,7 +78,9 @@ function AgentRow({
             <button
               type="button"
               onClick={() => onDelete(agent.agent_id)}
-              className="icon-btn text-red-400/70 hover:text-red-400"
+              disabled={isDefault}
+              title={isDefault ? 'Cannot delete the default voice agent' : `Delete ${agent.name}`}
+              className="icon-btn text-red-400/70 hover:text-red-400 disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:text-red-400/70"
               aria-label={`Delete ${agent.name}`}
             >
               <Trash2 size={14} />
@@ -84,8 +95,9 @@ function AgentRow({
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 export function SuperAdminAgentsPage() {
-  const [agents, setAgents]   = useState<AgentSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [agents, setAgents]         = useState<VoiceAgentSummary[]>([]);
+  const [defaultAgentId, setDefaultAgentId] = useState<string | null>(null);
+  const [loading, setLoading]       = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName]   = useState('');
@@ -97,7 +109,9 @@ export function SuperAdminAgentsPage() {
     setLoading(true);
     setLoadError(null);
     try {
-      setAgents(await voiceApi.listAgents());
+      const result = await voiceApi.listAgents();
+      setAgents(result.agents);
+      setDefaultAgentId(result.defaultAgentId);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to load agents';
       setLoadError(msg);
@@ -111,7 +125,7 @@ export function SuperAdminAgentsPage() {
   const handleCreate = async () => {
     if (!newName.trim()) return;
     setSaving(true);
-    const payload: AgentConfig = {
+    const payload: VoiceAgentConfig = {
       name: newName.trim(),
       conversation_config: {
         agent: {
@@ -128,13 +142,13 @@ export function SuperAdminAgentsPage() {
     };
     try {
       await voiceApi.createAgent(payload);
-      toast.success('Agent created');
+      toast.success('Voice agent created');
       setNewName('');
       setNewPrompt('');
       setCreating(false);
       load();
     } catch {
-      toast.error('Failed to create agent — check your ElevenLabs plan (Creator+ required for ConvAI)');
+      toast.error('Failed to create voice agent — check your ElevenLabs plan (Creator+ required for ConvAI)');
     } finally {
       setSaving(false);
     }
@@ -144,9 +158,9 @@ export function SuperAdminAgentsPage() {
     try {
       await voiceApi.deleteAgent(agentId);
       setAgents(a => a.filter(x => x.agent_id !== agentId));
-      toast.success('Agent deleted');
+      toast.success('Voice agent deleted');
     } catch {
-      toast.error('Failed to delete agent');
+      toast.error('Failed to delete voice agent');
     }
   };
 
@@ -169,18 +183,18 @@ export function SuperAdminAgentsPage() {
     try {
       await voiceApi.updateAgent(agentId, { name });
       setAgents(a => a.map(x => x.agent_id === agentId ? { ...x, name } : x));
-      toast.success('Agent renamed');
+      toast.success('Voice agent renamed');
     } catch {
-      toast.error('Failed to rename agent');
+      toast.error('Failed to rename voice agent');
     }
   };
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
       <div>
-        <h2 className="font-display text-xl font-bold">ElevenLabs Agents</h2>
+        <h2 className="font-display text-xl font-bold">ElevenLabs Voice Agents</h2>
         <p className="text-sm text-white/70 mt-0.5">
-          Manage ConvAI agents used by personas during live roleplay sessions.
+          Manage ConvAI voice agents used during live practice sessions.
           Requires ElevenLabs Creator plan or above.
         </p>
       </div>
@@ -189,7 +203,7 @@ export function SuperAdminAgentsPage() {
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2">
             <Zap size={14} className="text-accent" aria-hidden="true" />
-            <span className="font-display text-[14px] font-bold">Agents</span>
+            <span className="font-display text-[14px] font-bold">Voice Agents</span>
             {!loading && (
               <span className="ml-1 px-2 py-0.5 rounded-full bg-accent/10 text-accent text-[10px] font-semibold">
                 {agents.length}
@@ -215,7 +229,7 @@ export function SuperAdminAgentsPage() {
               onClick={() => setCreating(v => !v)}
               className="btn-primary py-1.5 px-3 text-[12px] gap-1.5"
             >
-              <Plus size={12} aria-hidden="true" /> New Agent
+              <Plus size={12} aria-hidden="true" /> New Voice Agent
             </button>
           </div>
         </div>
@@ -223,13 +237,13 @@ export function SuperAdminAgentsPage() {
         <div className="p-5 flex flex-col gap-4">
           {creating && (
             <div className="flex flex-col gap-3 p-4 rounded-[12px] border border-accent/25 bg-accent/5">
-              <div className="text-[12px] font-semibold text-accent mb-1">New Agent</div>
+              <div className="text-[12px] font-semibold text-accent mb-1">New Voice Agent</div>
               <div>
                 <label htmlFor="agent-name" className="sr-only">Agent name</label>
                 <input
                   id="agent-name"
                   className="input-base text-[13px]"
-                  placeholder="Agent name (e.g. Outbound SDR — Skeptical)"
+                  placeholder="Voice agent name (e.g. Outbound SDR — Skeptical)"
                   value={newName}
                   onChange={e => setNewName(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) handleCreate(); }}
@@ -285,13 +299,13 @@ export function SuperAdminAgentsPage() {
           ) : agents.length === 0 ? (
             <div className="text-center py-8 flex flex-col items-center gap-2 text-[color:var(--text3)]">
               <Bot size={24} className="opacity-30" />
-              <div className="text-[12.5px]">No agents yet.</div>
-              <div className="text-[11px]">A default agent is auto-created on the first call session if ConvAI is available.</div>
+              <div className="text-[12.5px]">No voice agents yet.</div>
+              <div className="text-[11px]">A default voice agent is auto-created on the first call session if ConvAI is available.</div>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
               {agents.map(a => (
-                <AgentRow key={a.agent_id} agent={a} onDelete={handleDelete} onUpdate={handleUpdate} />
+                <AgentRow key={a.agent_id} agent={a} isDefault={a.agent_id === defaultAgentId} onDelete={handleDelete} onUpdate={handleUpdate} />
               ))}
             </div>
           )}

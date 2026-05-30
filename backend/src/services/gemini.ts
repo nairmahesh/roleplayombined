@@ -3,9 +3,14 @@ import mongoose from 'mongoose';
 import { config } from '../config';
 import { logGeminiUsage } from './usage';
 
-const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
+const genAI  = new GoogleGenerativeAI(config.gemini.apiKey);
 const MODEL  = 'gemini-2.0-flash';
 const model  = genAI.getGenerativeModel({ model: MODEL });
+// Separate model instance that enforces JSON output — used for structured feedback
+const jsonModel = genAI.getGenerativeModel({
+  model: MODEL,
+  generationConfig: { responseMimeType: 'application/json' },
+});
 
 export interface ConversationMessage {
   role: 'user' | 'assistant';
@@ -68,8 +73,13 @@ export async function generateSessionFeedback(
   promptTemplate: string,
   ctx: Ctx = {},
 ): Promise<string> {
-  const prompt = promptTemplate.replace('{transcript}', transcript).replace('{framework}', framework);
-  const result = await model.generateContent(prompt);
+  let prompt = promptTemplate.replace('{transcript}', transcript).replace('{framework}', framework);
+  // If the template had no {transcript} placeholder, append the transcript and
+  // a JSON instruction so Gemini always has the conversation to evaluate.
+  if (!promptTemplate.includes('{transcript}')) {
+    prompt += `\n\nFramework used: ${framework}\n\nTRANSCRIPT:\n${transcript}\n\nRespond with ONLY valid JSON matching the structure described above.`;
+  }
+  const result = await jsonModel.generateContent(prompt);
   logUsage('session_feedback', result.response.usageMetadata, ctx);
   return result.response.text();
 }

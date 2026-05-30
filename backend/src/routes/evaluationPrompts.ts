@@ -32,8 +32,10 @@ router.get('/:type', async (req: AuthRequest, res: Response): Promise<void> => {
     ? { $or: [{ companyId: req.companyId }, { companyId: null }] }
     : { companyId: null };
 
+  // Normalise slug → display name: underscores→spaces, case-insensitive match
+  const normalised = req.params.type.replace(/_/g, ' ');
   const prompt = await EvaluationPrompt.findOne({
-    roleplayType: req.params.type,
+    roleplayType: { $regex: new RegExp(`^${normalised}$`, 'i') },
     ...companyFilter,
   }).lean();
 

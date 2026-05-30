@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from './store';
 import type {
   DashboardStats,
@@ -24,6 +24,75 @@ http.interceptors.request.use((cfg) => {
   if (token) cfg.headers.Authorization = `Bearer ${token}`;
   return cfg;
 });
+
+// ── Token refresh interceptor ─────────────────────────────────────────────────
+// On a 401, attempt a single token refresh then retry the original request.
+// If refresh fails (token revoked / expired), force logout.
+
+let _refreshing = false;
+let _queue: Array<{ resolve: (token: string) => void; reject: (err: unknown) => void }> = [];
+
+function processQueue(token: string | null, err: unknown) {
+  _queue.forEach(p => token ? p.resolve(token) : p.reject(err));
+  _queue = [];
+}
+
+http.interceptors.response.use(
+  res => res,
+  async (error: AxiosError) => {
+    const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+    // Only intercept 401s on non-refresh, non-login requests that haven't been retried
+    if (
+      error.response?.status !== 401 ||
+      original._retry ||
+      original.url === '/auth/refresh' ||
+      original.url === '/auth/login'
+    ) {
+      return Promise.reject(error);
+    }
+
+    if (_refreshing) {
+      // Another refresh is in flight — queue this request
+      return new Promise((resolve, reject) => {
+        _queue.push({
+          resolve: (token) => {
+            original.headers.Authorization = `Bearer ${token}`;
+            resolve(http(original));
+          },
+          reject,
+        });
+      });
+    }
+
+    original._retry = true;
+    _refreshing = true;
+
+    try {
+      const { refreshToken } = useAuthStore.getState();
+      if (!refreshToken) throw new Error('No refresh token');
+
+      const { data } = await axios.post<{ accessToken: string; refreshToken: string }>(
+        '/api/auth/refresh',
+        { refreshToken },
+      );
+
+      useAuthStore.getState().updateToken(data.accessToken, data.refreshToken);
+      processQueue(data.accessToken, null);
+
+      original.headers.Authorization = `Bearer ${data.accessToken}`;
+      return http(original);
+    } catch (refreshErr) {
+      processQueue(null, refreshErr);
+      // Refresh failed — session is unrecoverable, force logout
+      useAuthStore.getState().clearAuth();
+      window.location.href = '/login';
+      return Promise.reject(refreshErr);
+    } finally {
+      _refreshing = false;
+    }
+  }
+);
 
 // ── Auth API ──────────────────────────────────────────────────────────────────
 
@@ -254,7 +323,7 @@ export const superadminApi = {
 
 // ── Voice API ─────────────────────────────────────────────────────────────────
 
-export interface AgentConfig {
+export interface VoiceAgentConfig {
   name?: string;
   conversation_config?: {
     agent?: { prompt?: { prompt?: string; llm?: string; temperature?: number }; first_message?: string; language?: string };
@@ -262,16 +331,18 @@ export interface AgentConfig {
   };
 }
 
-export interface AgentSummary {
+export interface VoiceAgentSummary {
   agent_id: string;
   name: string;
   created_at_unix_secs?: number;
 }
 
 export const voiceApi = {
-  getSignedUrl: async (personaId?: string): Promise<string> => {
-    const params = personaId ? { personaId } : undefined;
-    const { data } = await http.get('/voice/signed-url', { params });
+  getSignedUrl: async (personaId?: string, agentId?: string): Promise<string> => {
+    const params: Record<string, string> = {};
+    if (agentId) params.agentId = agentId;
+    else if (personaId) params.personaId = personaId;
+    const { data } = await http.get('/voice/signed-url', { params: Object.keys(params).length ? params : undefined });
     return (data as { signedUrl: string }).signedUrl;
   },
 
@@ -289,7 +360,7 @@ export const voiceApi = {
 
   listAgents: async () => {
     const { data } = await http.get('/voice/agents');
-    return data as AgentSummary[];
+    return data as { agents: VoiceAgentSummary[]; defaultAgentId: string | null };
   },
 
   getAgent: async (agentId: string) => {
@@ -297,12 +368,12 @@ export const voiceApi = {
     return data;
   },
 
-  createAgent: async (payload: AgentConfig) => {
+  createAgent: async (payload: VoiceAgentConfig) => {
     const { data } = await http.post('/voice/agents', payload);
     return data as { agent_id: string };
   },
 
-  updateAgent: async (agentId: string, payload: AgentConfig) => {
+  updateAgent: async (agentId: string, payload: VoiceAgentConfig) => {
     const { data } = await http.patch(`/voice/agents/${agentId}`, payload);
     return data;
   },

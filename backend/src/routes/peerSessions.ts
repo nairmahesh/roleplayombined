@@ -8,6 +8,7 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
+  if (!req.companyId) { res.json([]); return; }
   const companyId = new mongoose.Types.ObjectId(req.companyId);
 
   const sessions = await Session.find({ companyId, status: 'COMPLETED' })

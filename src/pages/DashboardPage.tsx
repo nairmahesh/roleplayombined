@@ -582,11 +582,11 @@ export function DashboardPage() {
     analyticsApi.dashboard().then(d => {
       setStats(d);
       setCache('dashboard', d);
-    }).finally(() => setLoading(false));
+    }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   if (loading) return <LoadingSkeleton />;
-  if (!stats) return null;
+  if (!stats) return <LoadingSkeleton />;
 
   const role = user?.role;
   const subtitle =

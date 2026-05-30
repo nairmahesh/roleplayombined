@@ -8,6 +8,7 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/dashboard', async (req: AuthRequest, res: Response): Promise<void> => {
+  if (!req.companyId) { res.status(400).json({ error: 'No company context' }); return; }
   const companyId = new mongoose.Types.ObjectId(req.companyId);
   const userId = new mongoose.Types.ObjectId(req.userId);
   const isAgent = req.userRole === 'AGENT';
@@ -143,6 +144,7 @@ router.get('/dashboard', async (req: AuthRequest, res: Response): Promise<void> 
 });
 
 router.get('/leaderboard', async (req: AuthRequest, res: Response): Promise<void> => {
+  if (!req.companyId) { res.json([]); return; }
   const companyId = new mongoose.Types.ObjectId(req.companyId);
 
   const agg = await Session.aggregate([
