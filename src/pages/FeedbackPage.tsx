@@ -5,11 +5,51 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { RefreshCw, Share2, ChevronRight, CircleCheck as CheckCircle, TriangleAlert as AlertTriangle, Lightbulb, Play, Pause, Search, Copy, Download, MessageSquare, Clock, Shield, BarChart3, Gauge, Activity, Mic, ChevronDown, CircleAlert as AlertCircle, X, Info, Trophy, RotateCcw, Zap, Target, ChevronLeft, Film } from 'lucide-react';
-import { sessionsApi, peerSessionsApi } from '@/lib/api';
+import { sessionsApi, peerSessionsApi, recordingsApi, isS3Recording } from '@/lib/api';
 import { connectSocket } from '@/lib/socket';
 import { Session, ParsedFeedback, FRAMEWORK_INFO, ScorecardGroup, PeerSession } from '@/types';
 import { RECORDINGS_LS_KEY, type RecordingMeta } from '@/components/practice/OnlineMeetingRoom';
 import clsx from 'clsx';
+
+// ── Analysing screen with polling fallback UI ─────────────────────────────────
+function AnalysingScreen({ framework, onRefresh }: { framework: string; onRefresh: () => void }) {
+  const [secs, setSecs] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setSecs(s => s + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const timedOut = secs > 60;
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
+      <div className={clsx('w-16 h-16 rounded-full border-4', timedOut ? 'border-accent/20' : 'animate-spin')}
+        style={{ borderColor: 'rgba(91,111,255,0.3)', borderTopColor: timedOut ? 'transparent' : 'var(--accent)' }} />
+      <div className="text-center">
+        <h3 className="font-display text-xl font-bold mb-2" style={{ color: 'var(--text)' }}>
+          {timedOut ? 'Taking longer than expected…' : 'Analysing your session…'}
+        </h3>
+        <p className="text-sm mb-4" style={{ color: 'var(--text3)' }}>
+          {timedOut
+            ? 'The AI analysis is still running in the background.'
+            : `Reviewing your transcript against ${framework} criteria`}
+        </p>
+        {timedOut && (
+          <button
+            onClick={onRefresh}
+            className="flex items-center gap-2 mx-auto px-4 py-2 rounded-[10px] border text-[13px] font-medium transition-all hover:scale-105"
+            style={{ borderColor: 'var(--border2)', color: 'var(--text2)', background: 'var(--bg3)' }}
+          >
+            <RefreshCw size={13} /> Check now
+          </button>
+        )}
+        {!timedOut && (
+          <p className="text-[11px]" style={{ color: 'var(--text3)' }}>
+            {secs < 10 ? 'Starting…' : secs < 30 ? 'Generating feedback…' : 'Almost done…'}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 type Tab = 'scorecard' | 'transcript' | 'analytics' | 'objections' | 'leaderboard';
 
@@ -286,7 +326,14 @@ export function FeedbackPage() {
         setSession(data);
         setPeerScores(peers);
         setPeerSessions(peerSess);
-        if (data.recordingUrl) {
+        if (isS3Recording(data.recordingUrl)) {
+          // S3 key — fetch a short-lived pre-signed URL for playback
+          try {
+            const url = await recordingsApi.getPlaybackUrl(id);
+            setPlaybackUrl(url);
+          } catch { /* S3 not configured or no recording */ }
+        } else if (data.recordingUrl) {
+          // Direct playable URL (ElevenLabs audio proxy)
           setPlaybackUrl(data.recordingUrl);
         } else {
           // Fall back to locally-recorded blob (online meeting recording)
@@ -296,7 +343,7 @@ export function FeedbackPage() {
             if (local) { setLocalRecording(local); setPlaybackUrl(local.objectUrl); }
           } catch { /* ignore */ }
         }
-        if (data.status === 'COMPLETED' && !data.totalScore && !data.analysisSkipped) setAnalysing(true);
+        if (data.status === 'COMPLETED' && data.totalScore == null && data.aiFeedback == null && !data.analysisSkipped) setAnalysing(true);
       } catch {
         toast.error('Session not found');
         navigate('/sessions');
@@ -318,6 +365,22 @@ export function FeedbackPage() {
     socket.on('analysis:complete', onDone);
     return () => { socket.off('analysis:complete', onDone); socket.emit('session:leave', { sessionId: id }); };
   }, [id]);
+
+  // Polling fallback — if the socket event is missed, poll every 8s while analysing
+  useEffect(() => {
+    if (!analysing || !id) return;
+    const poll = setInterval(async () => {
+      try {
+        const data = await sessionsApi.get(id);
+        if (data.totalScore != null || data.aiFeedback != null || data.analysisSkipped) {
+          setSession(data);
+          setAnalysing(false);
+          clearInterval(poll);
+        }
+      } catch { /* ignore poll errors */ }
+    }, 8000);
+    return () => clearInterval(poll);
+  }, [analysing, id]);
 
   const togglePlay = useCallback(() => {
     if (!audioRef.current) return;
@@ -476,13 +539,16 @@ export function FeedbackPage() {
   if (!session) return null;
 
   if (analysing) return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
-      <div className="w-16 h-16 rounded-full border-4 animate-spin" style={{ borderColor: 'rgba(91,111,255,0.3)', borderTopColor: 'var(--accent)' }} />
-      <div className="text-center">
-        <h3 className="font-display text-xl font-bold mb-2" style={{ color: 'var(--text)' }}>Analysing your session…</h3>
-        <p className="text-sm" style={{ color: 'var(--text3)' }}>Reviewing your transcript against {FRAMEWORK_INFO[session.framework]?.label} criteria</p>
-      </div>
-    </div>
+    <AnalysingScreen
+      framework={FRAMEWORK_INFO[session.framework]?.label ?? session.framework}
+      onRefresh={async () => {
+        try {
+          const data = await sessionsApi.get(id!);
+          if (data.totalScore != null || data.aiFeedback != null || data.analysisSkipped) { setSession(data); setAnalysing(false); }
+          else toast('Analysis still running — check back in a moment.');
+        } catch { toast.error('Could not fetch session.'); }
+      }}
+    />
   );
 
   const scores         = session.frameworkScores || [];
@@ -1168,11 +1234,11 @@ export function FeedbackPage() {
                       )}
 
                       {/* What to improve — full width, prominent */}
-                      {feedback.improvements.length > 0 && (
+                      {(feedback.improvements?.length ?? 0) > 0 && (
                         <div className="px-4 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
                           <div className="text-[12px] font-semibold mb-3" style={{ color: 'var(--text)' }}>What to improve:</div>
                           <ul className="flex flex-col gap-3">
-                            {feedback.improvements.map((s, i) => (
+                            {(feedback.improvements ?? []).map((s, i) => (
                               <li key={i} className="flex gap-3">
                                 <span className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-[9px] font-bold" style={{ background: 'rgba(255,107,107,0.12)', color: '#FF6B6B', border: '1px solid rgba(255,107,107,0.2)' }}>
                                   {i + 1}
@@ -1185,11 +1251,11 @@ export function FeedbackPage() {
                       )}
 
                       {/* What went well */}
-                      {feedback.strengths.length > 0 && (
+                      {(feedback.strengths?.length ?? 0) > 0 && (
                         <div className="px-4 py-4">
                           <div className="text-[12px] font-semibold mb-3" style={{ color: 'var(--text)' }}>What went well:</div>
                           <ul className="flex flex-col gap-2.5">
-                            {feedback.strengths.map((s, i) => (
+                            {(feedback.strengths ?? []).map((s, i) => (
                               <li key={i} className="flex gap-3">
                                 <CheckCircle size={14} className="flex-shrink-0 mt-0.5" style={{ color: '#06D6A0' }} />
                                 <span className="text-[12.5px] leading-relaxed" style={{ color: 'var(--text2)' }}>{s}</span>

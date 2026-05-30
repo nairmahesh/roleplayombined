@@ -302,17 +302,7 @@ export function AppShell() {
         {/* Page content */}
         <main className="flex-1 overflow-y-auto px-4 pt-4 pb-4 md:px-7 md:pt-5 md:pb-7">
           <Suspense fallback={<PageLoader />}>
-            <AnimatePresence mode="sync" initial={false}>
-              <motion.div
-                key={location.pathname}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.08 }}
-              >
-                <Outlet />
-              </motion.div>
-            </AnimatePresence>
+            <Outlet />
           </Suspense>
         </main>
       </div>

@@ -248,12 +248,18 @@ router.patch('/:id/end', async (req: AuthRequest, res: Response): Promise<void> 
       try {
         const rawFeedback = await generateSessionFeedback(transcript, session.framework, promptTemplate, ctx);
 
-        // Robust JSON extraction — handles leading/trailing prose and markdown fences
+        // Robust JSON extraction — handles objects, arrays, prose wrappers, and markdown fences
         let cleanJson = rawFeedback.replace(/```json\n?|\n?```/g, '').trim();
         const firstBrace = cleanJson.indexOf('{');
-        const lastBrace  = cleanJson.lastIndexOf('}');
-        if (firstBrace !== -1 && lastBrace > firstBrace) {
-          cleanJson = cleanJson.slice(firstBrace, lastBrace + 1);
+        const firstBracket = cleanJson.indexOf('[');
+        // Prefer object `{}` unless array `[]` appears earlier
+        const useArray = firstBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace);
+        if (useArray) {
+          const end = cleanJson.lastIndexOf(']');
+          if (firstBracket !== -1 && end > firstBracket) cleanJson = cleanJson.slice(firstBracket, end + 1);
+        } else {
+          const end = cleanJson.lastIndexOf('}');
+          if (firstBrace !== -1 && end > firstBrace) cleanJson = cleanJson.slice(firstBrace, end + 1);
         }
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -265,8 +271,65 @@ router.patch('/:id/end', async (req: AuthRequest, res: Response): Promise<void> 
           throw parseErr;
         }
 
+        // If Gemini returned a named-key object like {"Situation": {"passed":false,"evidence":"..."}, "Overall":"Failed"}
+        // reshape it into the standard scorecardGroups format
+        if (!Array.isArray(parsed) && parsed.overallScore == null && parsed.scorecardGroups == null) {
+          const componentKeys = Object.keys(parsed).filter(
+            k => typeof parsed[k] === 'object' && parsed[k] !== null && ('passed' in parsed[k] || 'evidence' in parsed[k])
+          );
+          if (componentKeys.length > 0) {
+            const passedCount = componentKeys.filter(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              k => (parsed[k] as any).passed === true || (parsed[k] as any).passed === 'passed'
+            ).length;
+            parsed = {
+              overallScore: Math.round((passedCount / componentKeys.length) * 100),
+              overallFeedback: typeof parsed.Overall === 'string' ? parsed.Overall : 'Session evaluated.',
+              strengths: [],
+              improvements: [],
+              proTip: '',
+              scorecardGroups: [{
+                group: 'Framework Evaluation',
+                maxPoints: componentKeys.length,
+                earnedPoints: passedCount,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                criteria: componentKeys.map(k => ({
+                  question: k,
+                  passed: (parsed[k] as any).passed === true || (parsed[k] as any).passed === 'passed',
+                  reasoning: (parsed[k] as any).evidence ?? (parsed[k] as any).reasoning ?? '',
+                })),
+              }],
+            };
+          }
+        }
+
+        // If Gemini returned a flat array of criteria instead of the expected object, reshape it
+        if (Array.isArray(parsed)) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const passedCount = parsed.filter((c: any) => c.passed === true || c.passed === 'passed').length;
+          parsed = {
+            overallScore: Math.round((passedCount / Math.max(parsed.length, 1)) * 100),
+            overallFeedback: 'Session evaluated.',
+            strengths: [],
+            improvements: [],
+            proTip: '',
+            scorecardGroups: [{
+              group: 'Evaluation',
+              maxPoints: parsed.length,
+              earnedPoints: passedCount,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              criteria: parsed.map((c: any) => ({
+                question: c.criterion ?? c.question ?? '',
+                passed: c.passed === true || c.passed === 'passed',
+                reasoning: c.evidence ?? c.reasoning ?? '',
+              })),
+            }],
+          };
+        }
+
         session.aiFeedback = JSON.stringify(parsed);
-        session.totalScore  = parsed.overallScore;
+        // Ensure totalScore is always a concrete number so polling can detect completion
+        session.totalScore = parsed.overallScore ?? 0;
 
         if (parsed.scorecardGroups) {
           session.frameworkScores = parsed.scorecardGroups.map(
@@ -285,6 +348,21 @@ router.patch('/:id/end', async (req: AuthRequest, res: Response): Promise<void> 
         console.log(`[analysis] ✅ session ${sessionId} scored ${parsed.overallScore ?? '?'}`);
       } catch (err) {
         console.error(`[analysis] ❌ session ${sessionId}:`, err);
+        // Mark analysis as attempted with a null-safe score so polling can detect completion
+        try {
+          if (session.totalScore == null) {
+            session.totalScore = 0;
+            session.aiFeedback = JSON.stringify({
+              overallScore: 0,
+              overallFeedback: 'AI analysis could not be completed. Please try again.',
+              strengths: [],
+              improvements: ['Re-run the session to get feedback.'],
+              proTip: '',
+              scorecardGroups: [],
+            });
+            await session.save();
+          }
+        } catch { /* ignore */ }
       } finally {
         // Always notify the client so it doesn't hang on the analysing screen
         try {
@@ -369,28 +447,30 @@ router.get('/:id/peer-scores', async (req: AuthRequest, res: Response): Promise<
 
 function defaultFeedbackPrompt(framework: string): string {
   return `You are an expert sales coach evaluating a roleplay transcript.
-Framework used: ${framework}
+Framework: ${framework}
 
-Analyze the transcript and return ONLY valid JSON:
+IMPORTANT: Your entire response must be a single JSON OBJECT (not an array). Start with { and end with }.
+
+Return this exact structure:
 {
-  "overallScore": <0-100>,
+  "overallScore": <integer 0-100>,
   "overallFeedback": "<2-3 sentence summary>",
+  "strengths": ["<one strength per item>"],
+  "improvements": ["<one improvement per item>"],
+  "proTip": "<single most impactful tip>",
   "scorecardGroups": [
     {
-      "group": "<skill area>",
-      "maxPoints": <int>,
-      "earnedPoints": <int>,
+      "group": "<skill area name>",
+      "maxPoints": <integer>,
+      "earnedPoints": <integer>,
       "criteria": [
-        { "question": "<what was evaluated>", "passed": <true|false>, "reasoning": "<1 sentence>" }
+        { "question": "<criterion text>", "passed": <true or false>, "reasoning": "<1 sentence with evidence>" }
       ]
     }
   ],
   "timelineEvents": [
-    { "type": "<ISSUE|GOOD|WARNING|NEUTRAL>", "timestampMs": <ms>, "title": "<short>", "description": "<what happened>", "suggestion": "<tip or null>", "transcriptRef": "<quote or null>", "betterResponse": "<alt or null>" }
-  ],
-  "strengths": ["<strength>"],
-  "improvements": ["<improvement>"],
-  "proTip": "<single most impactful tip>"
+    { "type": "<GOOD|WARNING|ISSUE>", "timestampMs": <integer milliseconds>, "title": "<short label>", "description": "<what happened>", "suggestion": "<coaching tip or null>" }
+  ]
 }
 
 TRANSCRIPT:

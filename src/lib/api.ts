@@ -524,4 +524,21 @@ export const usageApi = {
   },
 };
 
+// ── Recordings API ────────────────────────────────────────────────────────────
+
+export const recordingsApi = {
+  getPlaybackUrl: async (sessionId: string): Promise<string> => {
+    const { data } = await http.get(`/recordings/playback/${sessionId}`);
+    return (data as { url: string }).url;
+  },
+};
+
+// Returns true when a recordingUrl value is a raw S3 key rather than a playable URL.
+// S3 keys look like "recordings/sessionId-timestamp.webm".
+// ElevenLabs audio proxies look like "/api/sessions/…/audio".
+export function isS3Recording(recordingUrl: string | undefined | null): boolean {
+  if (!recordingUrl) return false;
+  return recordingUrl.startsWith('recordings/');
+}
+
 export const api = http;
