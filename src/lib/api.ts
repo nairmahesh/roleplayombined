@@ -335,6 +335,7 @@ export interface VoiceAgentSummary {
   agent_id: string;
   name: string;
   created_at_unix_secs?: number;
+  description?: string;
 }
 
 export const voiceApi = {

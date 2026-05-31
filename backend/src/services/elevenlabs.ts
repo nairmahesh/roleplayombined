@@ -230,6 +230,7 @@ export interface AgentSummary {
   agent_id: string;
   name: string;
   created_at_unix_secs?: number;
+  description?: string;
 }
 
 export async function listAgents(): Promise<AgentSummary[]> {
@@ -237,7 +238,26 @@ export async function listAgents(): Promise<AgentSummary[]> {
     `${EL_BASE}/convai/agents`,
     { headers: authHeader() }
   );
-  return res.data.agents ?? [];
+  const summaries: AgentSummary[] = res.data.agents ?? [];
+
+  // Enrich with description (first ~120 chars of system prompt) by fetching full agent configs.
+  // Agents are typically few, so N parallel calls is fine.
+  await Promise.allSettled(
+    summaries.map(async (agent) => {
+      try {
+        const detail = await axios.get<{ conversation_config?: { agent?: { prompt?: { prompt?: string } } } }>(
+          `${EL_BASE}/convai/agents/${agent.agent_id}`,
+          { headers: authHeader(), timeout: 5000 }
+        );
+        const prompt = detail.data?.conversation_config?.agent?.prompt?.prompt ?? '';
+        if (prompt) {
+          agent.description = prompt.length > 120 ? prompt.slice(0, 120).trimEnd() + '…' : prompt;
+        }
+      } catch { /* skip — description stays undefined */ }
+    })
+  );
+
+  return summaries;
 }
 
 export async function getAgent(agentId: string): Promise<unknown> {
