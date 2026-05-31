@@ -10,7 +10,7 @@ import {
   MonitorPlay, Circle, Square, Download, Play,
   Film,
 } from 'lucide-react';
-import { sessionsApi, voiceApi } from '@/lib/api';
+import { sessionsApi, voiceApi, api } from '@/lib/api';
 import { ConversationProvider, useConversation } from '@elevenlabs/react';
 import { connectSocket } from '@/lib/socket';
 import { Framework, SessionType, FRAMEWORK_INFO } from '@/types';
@@ -167,6 +167,7 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
   const [showRecordingReview, setShowRecordingReview] = useState(false);
   const [videoPlaying, setVideoPlaying]     = useState(false);
   const [phase, setPhase]                   = useState<'joining' | 'active'>('joining');
+  const [isUploading, setIsUploading]       = useState(false);
 
   const localVideoRef    = useRef<HTMLVideoElement>(null);
   const screenVideoRef   = useRef<HTMLVideoElement>(null);
@@ -177,7 +178,8 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
   const historyRef       = useRef<Message[]>([]);
   const isEndingRef      = useRef(false);
   const handleEndRef     = useRef<(() => void) | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaRecorderRef    = useRef<MediaRecorder | null>(null);
+  const recordingUploadRef  = useRef<Promise<void> | null>(null); // resolves when upload finishes
   const everConnectedRef  = useRef(false);
   const connectTimeRef    = useRef<number | null>(null);
   const sessionStartedRef = useRef(false);
@@ -208,6 +210,61 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
     timerRef.current = setInterval(() => setElapsed(Date.now() - startTimeRef.current), 1000);
     socket.emit('session:join', { sessionId });
     try { await sessionsApi.start(sessionId); } catch {}
+
+    // Auto-start video recording as soon as the meeting is live
+    try {
+      recordingChunksRef.current = [];
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+        ? 'video/webm;codecs=vp9,opus' : 'video/webm';
+      const mr = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 1_000_000, audioBitsPerSecond: 128_000 });
+      mr.ondataavailable = e => { if (e.data.size > 0) recordingChunksRef.current.push(e.data); };
+
+      // Store a promise that resolves when the upload completes so confirmEnd can await it
+      let resolveUpload!: () => void;
+      recordingUploadRef.current = new Promise<void>(res => { resolveUpload = res; });
+
+      mr.onstop = async () => {
+        const blob = new Blob(recordingChunksRef.current, { type: 'video/webm' });
+        const url  = URL.createObjectURL(blob);
+        setRecordingBlob(blob);
+        setRecordingObjectUrl(url);
+
+        if (blob.size > 5000) {
+          try {
+            const form = new FormData();
+            form.append('file', blob, 'recording.webm');
+            const { data } = await api.post(`/recordings/upload/${sessionId}`, form, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            console.log('[OnlineMeeting] recording uploaded, key=', data.key);
+          } catch (err) {
+            console.warn('[OnlineMeeting] S3 upload failed — storing locally', err);
+            // Fallback: save to localStorage so the feedback page can still play it
+            const meta: RecordingMeta = {
+              sessionId,
+              recordedAt: new Date().toISOString(),
+              durationMs: Date.now() - startTimeRef.current,
+              sizeBytes: blob.size,
+              objectUrl: url,
+            };
+            try {
+              const existing: RecordingMeta[] = JSON.parse(localStorage.getItem(RECORDINGS_LS_KEY) || '[]');
+              localStorage.setItem(RECORDINGS_LS_KEY, JSON.stringify(
+                [...existing.filter(r => r.sessionId !== sessionId), meta]
+              ));
+            } catch { /* ignore */ }
+          }
+        }
+        resolveUpload();
+      };
+
+      mr.start(5000);
+      mediaRecorderRef.current = mr;
+      setIsRecording(true);
+    } catch (err) {
+      console.warn('[OnlineMeeting] Could not start auto-recording:', err);
+      recordingUploadRef.current = Promise.resolve(); // don't block if recording failed to start
+    }
 
     // Connect ElevenLabs
     let signedUrl: string | null = null;
@@ -414,6 +471,22 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
     setShowAnalysisPrompt(false);
     const durationSeconds = endDataRef.current?.durationSeconds ?? 0;
     const convaiConversationId = endDataRef.current?.convaiConversationId;
+
+    // Stop auto-recording and wait for the upload to fully finish before navigating
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+    // Show upload progress while waiting for S3
+    if (recordingUploadRef.current) {
+      setIsUploading(true);
+      await Promise.race([
+        recordingUploadRef.current,
+        new Promise(r => setTimeout(r, 30_000)), // 30s hard cap so end is never blocked
+      ]);
+      setIsUploading(false);
+    }
+
     try {
       await sessionsApi.end(sessionId, { durationSeconds, transcript: historyRef.current, skipAnalysis: !analyze, convaiConversationId });
       toast.success(analyze ? 'Session ended — AI is analysing…' : 'Session saved.');
@@ -851,20 +924,28 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
                 </div>
               )}
 
+              {isUploading && (
+                <div className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-[12px] border border-white/10 bg-white/[0.03]">
+                  <div className="w-3.5 h-3.5 rounded-full border-2 border-white/20 border-t-white animate-spin flex-shrink-0" />
+                  <span className="text-[12px] text-white/60">Uploading recording…</span>
+                </div>
+              )}
               <div className="flex gap-3 w-full">
                 <button
                   type="button"
                   onClick={() => confirmEnd(false)}
-                  className="flex-1 py-2.5 rounded-[10px] bg-white/[0.05] border border-white/10 text-[13px] text-white/75 font-semibold hover:bg-white/[0.09] transition-colors"
+                  disabled={isUploading}
+                  className="flex-1 py-2.5 rounded-[10px] bg-white/[0.05] border border-white/10 text-[13px] text-white/75 font-semibold hover:bg-white/[0.09] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Skip
                 </button>
                 <button
                   type="button"
                   onClick={() => confirmEnd(true)}
-                  className="flex-1 py-2.5 rounded-[10px] bg-[#1a73e8] text-white text-[13px] font-bold hover:bg-[#1557b0] transition-colors"
+                  disabled={isUploading}
+                  className="flex-1 py-2.5 rounded-[10px] bg-[#1a73e8] text-white text-[13px] font-bold hover:bg-[#1557b0] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  Analyze
+                  {isUploading ? 'Uploading…' : 'Analyze'}
                 </button>
               </div>
             </motion.div>

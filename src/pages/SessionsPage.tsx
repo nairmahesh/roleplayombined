@@ -3,7 +3,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { sessionsApi, usersApi } from '@/lib/api';
+import toast from 'react-hot-toast';
+import { sessionsApi, usersApi, recordingsApi, isS3Recording } from '@/lib/api';
 import { useAuthStore, usePageCache } from '@/lib/store';
 import { Session, User, FRAMEWORK_INFO } from '@/types';
 import { formatDistanceToNow, isWithinInterval, subDays, startOfDay } from 'date-fns';
@@ -69,6 +70,7 @@ export function SessionsPage() {
   const [recordings, setRecordings] = useState<RecordingMeta[]>([]);
   const [playbackMeta, setPlaybackMeta] = useState<RecordingMeta | null>(null);
   const [videoPlaying, setVideoPlaying] = useState(false);
+  const [s3LoadingId, setS3LoadingId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -394,7 +396,17 @@ export function SessionsPage() {
                 isAdmin={isAdmin}
                 userLocationMap={userLocationMap}
                 recordingMeta={recordings.find(r => r.sessionId === session.id)}
+                s3LoadingId={s3LoadingId}
                 onPlayRecording={meta => { setPlaybackMeta(meta); setVideoPlaying(false); }}
+                onPlayS3Recording={async (sessionId) => {
+                  setS3LoadingId(sessionId);
+                  try {
+                    const url = await recordingsApi.getPlaybackUrl(sessionId);
+                    setPlaybackMeta({ sessionId, objectUrl: url, recordedAt: new Date().toISOString(), durationMs: 0, sizeBytes: 0 });
+                    setVideoPlaying(false);
+                  } catch { toast.error('Recording not available'); }
+                  finally { setS3LoadingId(null); }
+                }}
                 onClick={() => navigate(`/sessions/${session.id}/feedback`)}
               />
             ))}
@@ -524,7 +536,9 @@ function SessionRow({
   isAdmin,
   userLocationMap,
   recordingMeta,
+  s3LoadingId,
   onPlayRecording,
+  onPlayS3Recording,
   onClick,
 }: {
   session: Session;
@@ -532,7 +546,9 @@ function SessionRow({
   isAdmin: boolean;
   userLocationMap: Record<string, string>;
   recordingMeta?: RecordingMeta;
+  s3LoadingId: string | null;
   onPlayRecording?: (meta: RecordingMeta) => void;
+  onPlayS3Recording?: (sessionId: string) => void;
   onClick: () => void;
 }) {
   const score = session.totalScore;
@@ -541,6 +557,14 @@ function SessionRow({
   const personaTitle = session.scenarioConfig?.displayTitle || session.persona?.title || '';
   const repName = session.user ? `${session.user.firstName} ${session.user.lastName}` : null;
   const repLocation = session.user?.id ? userLocationMap[session.user.id] : undefined;
+  const hasS3Rec = isS3Recording(session.recordingUrl);
+  const isLoadingRec = s3LoadingId === session.id;
+  const handleRecClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (recordingMeta && onPlayRecording) onPlayRecording(recordingMeta);
+    else if (hasS3Rec && onPlayS3Recording) onPlayS3Recording(session.id);
+  };
+  const showRec = !!(recordingMeta || hasS3Rec);
 
   return (
     <motion.div
@@ -562,13 +586,15 @@ function SessionRow({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-[13.5px] font-medium truncate" style={{ color: 'var(--text)' }}>{personaName}</span>
-              {recordingMeta && onPlayRecording && (
+              {showRec && (
                 <button
-                  onClick={e => { e.stopPropagation(); onPlayRecording(recordingMeta); }}
+                  onClick={handleRecClick}
                   className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
                   style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}
                 >
-                  <Play size={9} className="ml-px" />
+                  {isLoadingRec
+                    ? <div className="w-2.5 h-2.5 rounded-full border border-red-400/40 border-t-red-400 animate-spin" />
+                    : <Play size={9} className="ml-px" />}
                 </button>
               )}
             </div>
@@ -605,15 +631,18 @@ function SessionRow({
             <div className="text-[13.5px] font-medium truncate" style={{ color: 'var(--text)' }}>{personaName}</div>
             <div className="text-[11.5px] truncate" style={{ color: 'var(--text3)' }}>{personaTitle}</div>
           </div>
-          {recordingMeta && onPlayRecording && (
+          {showRec && (
             <button
-              onClick={e => { e.stopPropagation(); onPlayRecording(recordingMeta); }}
+              onClick={handleRecClick}
               title="Play recording"
-              className="flex-shrink-0 flex items-center gap-1.5 px-2 py-1 rounded-[7px] border opacity-0 group-hover:opacity-100 transition-all hover:scale-105"
+              disabled={isLoadingRec}
+              className="flex-shrink-0 flex items-center gap-1.5 px-2 py-1 rounded-[7px] border opacity-0 group-hover:opacity-100 transition-all hover:scale-105 disabled:opacity-50"
               style={{ background: 'rgba(239,68,68,0.1)', borderColor: 'rgba(239,68,68,0.2)', color: '#f87171' }}
             >
-              <Film size={11} />
-              <span className="text-[10.5px] font-medium">Rec</span>
+              {isLoadingRec
+                ? <div className="w-2.5 h-2.5 rounded-full border border-red-400/40 border-t-red-400 animate-spin" />
+                : <Film size={11} />}
+              <span className="text-[10.5px] font-medium">{isLoadingRec ? '…' : 'Rec'}</span>
             </button>
           )}
         </div>
