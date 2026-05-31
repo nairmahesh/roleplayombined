@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Phone, Monitor, Sparkles, Loader as Loader2, ChevronDown, ChevronUp, RefreshCw, Play, Plus, X, Settings, Info, Pencil, Trash2, ArrowLeft, BookOpen, Lock, Check, User, Layers, Globe, Database, FileText, ClipboardList, CircleCheck, Wand as Wand2 } from 'lucide-react';
+import { Phone, Monitor, Sparkles, Loader as Loader2, ChevronDown, ChevronUp, RefreshCw, Play, Plus, X, Settings, Info, Pencil, Trash2, ArrowLeft, BookOpen, Lock, Check, User, Layers, Globe, Database, FileText, ClipboardList, CircleCheck, Wand as Wand2, Bot } from 'lucide-react';
 import { practiceApi, sessionsApi, personasApi, teamRoleplaysApi, evaluationPromptsApi, voiceApi, VoiceAgentSummary } from '@/lib/api';
 import type { AssignmentScope, AssignmentTarget, EvaluationGroupDef } from '@/types';
 import { Framework, SessionType, FRAMEWORK_INFO, ScenarioConfig, Persona, TeamRoleplay, KnowledgeBaseEntry } from '@/types';
@@ -948,6 +948,7 @@ export function PracticePage() {
     setEndCondition(sc.endCondition ?? '');
     setTimeLimitMins(sc.timeLimitMins ? String(sc.timeLimitMins) : '3');
     if (sc.sessionType) setSessionType(sc.sessionType);
+    if ((sc as any).voiceAgentId) setSelectedVoiceAgentId((sc as any).voiceAgentId);
     setActiveTeamRoleplayId(tr.id);
     setBotKnowledge(sc.botKnowledge ?? []);
     setUserBriefing(sc.userBriefing ?? []);
@@ -1081,6 +1082,7 @@ export function PracticePage() {
           aiCanEnd, endCondition, timeLimitMins: timeLimitMinsNum,
           avatarId, elevenlabsVoiceId: selectedVoiceId,
           language, botKnowledge, userBriefing,
+          voiceAgentId: selectedVoiceAgentId || undefined,
         } as any,
       });
       setTeamRoleplays(prev => [saved, ...prev]);
@@ -2733,6 +2735,46 @@ export function PracticePage() {
                   <label className="text-[11px] text-white/80 block mb-1.5">Description <span className="text-white/65">(optional)</span></label>
                   <textarea value={saveRoleplayDesc} onChange={e => setSaveRoleplayDesc(e.target.value)} placeholder="Brief note about this scenario…" className="input-base resize-none text-[12.5px] w-full min-h-[60px]" maxLength={200} />
                 </div>
+
+                {/* Voice agent selector */}
+                {voiceAgents.length > 0 && (
+                  <div>
+                    <label className="text-[11px] text-white/80 block mb-1.5 flex items-center gap-1.5">
+                      <Bot size={11} className="text-accent" /> Voice Agent
+                    </label>
+                    <div className="flex flex-col gap-1.5">
+                      {voiceAgents.map(a => {
+                        const isSelected = selectedVoiceAgentId === a.agent_id;
+                        return (
+                          <button
+                            key={a.agent_id}
+                            type="button"
+                            onClick={() => setSelectedVoiceAgentId(a.agent_id)}
+                            className={clsx(
+                              'flex items-start gap-3 px-3 py-2.5 rounded-[10px] border text-left transition-all',
+                              isSelected
+                                ? 'bg-accent/10 border-accent/40'
+                                : 'border-white/[0.07] hover:bg-white/[0.04] hover:border-white/[0.14]',
+                            )}
+                          >
+                            <div className={clsx(
+                              'w-4 h-4 rounded-full border-2 flex-shrink-0 mt-0.5 transition-colors',
+                              isSelected ? 'border-accent bg-accent' : 'border-white/25',
+                            )}>
+                              {isSelected && <span className="block w-1.5 h-1.5 rounded-full bg-white m-auto mt-[2px]" />}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-[12.5px] font-semibold text-white/90">{a.name}</div>
+                              {a.description && (
+                                <div className="text-[11px] text-white/45 mt-0.5 leading-snug line-clamp-2">{a.description}</div>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Assignment targeting — managers/admins only */}
                 {isManagerOrAdmin && (

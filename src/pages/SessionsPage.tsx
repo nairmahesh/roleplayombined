@@ -69,6 +69,7 @@ export function SessionsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [recordings, setRecordings] = useState<RecordingMeta[]>([]);
   const [playbackMeta, setPlaybackMeta] = useState<RecordingMeta | null>(null);
+  const [playbackSessionType, setPlaybackSessionType] = useState<string>('ONLINE_MEETING');
   const [videoPlaying, setVideoPlaying] = useState(false);
   const [s3LoadingId, setS3LoadingId] = useState<string | null>(null);
 
@@ -397,11 +398,18 @@ export function SessionsPage() {
                 userLocationMap={userLocationMap}
                 recordingMeta={recordings.find(r => r.sessionId === session.id)}
                 s3LoadingId={s3LoadingId}
-                onPlayRecording={meta => { setPlaybackMeta(meta); setVideoPlaying(false); }}
+                onPlayRecording={meta => {
+                  const sType = sessions.find(s => s.id === meta.sessionId)?.type ?? 'ONLINE_MEETING';
+                  setPlaybackSessionType(sType);
+                  setPlaybackMeta(meta);
+                  setVideoPlaying(false);
+                }}
                 onPlayS3Recording={async (sessionId) => {
                   setS3LoadingId(sessionId);
                   try {
                     const url = await recordingsApi.getPlaybackUrl(sessionId);
+                    const sType = sessions.find(s => s.id === sessionId)?.type ?? 'ONLINE_MEETING';
+                    setPlaybackSessionType(sType);
                     setPlaybackMeta({ sessionId, objectUrl: url, recordedAt: new Date().toISOString(), durationMs: 0, sizeBytes: 0 });
                     setVideoPlaying(false);
                   } catch { toast.error('Recording not available'); }
@@ -485,28 +493,47 @@ export function SessionsPage() {
                 </div>
               </div>
 
-              {/* Video */}
-              <div className="relative bg-black" style={{ aspectRatio: '16/9' }}>
-                <video
-                  key={playbackMeta.objectUrl}
-                  src={playbackMeta.objectUrl}
-                  className="w-full h-full object-contain"
-                  onPlay={() => setVideoPlaying(true)}
-                  onPause={() => setVideoPlaying(false)}
-                  onEnded={() => setVideoPlaying(false)}
-                  controls
-                />
-                {!videoPlaying && (
-                  <div
-                    className="absolute inset-0 flex items-center justify-center cursor-pointer"
-                    onClick={e => { e.stopPropagation(); (e.currentTarget.previousElementSibling as HTMLVideoElement)?.play(); }}
-                  >
-                    <div className="w-16 h-16 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center hover:bg-white/25 transition-colors">
-                      <Play size={26} className="text-white ml-1" />
-                    </div>
+              {/* Video / Audio player */}
+              {playbackSessionType === 'PHONE_CALL' ? (
+                <div className="flex flex-col items-center gap-4 px-6 py-8" style={{ background: '#111' }}>
+                  <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
+                    <Phone size={28} className="text-white/60" />
                   </div>
-                )}
-              </div>
+                  <p className="text-[12px] text-white/50">Phone call recording</p>
+                  <audio
+                    key={playbackMeta.objectUrl}
+                    src={playbackMeta.objectUrl}
+                    className="w-full"
+                    onPlay={() => setVideoPlaying(true)}
+                    onPause={() => setVideoPlaying(false)}
+                    onEnded={() => setVideoPlaying(false)}
+                    controls
+                    style={{ accentColor: '#1a73e8' }}
+                  />
+                </div>
+              ) : (
+                <div className="relative bg-black" style={{ aspectRatio: '16/9' }}>
+                  <video
+                    key={playbackMeta.objectUrl}
+                    src={playbackMeta.objectUrl}
+                    className="w-full h-full object-contain"
+                    onPlay={() => setVideoPlaying(true)}
+                    onPause={() => setVideoPlaying(false)}
+                    onEnded={() => setVideoPlaying(false)}
+                    controls
+                  />
+                  {!videoPlaying && (
+                    <div
+                      className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                      onClick={e => { e.stopPropagation(); (e.currentTarget.previousElementSibling as HTMLVideoElement)?.play(); }}
+                    >
+                      <div className="w-16 h-16 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center hover:bg-white/25 transition-colors">
+                        <Play size={26} className="text-white ml-1" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Footer */}
               <div className="flex items-center justify-between px-5 py-3.5" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>

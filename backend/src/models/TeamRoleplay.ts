@@ -20,6 +20,7 @@ export interface ITeamRoleplay extends Document {
     difficulty: string;
     suggestedQuestions: string[];
     objections?: string[];
+    voiceAgentId?: string;
   };
   isActive: boolean;
   companyId: mongoose.Types.ObjectId;
@@ -45,6 +46,7 @@ const TeamRoleplaysSchema = new Schema<ITeamRoleplay>(
       difficulty: String,
       suggestedQuestions: [String],
       objections: [String],
+      voiceAgentId: String,
     },
     isActive: { type: Boolean, default: true },
     companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true },

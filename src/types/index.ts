@@ -225,6 +225,8 @@ export interface ScenarioConfig {
   // Knowledge base
   botKnowledge?: KnowledgeBaseEntry[];    // context fed to the AI bot
   userBriefing?: KnowledgeBaseEntry[];    // content shown to user before call
+  // Voice agent override for this roleplay
+  voiceAgentId?: string;
 }
 
 export interface Session {

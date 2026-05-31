@@ -178,8 +178,10 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
   const historyRef       = useRef<Message[]>([]);
   const isEndingRef      = useRef(false);
   const handleEndRef     = useRef<(() => void) | null>(null);
-  const mediaRecorderRef    = useRef<MediaRecorder | null>(null);
-  const recordingUploadRef  = useRef<Promise<void> | null>(null); // resolves when upload finishes
+  const mediaRecorderRef        = useRef<MediaRecorder | null>(null);
+  const recordingUploadRef      = useRef<Promise<void> | null>(null); // resolves when upload finishes
+  const resolveUploadRef        = useRef<(() => void) | null>(null);
+  const pendingRestartStreamRef = useRef<MediaStream | null>(null); // set when screen share toggles during recording
   const everConnectedRef  = useRef(false);
   const connectTimeRef    = useRef<number | null>(null);
   const sessionStartedRef = useRef(false);
@@ -201,6 +203,60 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
     }
   }, [screenStream]);
 
+  // ── Auto-recorder: creates a MediaRecorder for a given stream.
+  // Chunks accumulate in recordingChunksRef across restarts (screen share toggles).
+  // On real final stop: uploads to S3, falls back to localStorage, shows review.
+  const setupAutoRecorder = useCallback((recordStream: MediaStream) => {
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+      ? 'video/webm;codecs=vp9,opus' : 'video/webm';
+    const mr = new MediaRecorder(recordStream, { mimeType, videoBitsPerSecond: 1_000_000, audioBitsPerSecond: 128_000 });
+    mr.ondataavailable = e => { if (e.data.size > 0) recordingChunksRef.current.push(e.data); };
+    mr.onstop = async () => {
+      // Screen share was toggled — restart recording with the new stream
+      if (pendingRestartStreamRef.current) {
+        const nextStream = pendingRestartStreamRef.current;
+        pendingRestartStreamRef.current = null;
+        setupAutoRecorder(nextStream);
+        return;
+      }
+      // Real final stop — build blob, upload, show review
+      const blob = new Blob(recordingChunksRef.current, { type: 'video/webm' });
+      const url  = URL.createObjectURL(blob);
+      setRecordingBlob(blob);
+      setRecordingObjectUrl(url);
+
+      if (blob.size > 5000) {
+        try {
+          const form = new FormData();
+          form.append('file', blob, 'recording.webm');
+          const { data } = await api.post(`/recordings/upload/${sessionId}`, form, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+          console.log('[OnlineMeeting] recording uploaded, key=', data.key);
+        } catch (err) {
+          console.warn('[OnlineMeeting] S3 upload failed — storing locally', err);
+          const meta: RecordingMeta = {
+            sessionId,
+            recordedAt: new Date().toISOString(),
+            durationMs: Date.now() - startTimeRef.current,
+            sizeBytes: blob.size,
+            objectUrl: url,
+          };
+          try {
+            const existing: RecordingMeta[] = JSON.parse(localStorage.getItem(RECORDINGS_LS_KEY) || '[]');
+            localStorage.setItem(RECORDINGS_LS_KEY, JSON.stringify(
+              [...existing.filter(r => r.sessionId !== sessionId), meta]
+            ));
+          } catch { /* storage full */ }
+        }
+      }
+      resolveUploadRef.current?.();
+      setShowRecordingReview(true);
+    };
+    mr.start(5000);
+    mediaRecorderRef.current = mr;
+  }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Start meeting after permissions granted ───────────────────────────────
   const startMeeting = useCallback(async (stream: MediaStream) => {
     setLocalStream(stream);
@@ -214,56 +270,14 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
     // Auto-start video recording as soon as the meeting is live
     try {
       recordingChunksRef.current = [];
-      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
-        ? 'video/webm;codecs=vp9,opus' : 'video/webm';
-      const mr = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 1_000_000, audioBitsPerSecond: 128_000 });
-      mr.ondataavailable = e => { if (e.data.size > 0) recordingChunksRef.current.push(e.data); };
-
-      // Store a promise that resolves when the upload completes so confirmEnd can await it
       let resolveUpload!: () => void;
       recordingUploadRef.current = new Promise<void>(res => { resolveUpload = res; });
-
-      mr.onstop = async () => {
-        const blob = new Blob(recordingChunksRef.current, { type: 'video/webm' });
-        const url  = URL.createObjectURL(blob);
-        setRecordingBlob(blob);
-        setRecordingObjectUrl(url);
-
-        if (blob.size > 5000) {
-          try {
-            const form = new FormData();
-            form.append('file', blob, 'recording.webm');
-            const { data } = await api.post(`/recordings/upload/${sessionId}`, form, {
-              headers: { 'Content-Type': 'multipart/form-data' },
-            });
-            console.log('[OnlineMeeting] recording uploaded, key=', data.key);
-          } catch (err) {
-            console.warn('[OnlineMeeting] S3 upload failed — storing locally', err);
-            // Fallback: save to localStorage so the feedback page can still play it
-            const meta: RecordingMeta = {
-              sessionId,
-              recordedAt: new Date().toISOString(),
-              durationMs: Date.now() - startTimeRef.current,
-              sizeBytes: blob.size,
-              objectUrl: url,
-            };
-            try {
-              const existing: RecordingMeta[] = JSON.parse(localStorage.getItem(RECORDINGS_LS_KEY) || '[]');
-              localStorage.setItem(RECORDINGS_LS_KEY, JSON.stringify(
-                [...existing.filter(r => r.sessionId !== sessionId), meta]
-              ));
-            } catch { /* ignore */ }
-          }
-        }
-        resolveUpload();
-      };
-
-      mr.start(5000);
-      mediaRecorderRef.current = mr;
+      resolveUploadRef.current = resolveUpload;
+      setupAutoRecorder(stream);
       setIsRecording(true);
     } catch (err) {
       console.warn('[OnlineMeeting] Could not start auto-recording:', err);
-      recordingUploadRef.current = Promise.resolve(); // don't block if recording failed to start
+      recordingUploadRef.current = Promise.resolve();
     }
 
     // Connect ElevenLabs
@@ -359,13 +373,35 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
       screenStream?.getTracks().forEach(t => t.stop());
       setScreenStream(null);
       setScreenOn(false);
+      // Restart auto-recording with camera-only stream (drop screen tracks)
+      const mr = mediaRecorderRef.current;
+      if (isRecording && localStream && mr && mr.state !== 'inactive') {
+        pendingRestartStreamRef.current = localStream;
+        mr.stop();
+      }
     } else {
       try {
         const stream = await (navigator.mediaDevices as MediaDevices & { getDisplayMedia: (c: object) => Promise<MediaStream> })
           .getDisplayMedia({ video: true, audio: true });
-        stream.getVideoTracks()[0].onended = () => { setScreenStream(null); setScreenOn(false); };
+        stream.getVideoTracks()[0].onended = () => {
+          setScreenStream(null);
+          setScreenOn(false);
+          // Restart recording with camera-only when user stops share via OS button
+          const mr2 = mediaRecorderRef.current;
+          if (isRecording && localStream && mr2 && mr2.state !== 'inactive') {
+            pendingRestartStreamRef.current = localStream;
+            mr2.stop();
+          }
+        };
         setScreenStream(stream);
         setScreenOn(true);
+        // Restart auto-recording to include both camera + screen share
+        const mr3 = mediaRecorderRef.current;
+        if (isRecording && localStream && mr3 && mr3.state !== 'inactive') {
+          const combined = new MediaStream([...localStream.getTracks(), ...stream.getTracks()]);
+          pendingRestartStreamRef.current = combined;
+          mr3.stop();
+        }
       } catch { /* user cancelled */ }
     }
   };
@@ -435,19 +471,13 @@ function OnlineMeetingRoomInner({ sessionId, persona, framework, timeLimitMins, 
     localStream?.getTracks().forEach(t => t.stop());
     screenStream?.getTracks().forEach(t => t.stop());
     endDataRef.current = { durationSeconds: Math.round((Date.now() - startTimeRef.current) / 1000), convaiConversationId };
-    // If actively recording, stop it — onstop will set recordingBlob and then we show review
-    if (isRecording && mediaRecorderRef.current) {
-      mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(recordingChunksRef.current, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        setRecordingBlob(blob);
-        setRecordingObjectUrl(url);
-        saveRecordingMeta(sessionId, blob.size, url);
-        setShowRecordingReview(true); // show review before analysis
-      };
+    // Cancel any in-flight screen-share restart, then stop recorder.
+    // setupAutoRecorder's onstop handles: upload → resolveUpload → setShowRecordingReview.
+    pendingRestartStreamRef.current = null;
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
+      setIsRecording(false);
     } else if (recordingBlob) {
-      // Recording already done — show review directly
       setShowRecordingReview(true);
     } else {
       setShowAnalysisPrompt(true);
